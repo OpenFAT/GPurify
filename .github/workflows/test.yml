@@ -1,7 +1,8 @@
 name: test
 
 # The merge gate, on every OS a release ships for: every unit suite in
-# ReleaseSafe (LLVM with every safety check on), plus `zig fmt`.
+# ReleaseSafe (LLVM with every safety check on), the CUDA and HIP compile of
+# every kernel root, and `zig fmt`.
 on:
   push:
     branches: [main]
@@ -34,6 +35,6 @@ jobs:
           name: omarsiwy
           skipPush: true
       - name: Format
-        run: nix develop -c zig fmt --check build.zig build.zig.zon src
+        run: nix develop -c zig fmt --check build.zig build.zig.zon src tests
       - name: Every suite
         run: nix develop -c zig build test -Doptimize=ReleaseSafe --summary failures

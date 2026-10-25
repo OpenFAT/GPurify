@@ -1,0 +1,134 @@
+# Ledger: the shipped decks' PEX against JKU's PEX bench
+# (iic-jku/open-pdks-regression-tests, <pdk>/pex_bench/, pinned in
+# tests/foundry/pdks.tsv): metal-only cells whose expected values are the
+# Magic extraction deck's arithmetic by hand, expected/results.json `deck`.
+# tests/foundry/pex_bench.rs holds every row to it at the bench's 0.05 %.
+#   pdk     the bench's PDK directory
+#   table   A ground C, B overlap C, C sidewall C, D sheet R, E n cuts
+#   key     the bench's key
+#   status  agrees | differs
+#   note    why ours differs
+pdk	table	key	status	note
+sky130A	A	li1_plate	agrees	
+sky130A	A	li1_wire	agrees	
+sky130A	A	m1_plate	agrees	
+sky130A	A	m1_wire	agrees	
+sky130A	A	m2_plate	agrees	
+sky130A	A	m2_wire	agrees	
+sky130A	A	m3_plate	agrees	
+sky130A	A	m3_wire	agrees	
+sky130A	A	m4_plate	agrees	
+sky130A	A	m4_wire	agrees	
+sky130A	A	m5_plate	agrees	
+sky130A	A	m5_wire	agrees	
+sky130A	B	m1_over_li1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+sky130A	B	m2_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+sky130A	B	m3_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+sky130A	B	m3_over_m2	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+sky130A	B	m4_over_m3	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+sky130A	B	m5_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+sky130A	B	m5_over_m4	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+sky130A	C	s0p2	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+sky130A	C	s0p4	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+sky130A	C	s0p8	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+sky130A	C	s1p6	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+sky130A	C	s3p2	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+sky130A	D	li1	agrees	
+sky130A	D	m1	agrees	
+sky130A	D	m2	agrees	
+sky130A	D	m3	agrees	
+sky130A	D	m4	agrees	
+sky130A	D	m5	agrees	
+sky130A	E	li1_m1_n2	agrees	
+sky130A	E	li1_m1_n4	agrees	
+sky130A	E	li1_m1_n8	agrees	
+sky130A	E	m1_m2_n2	agrees	
+sky130A	E	m1_m2_n4	agrees	
+sky130A	E	m1_m2_n8	agrees	
+sky130A	E	m2_m3_n2	agrees	
+sky130A	E	m2_m3_n4	agrees	
+sky130A	E	m2_m3_n8	agrees	
+gf180mcuD	A	m1_plate	agrees	
+gf180mcuD	A	m1_wire	agrees	
+gf180mcuD	A	m2_plate	agrees	
+gf180mcuD	A	m2_wire	agrees	
+gf180mcuD	A	m3_plate	agrees	
+gf180mcuD	A	m3_wire	agrees	
+gf180mcuD	A	m4_plate	agrees	
+gf180mcuD	A	m4_wire	agrees	
+gf180mcuD	A	m5_plate	agrees	
+gf180mcuD	A	m5_wire	agrees	
+gf180mcuD	B	m2_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+gf180mcuD	B	m3_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+gf180mcuD	B	m3_over_m2	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+gf180mcuD	B	m4_over_m3	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+gf180mcuD	B	m5_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+gf180mcuD	B	m5_over_m4	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+gf180mcuD	C	s0p2	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+gf180mcuD	C	s0p4	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+gf180mcuD	C	s0p8	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+gf180mcuD	C	s1p6	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+gf180mcuD	C	s3p2	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+gf180mcuD	D	m1	agrees	
+gf180mcuD	D	m2	agrees	
+gf180mcuD	D	m3	agrees	
+gf180mcuD	D	m4	agrees	
+gf180mcuD	D	m5	differs	the bench's gf180mcuD stack makes 81/0 the 40 mOhm top metal; the shipped deck is the six-metal stack, 81/0 an inner 90 mOhm Metal5
+gf180mcuD	E	m1_m2_n2	agrees	
+gf180mcuD	E	m1_m2_n4	agrees	
+gf180mcuD	E	m1_m2_n8	agrees	
+gf180mcuD	E	m2_m3_n2	agrees	
+gf180mcuD	E	m2_m3_n4	agrees	
+gf180mcuD	E	m2_m3_n8	agrees	
+gf180mcuD	E	m3_m4_n2	agrees	
+gf180mcuD	E	m3_m4_n4	agrees	
+gf180mcuD	E	m3_m4_n8	agrees	
+gf180mcuD	E	m4_m5_n2	agrees	
+gf180mcuD	E	m4_m5_n4	agrees	
+gf180mcuD	E	m4_m5_n8	agrees	
+ihp-sg13g2	A	m1_plate	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m1_wire	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m2_plate	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m2_wire	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m3_plate	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m3_wire	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m4_plate	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m4_wire	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m5_plate	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	m5_wire	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	tm1_plate	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	tm1_wire	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	tm2_plate	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	A	tm2_wire	differs	the deck's [PS] gives Metal1 37 aF/um2 measured, the rest parallel plate, and no fringe; the bench reads Magic's sg13g2 tech file
+ihp-sg13g2	B	m2_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+ihp-sg13g2	B	m3_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+ihp-sg13g2	B	m3_over_m2	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+ihp-sg13g2	B	m4_over_m3	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+ihp-sg13g2	B	m5_over_m4	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+ihp-sg13g2	B	tm1_over_m1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+ihp-sg13g2	B	tm1_over_m5	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+ihp-sg13g2	B	tm2_over_tm1	differs	closed form eps0*k*A/d, no fringe (crates/extract The closed forms); the bench's Magic defaultoverlap A*ov + P*sideoverlap
+ihp-sg13g2	C	s0p2	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+ihp-sg13g2	C	s0p4	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+ihp-sg13g2	C	s0p8	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+ihp-sg13g2	C	s1p6	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+ihp-sg13g2	C	s3p2	differs	closed form eps0*k*t*L/S, no fringe, a lower bound (crates/extract The closed forms); the bench's Magic sidewall k*L/(S+offset)
+ihp-sg13g2	D	m1	agrees	
+ihp-sg13g2	D	m2	agrees	
+ihp-sg13g2	D	m3	agrees	
+ihp-sg13g2	D	m4	agrees	
+ihp-sg13g2	D	m5	agrees	
+ihp-sg13g2	D	tm1	agrees	
+ihp-sg13g2	D	tm2	agrees	
+ihp-sg13g2	E	m1_m2_n2	agrees	
+ihp-sg13g2	E	m1_m2_n4	agrees	
+ihp-sg13g2	E	m1_m2_n8	agrees	
+ihp-sg13g2	E	m2_m3_n2	agrees	
+ihp-sg13g2	E	m2_m3_n4	agrees	
+ihp-sg13g2	E	m2_m3_n8	agrees	
+ihp-sg13g2	E	m5_tm1_n2	differs	vp_* cells: a 2 um arm into a 16 um pad holding the cut row; ours has the pad's lateral resistance out to the outer cuts, the bench's arithmetic takes the pad as one node (vc_* chains, full-width arms, agree)
+ihp-sg13g2	E	m5_tm1_n4	differs	vp_* cells: a 2 um arm into a 16 um pad holding the cut row; ours has the pad's lateral resistance out to the outer cuts, the bench's arithmetic takes the pad as one node (vc_* chains, full-width arms, agree)
+ihp-sg13g2	E	m5_tm1_n8	differs	vp_* cells: a 2 um arm into a 16 um pad holding the cut row; ours has the pad's lateral resistance out to the outer cuts, the bench's arithmetic takes the pad as one node (vc_* chains, full-width arms, agree)
+ihp-sg13g2	E	tm1_tm2_n2	differs	vp_* cells: a 2 um arm into a 16 um pad holding the cut row; ours has the pad's lateral resistance out to the outer cuts, the bench's arithmetic takes the pad as one node (vc_* chains, full-width arms, agree)
+ihp-sg13g2	E	tm1_tm2_n4	differs	vp_* cells: a 2 um arm into a 16 um pad holding the cut row; ours has the pad's lateral resistance out to the outer cuts, the bench's arithmetic takes the pad as one node (vc_* chains, full-width arms, agree)
+ihp-sg13g2	E	tm1_tm2_n8	differs	vp_* cells: a 2 um arm into a 16 um pad holding the cut row; ours has the pad's lateral resistance out to the outer cuts, the bench's arithmetic takes the pad as one node (vc_* chains, full-width arms, agree)

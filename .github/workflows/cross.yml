@@ -34,4 +34,4 @@ jobs:
       - name: Build every artifact for ${{ matrix.target }}
         run: >
           nix develop -c zig build -Dtarget=${{ matrix.target }}
-          -Doptimize=ReleaseSafe --summary failures --prefix out
+          -Doptimize=ReleaseSafe -Dgpu=false --summary failures --prefix out
