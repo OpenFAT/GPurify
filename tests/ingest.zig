@@ -6,4 +6,6 @@ test {
     _ = @import("ingest/deck_rules.zig");
     _ = @import("ingest/deck_lvs.zig");
     _ = @import("ingest/deck_errors.zig");
+    _ = @import("ingest/netlist.zig");
+    _ = @import("ingest/verilog.zig");
 }
