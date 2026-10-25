@@ -244,8 +244,8 @@ pub fn pointSegNear2(p: Point, seg: Seg) PointNear {
     if (@abs(vx) == @abs(vy)) {
         // `v = k·s`: twice the squared offset is `(s × w)²`, and the foot,
         // doubled, is `2a + (s·w)·s`.
-        const sx = std.math.sign(vx);
-        const sy = std.math.sign(vy);
+        const sx: i64 = std.math.sign(vx);
+        const sy: i64 = std.math.sign(vy);
         const side: i128 = sx * wy - sy * wx;
         const t = sx * wx + sy * wy;
         return .{ .d2 = side * side, .at2 = .{ .x = 2 * ax + t * sx, .y = 2 * ay + t * sy } };

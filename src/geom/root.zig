@@ -29,6 +29,7 @@
 //! - `relation`: `pairThreshold2`, `projectedReach2`, `pairThresholdAny`
 //! - `width`: `narrowestFacing`, `narrowestWidth`, `narrowestWidth2`, `narrowestNeck`, `narrowestPair2`, `narrowestPairAny`, `polyEdges`
 //! - `boolean`: `unionInto`, `intersectionInto`, `subtractionInto`, `canonicalRingsInto`
+//! - `derive`: sizing, selections, holes, extents and edge layers (derive*.zig)
 //! - aliases: `Point`, `Seg`, `Ring`, `GeometryStore`, `GeometryStoreBuilder`,
 //!   `ValidatedLayer`, `Polygon`
 
@@ -49,6 +50,7 @@ pub const rects = @import("rects.zig");
 pub const relation = @import("relation.zig");
 pub const width = @import("width.zig");
 pub const boolean = @import("boolean.zig");
+pub const derive = @import("derive.zig");
 
 pub const Dbu = dbu.Dbu;
 pub const DbuArea = dbu.DbuArea;
@@ -105,6 +107,7 @@ test {
     _ = relation;
     _ = width;
     _ = boolean;
+    _ = derive;
     _ = @import("boolean_slab.zig");
     _ = @import("boolean_octilinear.zig");
     _ = @import("boolean_anyangle.zig");

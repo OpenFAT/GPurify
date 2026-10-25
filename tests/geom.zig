@@ -10,4 +10,11 @@ test {
     _ = @import("geom/rects_decomposition.zig");
     _ = @import("geom/boolean_laws.zig");
     _ = @import("geom/boolean_random.zig");
+    _ = @import("geom/boolean_octilinear.zig");
+    _ = @import("geom/boolean_anyangle.zig");
+    _ = @import("geom/corner_model.zig");
+    _ = @import("geom/width_pairs.zig");
+    _ = @import("geom/derive_ops.zig");
+    _ = @import("geom/width_anyangle.zig");
+    _ = @import("geom/derive_anyangle.zig");
 }

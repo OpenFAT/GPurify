@@ -253,8 +253,8 @@ fn dist2(a: E, b: E) i128 {
 /// Twice the squared distance of `p` from `e`'s line, square to it.
 fn perp2(e: E, p: P) i128 {
     const v = e.d();
-    const sx = std.math.sign(v[0]);
-    const sy = std.math.sign(v[1]);
+    const sx: i128 = std.math.sign(v[0]);
+    const sy: i128 = std.math.sign(v[1]);
     // On the octilinear grid `e.d` is a whole multiple of (sx, sy).
     const c = sx * (p[1] - e.p1[1]) - sy * (p[0] - e.p1[0]);
     return @divTrunc(2 * c * c, sx * sx + sy * sy);

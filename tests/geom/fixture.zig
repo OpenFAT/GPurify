@@ -12,6 +12,8 @@
 //! - `pub fn totalArea(l: *const ValidatedLayer) DbuArea`, `pub fn twiceArea(l: *const ValidatedLayer) i128`
 //! - `pub const DirEdge = [2][2]i64`, `pub fn edgeSet(l: *const ValidatedLayer, map: anytype, mirror: bool) !std.ArrayList(DirEdge)`
 //! - `pub fn run(kind: Kind, a: *const ValidatedLayer, b: *const ValidatedLayer) !ValidatedLayer`, `pub const Kind = enum { @"or", @"and", not }`
+//! - `pub const oct_side`, `pub fn randomOctShape(arena: std.mem.Allocator, rng: *Rng) ![]const [2]i64`
+//! - `pub fn dropOne(comptime T: type, arena: std.mem.Allocator, items: []const T, keep_nonempty: bool) ![]const []const T`
 
 const std = @import("std");
 const testing = std.testing;
@@ -21,8 +23,12 @@ const DbuArea = geom.DbuArea;
 const GeometryStore = geom.GeometryStore;
 const ValidatedLayer = geom.ValidatedLayer;
 const shapes = @import("testgen").shapes;
+const Rng = @import("testgen").Rng;
 
 pub const gpa = testing.allocator;
+
+/// `randomOctShape` draws inside `[0, oct_side]²`.
+pub const oct_side = 16;
 
 /// One drawn polygon: its layer and its open vertex list.
 pub const Shape = struct { layer: u16, pts: []const [2]i64 };
@@ -122,6 +128,78 @@ pub fn edgeSet(l: *const ValidatedLayer, map: anytype, mirror: bool) !std.ArrayL
         }
     }.lessThan);
     return out;
+}
+
+/// A random octilinear shape inside `[0, oct_side]²`, counter-clockwise: a
+/// rectangle with chamfered corners, a diamond, a right triangle, or a
+/// parallelogram (boolean_octilinear.rs's `random_shape`).
+pub fn randomOctShape(arena: std.mem.Allocator, rng: *Rng) ![]const [2]i64 {
+    const s = oct_side;
+    var pts: std.ArrayList([2]i64) = .empty;
+    switch (rng.range(0, 4)) {
+        0 => {
+            const x0 = rng.range(0, s - 1);
+            const y0 = rng.range(0, s - 1);
+            const x1 = rng.range(x0 + 1, s + 1);
+            const y1 = rng.range(y0 + 1, s + 1);
+            const most = @divTrunc(@min(x1 - x0, y1 - y0), 2);
+            var c: [4]i64 = undefined;
+            for (&c) |*v| v.* = rng.range(0, most + 1);
+            const all = [8][2]i64{
+                .{ x0 + c[0], y0 }, .{ x1 - c[1], y0 }, .{ x1, y0 + c[1] }, .{ x1, y1 - c[2] },
+                .{ x1 - c[2], y1 }, .{ x0 + c[3], y1 }, .{ x0, y1 - c[3] }, .{ x0, y0 + c[0] },
+            };
+            // Consecutive repeats dropped, the closing vertex included.
+            for (all) |p| {
+                if (pts.items.len > 0 and std.mem.eql(i64, &pts.items[pts.items.len - 1], &p)) continue;
+                try pts.append(arena, p);
+            }
+            while (pts.items.len > 1 and std.mem.eql(i64, &pts.items[0], &pts.items[pts.items.len - 1])) _ = pts.pop();
+        },
+        1 => {
+            const r = rng.range(1, @divTrunc(s, 2) + 1);
+            const cx = rng.range(r, s - r + 1);
+            const cy = rng.range(r, s - r + 1);
+            try pts.appendSlice(arena, &.{ .{ cx + r, cy }, .{ cx, cy + r }, .{ cx - r, cy }, .{ cx, cy - r } });
+        },
+        2 => {
+            const e = rng.range(1, s + 1);
+            const x = rng.range(0, s - e + 1);
+            const y = rng.range(0, s - e + 1);
+            try pts.appendSlice(arena, switch (rng.range(0, 4)) {
+                0 => &.{ .{ x, y }, .{ x + e, y }, .{ x, y + e } },
+                1 => &.{ .{ x, y }, .{ x + e, y }, .{ x + e, y + e } },
+                2 => &.{ .{ x + e, y }, .{ x + e, y + e }, .{ x, y + e } },
+                else => &.{ .{ x, y }, .{ x + e, y + e }, .{ x, y + e } },
+            });
+        },
+        else => {
+            const w = rng.range(1, @divTrunc(s, 2) + 1);
+            const h = rng.range(1, @divTrunc(s, 2) + 1);
+            const x = rng.range(0, s - w - h + 1);
+            const y = rng.range(0, s - h + 1);
+            if (rng.range(0, 2) == 0) {
+                try pts.appendSlice(arena, &.{ .{ x, y }, .{ x + w, y }, .{ x + w + h, y + h }, .{ x + h, y + h } });
+            } else {
+                try pts.appendSlice(arena, &.{ .{ x + h, y }, .{ x + h + w, y }, .{ x + w, y + h }, .{ x, y + h } });
+            }
+        },
+    }
+    return pts.items;
+}
+
+/// Every candidate with one element dropped, empty candidates left out when
+/// `keep_nonempty`.
+pub fn dropOne(comptime T: type, arena: std.mem.Allocator, items: []const T, keep_nonempty: bool) ![]const []const T {
+    var out: std.ArrayList([]const T) = .empty;
+    for (0..items.len) |skip| {
+        if (keep_nonempty and items.len == 1) continue;
+        const fewer = try arena.alloc(T, items.len - 1);
+        @memcpy(fewer[0..skip], items[0..skip]);
+        @memcpy(fewer[skip..], items[skip + 1 ..]);
+        try out.append(arena, fewer);
+    }
+    return out.items;
 }
 
 /// `kind(a, b)` into a fresh layer.
