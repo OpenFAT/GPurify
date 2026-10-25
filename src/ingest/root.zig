@@ -9,10 +9,12 @@
 //!
 //! Contents:
 //! - `gds` (gds.zig): `Library`, `Xform`, `readGdsBytes`
+//! - `deck` (deck/deck.zig): `parseDeck`, `Deck`, `print`, ...
 //! - `provenance` (provenance.zig), `Provenance`
 //! - `globMatches` (glob.zig)
 
 pub const gds = @import("gds.zig");
+pub const deck = @import("deck/deck.zig");
 pub const provenance = @import("provenance.zig");
 pub const globMatches = @import("glob.zig").globMatches;
 
@@ -24,4 +26,5 @@ test {
     _ = @import("gds_records.zig");
     _ = @import("gds_elements.zig");
     _ = @import("provenance.zig");
+    _ = @import("deck/deck.zig");
 }

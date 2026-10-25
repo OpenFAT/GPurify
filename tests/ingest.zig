@@ -2,4 +2,5 @@
 test {
     _ = @import("ingest/layout.zig");
     _ = @import("ingest/provenance.zig");
+    _ = @import("ingest/deck.zig");
 }
