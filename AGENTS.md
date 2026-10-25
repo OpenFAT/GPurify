@@ -27,7 +27,8 @@ Load each with the Skill tool (other agents: read
   `tests/<module>.zig` suite. Run your module's step, not `zig build test`,
   while siblings are mid-port.
 - Pass `-Dgpu=false` for a fast loop. Run once without it before committing
-  anything that touches a `kernels.zig`: the device compile must stay green.
+  anything that touches a Gompute spec or row kernel: the device compile must
+  stay green.
 - Gate on the exit code. `cmd | tail` swallows it.
 - Run one zig process per agent, and don't build while `free -g` shows under
   6 GB available.

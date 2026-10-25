@@ -5,20 +5,15 @@ const Import = Build.Module.Import;
 
 /// One owner per row, in dependency order: a module imports only rows above
 /// it, so the graph is a DAG by construction (ARCHITECTURE.md, Modules).
-const Owner = struct { name: []const u8, deps: []const []const u8 };
+/// `kernels`: the module root is also a Gompute kernel root, compiled for
+/// CUDA and HIP; its files hold their own specs and `exportKernels` calls.
+const Owner = struct { name: []const u8, deps: []const []const u8, kernels: bool = false };
 const owners = [_]Owner{
-    .{ .name = "geom", .deps = &.{"gompute"} },
+    .{ .name = "geom", .deps = &.{"gompute"}, .kernels = true },
     .{ .name = "ingest", .deps = &.{"geom"} },
     .{ .name = "check", .deps = &.{ "gompute", "geom", "ingest" } },
     .{ .name = "extract", .deps = &.{ "gompute", "geom", "ingest", "check" } },
     .{ .name = "gpurify", .deps = &.{ "geom", "ingest", "check", "extract" } },
-};
-
-/// Gompute kernel roots: device-compiled leaves that import only `gompute`.
-const kernel_roots = [_]struct { []const u8, []const u8 }{
-    .{ "geom", "src/geom/kernels.zig" },
-    .{ "check", "src/check/kernels.zig" },
-    .{ "extract", "src/extract/kernels.zig" },
 };
 
 pub fn build(b: *Build) void {
@@ -29,10 +24,16 @@ pub fn build(b: *Build) void {
     const hip_arch = b.option([]const u8, "hip-arch", "HIP arch (gfx1100, ...), `none` to omit") orelse "gfx1100";
 
     const gompute_dep = b.dependency("gompute", .{});
-    var roots: [kernel_roots.len]gompute_build.KernelRoot = undefined;
-    for (kernel_roots, &roots) |k, *root| root.* = .{ .name = k[0], .root = b.path(k[1]) };
+    var roots: std.ArrayList(gompute_build.KernelRoot) = .empty;
+    for (owners, 0..) |o, i| if (o.kernels) roots.append(b.allocator, .{
+        .name = o.name,
+        .root = b.path(b.fmt("src/{s}/root.zig", .{o.name})),
+        .imports = &deviceImports,
+        .imports_ctx = @ptrFromInt(i + 1),
+    }) catch @panic("OOM");
+    device_gompute = gompute_dep;
     const kernels = gompute_build.addKernels(b, gompute_dep, .{
-        .kernel_roots = &roots,
+        .kernel_roots = roots.items,
         .target = target,
         .optimize = if (optimize == .debug) .fast else optimize,
         .cuda = if (gpu) gpuArch(cuda_arch) else .{ .enabled = false },
@@ -106,6 +107,34 @@ pub fn build(b: *Build) void {
         step.dependOn(&b.addRunArtifact(b.addTest(.{ .name = b.fmt("{s}-suite", .{o.name}), .root_module = suite })).step);
         test_all.dependOn(step);
     }
+}
+
+/// The device compile of an owner's root sees its owner imports rebuilt for
+/// the device target; the compile analyses only what the kernels reference.
+var device_gompute: *Build.Dependency = undefined;
+
+fn deviceImports(b: *Build, target: Build.ResolvedTarget, optimize: std.lang.Optimize, ctx: ?*anyopaque) []const Import {
+    var made: [owners.len]?*Build.Module = @splat(null);
+    const o = owners[@intFromPtr(ctx) - 1];
+    const out = b.allocator.alloc(Import, o.deps.len) catch @panic("OOM");
+    var n: usize = 0;
+    for (o.deps) |d| if (!std.mem.eql(u8, d, "gompute")) {
+        out[n] = .{ .name = d, .module = deviceModule(b, target, optimize, d, &made) };
+        n += 1;
+    };
+    return out[0..n];
+}
+
+fn deviceModule(b: *Build, target: Build.ResolvedTarget, optimize: std.lang.Optimize, name: []const u8, made: *[owners.len]?*Build.Module) *Build.Module {
+    const i = for (owners, 0..) |o, i| (if (std.mem.eql(u8, o.name, name)) break i) else unreachable;
+    if (made[i]) |m| return m;
+    const m = b.createModule(.{ .root_source_file = b.path(b.fmt("src/{s}/root.zig", .{name})), .target = target, .optimize = optimize, .strip = true });
+    made[i] = m;
+    for (owners[i].deps) |d| m.addImport(d, if (std.mem.eql(u8, d, "gompute"))
+        device_gompute.module("gompute_device")
+    else
+        deviceModule(b, target, optimize, d, made));
+    return m;
 }
 
 fn gpuArch(arch: []const u8) gompute_build.CudaOptions {

@@ -107,14 +107,22 @@ gpurify.run(inputs, options):            load → extract → checks → report
 The engine runs on the CPU or the GPU from one source. Gompute specializes the
 backend at compile time, and a machine without a driver falls back to the CPU.
 
+**No kernel files.** A spec or row kernel lives in the file that owns its
+data (`geom/linalg.zig` holds `axpy`), and that file calls
+`g.exportKernels(@This())`. A module with kernels sets `kernels = true` in
+`build.zig`'s `owners`; its `root.zig` is then also the Gompute kernel root
+and references each kernel-owning file from a `comptime` block. The device
+compile sees the module's owner imports, rebuilt for nvptx/amdgcn, and
+analyses only what the kernels reference.
+
 **Two kernel shapes, both written once:**
 
 1. **Elementwise**: `g.map`/`zip`/`mapIndexed`/`gather`/`scatter` specs in
-   the module's `kernels.zig`. On the CPU the generic body runs at `@Vector`
+   the owning file. On the CPU the generic body runs at `@Vector`
    width. Examples: per-edge length, per-vertex off-grid, per-region R and C,
    per-edge current density, `axpy`.
 2. **Row kernels** (ESPice's `lu_device.zig` pattern): the body is a generic
-   function in `kernels.zig` over the row index and `g.GlobalPtr`-style
+   function in the owning file over the row index and `g.GlobalPtr`-style
    slices. The device root exports it with `g.exportRaw`; the CPU calls the
    same body across a `std.Thread.Pool` of row blocks. One body for both
    backends means the results agree bit for bit.
@@ -209,7 +217,7 @@ RAM, 32 cores).
 |---|---|---|---|
 | 0 | lead | data copy, this file, `AGENTS.md`, CI, `geom` units (`dbu`, `qty`, `arith`, `intern`, `ids`, `bbox`) and `Device` | ~1k |
 | 1 | **geom**, **ingest**, **testgen** (shapes, rng, gds writer, assertions first) | rest of geom + i128 device probe; every reader | 7.6k+7.4k, 21.6k+4.3k, 3.7k |
-| 2 | **check-base**, **extract-field** | `report`, `rects`, `proximity`, `topology`, check kernels; field mesh/solve/matvec/dielectric/henry + GPU row kernels | ~4k+6k, ~5k+2k |
+| 2 | **check-base**, **extract-field** | `report`, `rects`, `proximity`, `topology`, the pair-distance and density kernels; field mesh/solve/matvec/dielectric/henry + GPU row kernels | ~4k+6k, ~5k+2k |
 | 3 | **drc+deck**, **lvs**, **extract-pex** | drc families + deck compile/builder/print/query (ERC rows compile to an empty table until wave 4); lvs; analytical, network, reduce, compare, foreign, substrate, fill, tsv | ~23k+25k, ~6k+8k, ~4.5k+1.5k |
 | 4 | **erc** | erc + deck's ERC rows | ~19k+20k |
 | 5 | **engine**, **liberty+export**, **cli** | gpurify spines, system, fill/enhance/incremental/xor; writers; Liberty; CLI | ~14k+61k |
@@ -220,5 +228,5 @@ RAM, 32 cores).
 | Change | Edits | Radius |
 |---|---|---|
 | A new DRC rule kind | `drc/kinds.zig` row, a new kind table + its transform file in `drc/`, one `switch` arm the compiler lists, the deck builder row, its test | 1 switch site |
-| Move a CPU loop to the GPU | its body moves into `kernels.zig` as a spec or row kernel, the call site picks a backend through `Device`, plus a differential test | 1 call site |
+| Move a CPU loop to the GPU | the loop body becomes a spec or row kernel in the same file (plus `kernels = true` on first use), the call site picks a backend through `Device`, plus a differential test | 1 call site |
 | A new input format (OASIS) | `ingest/oasis.zig` producing the same `gds.Library` rows, one line in the load spine | 1 spine line |

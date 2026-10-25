@@ -21,6 +21,7 @@ const intern = @import("intern.zig");
 const ids = @import("ids.zig");
 const bbox = @import("bbox.zig");
 const device = @import("device.zig");
+const linalg = @import("linalg.zig");
 
 pub const Dbu = dbu.Dbu;
 pub const DbuArea = dbu.DbuArea;
@@ -47,6 +48,11 @@ pub const PolyId = ids.PolyId;
 
 pub const Bbox = bbox.Bbox;
 pub const Device = device.Device;
+
+// The device compile of this root sees only what these blocks reference.
+comptime {
+    _ = linalg;
+}
 
 test {
     _ = dbu;

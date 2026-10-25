@@ -1,5 +1,6 @@
-//! Gompute kernels for geom's f64 vector algebra, compiled for the CPU and
-//! for CUDA/HIP from this one source. A leaf: it imports only `gompute`.
+//! f64 vector algebra shared by the power-grid and field solvers: Gompute
+//! specs, compiled for the CPU and for CUDA/HIP from this one source.
+//! Placeholder until wave 1 ports `crates/geom/src/linalg.rs`.
 //!
 //! Contents:
 //! - `pub const axpy`, `pub const Axpy = struct { a: f64 }`
