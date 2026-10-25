@@ -15,6 +15,8 @@ const Grid = geom.Grid;
 const Qty = geom.Qty;
 const max = geom.max_abs_dbu;
 
+// ---- private ----
+
 fn prng(seed: u64) std.Random.DefaultPrng {
     return .init(seed);
 }
@@ -34,6 +36,32 @@ fn um(raw: f64) Qty(.length, .micro) {
 }
 
 // ---- dbu.rs ----
+
+/// Distinct names, seeded. The index prefix guarantees distinctness; the random
+/// suffix stops the corpus being sorted on arrival.
+fn distinctNames(gpa: std.mem.Allocator, count: usize, seed: u64) ![][]u8 {
+    var p = prng(seed);
+    const names = try gpa.alloc([]u8, count);
+    for (names, 0..) |*n, i| n.* = try std.fmt.allocPrint(gpa, "n{d}_{x}", .{ i, p.random().int(u64) });
+    return names;
+}
+
+/// Restate at prefix `q` and back at `p`.
+fn expectRoundTrips(comptime dim: geom.Dimension, comptime p: geom.Prefix, comptime q: geom.Prefix, raw: f64) !void {
+    const original: Qty(dim, p) = .{ .raw = raw };
+    try testing.expectApproxEqRel(raw, original.to(q).to(p).raw, 1e-12);
+}
+
+/// Render one quantity and check it against its expected suffix. The numeric
+/// head is parsed back rather than matched against a literal: the value's
+/// spelling is a formatting choice, the prefix letter is not.
+fn expectRendersAs(comptime dim: geom.Dimension, comptime p: geom.Prefix, raw: f64, suffix: []const u8) !void {
+    var buf: [64]u8 = undefined;
+    const shown = try std.fmt.bufPrint(&buf, "{f}", .{Qty(dim, p){ .raw = raw }});
+    try testing.expect(std.mem.endsWith(u8, shown, suffix));
+    const head = std.mem.trim(u8, shown[0 .. shown.len - suffix.len], " ");
+    try testing.expectApproxEqAbs(raw, try std.fmt.parseFloat(f64, head), 1e-12);
+}
 
 test "the coordinate domain is closed at max_abs_dbu" {
     // Oracle: closed form. The domain is stated in the doc comment as
@@ -236,15 +264,6 @@ test "a coordinate measures a thousand nanometres over the resolution" {
 
 // ---- intern.rs ----
 
-/// Distinct names, seeded. The index prefix guarantees distinctness; the random
-/// suffix stops the corpus being sorted on arrival.
-fn distinctNames(gpa: std.mem.Allocator, count: usize, seed: u64) ![][]u8 {
-    var p = prng(seed);
-    const names = try gpa.alloc([]u8, count);
-    for (names, 0..) |*n, i| n.* = try std.fmt.allocPrint(gpa, "n{d}_{x}", .{ i, p.random().int(u64) });
-    return names;
-}
-
 test "interning a name twice gives one id and resolve inverts it" {
     // Oracle: law. Interning is idempotent and `resolve` inverts it — the two
     // properties `crate::intern`'s doc comment states outright.
@@ -329,23 +348,6 @@ test "two interning orders give the same set of ids and the same names back" {
 }
 
 // ---- qty.rs ----
-
-/// Restate at prefix `q` and back at `p`.
-fn expectRoundTrips(comptime dim: geom.Dimension, comptime p: geom.Prefix, comptime q: geom.Prefix, raw: f64) !void {
-    const original: Qty(dim, p) = .{ .raw = raw };
-    try testing.expectApproxEqRel(raw, original.to(q).to(p).raw, 1e-12);
-}
-
-/// Render one quantity and check it against its expected suffix. The numeric
-/// head is parsed back rather than matched against a literal: the value's
-/// spelling is a formatting choice, the prefix letter is not.
-fn expectRendersAs(comptime dim: geom.Dimension, comptime p: geom.Prefix, raw: f64, suffix: []const u8) !void {
-    var buf: [64]u8 = undefined;
-    const shown = try std.fmt.bufPrint(&buf, "{f}", .{Qty(dim, p){ .raw = raw }});
-    try testing.expect(std.mem.endsWith(u8, shown, suffix));
-    const head = std.mem.trim(u8, shown[0 .. shown.len - suffix.len], " ");
-    try testing.expectApproxEqAbs(raw, try std.fmt.parseFloat(f64, head), 1e-12);
-}
 
 test "a quantity prints its value followed by its prefixed symbol" {
     // Oracle: closed form. The SI prefix table is the oracle: `10^-18` is `a`,
