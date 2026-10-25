@@ -15,11 +15,13 @@
 //!   `max_hierarchy_depth` (netlist.zig), `readSpice`, `readSpectre`
 //!   (netlist_read.zig), `flattenTop`, `flattenTopWith` (netlist_flatten.zig),
 //!   `readVerilogInto` (verilog.zig)
+//! - `intent` (intent.zig): `parseIntent`, `readIntent`, `DesignIntent`
 //! - `provenance` (provenance.zig), `Provenance`
 //! - `globMatches` (glob.zig)
 
 pub const gds = @import("gds.zig");
 pub const deck = @import("deck/deck.zig");
+pub const intent = @import("intent.zig");
 pub const provenance = @import("provenance.zig");
 pub const globMatches = @import("glob.zig").globMatches;
 
@@ -50,6 +52,7 @@ test {
     _ = @import("gds.zig");
     _ = @import("gds_records.zig");
     _ = @import("gds_elements.zig");
+    _ = @import("intent.zig");
     _ = @import("provenance.zig");
     _ = @import("deck/deck.zig");
     _ = @import("netlist_lex.zig");

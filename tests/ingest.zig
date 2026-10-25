@@ -8,4 +8,5 @@ test {
     _ = @import("ingest/deck_errors.zig");
     _ = @import("ingest/netlist.zig");
     _ = @import("ingest/verilog.zig");
+    _ = @import("ingest/intent.zig");
 }
