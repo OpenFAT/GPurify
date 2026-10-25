@@ -1,0 +1,35 @@
+# Zig
+**/.zig-cache
+**/zig-out/
+**/zig-out-di/
+**/zig-pkg
+
+# Build artifacts
+obj_dir/
+*.o
+*.a
+*.so
+*.dylib
+
+# Logs / dumps
+*.log
+/core
+core.[0-9]*
+*.dump
+vgcore.*
+*.out
+
+# Claude Code
+.claude/
+
+# Editor / OS
+*.swp
+*.swo
+*~
+.DS_Store
+.vscode/
+.idea/
+
+# Nix
+result
+result-*

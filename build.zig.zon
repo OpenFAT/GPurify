@@ -1,0 +1,12 @@
+.{
+    .name = .GPurify,
+    .version = "0.0.0",
+    .fingerprint = 0xbd326ec00ee7fde5, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.18.0-dev.567+7f0281900",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

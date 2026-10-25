@@ -1,0 +1,39 @@
+name: test
+
+# The merge gate, on every OS a release ships for: every unit suite in
+# ReleaseSafe (LLVM with every safety check on), plus `zig fmt`.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group: # the merge queue tests the merged result before it lands
+  workflow_dispatch:
+  workflow_call:
+
+# A newer push to the same PR supersedes the run; main and the queue never cancel.
+concurrency:
+  group: test-${{ github.workflow_ref }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  release-safe:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@ad2ddac53f961de1989924296a1f236fcfbaa4fc # v15
+        with:
+          name: omarsiwy
+          skipPush: true
+      - name: Format
+        run: nix develop -c zig fmt --check build.zig build.zig.zon src
+      - name: Every suite
+        run: nix develop -c zig build test -Doptimize=ReleaseSafe --summary failures
