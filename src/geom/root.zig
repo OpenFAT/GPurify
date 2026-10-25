@@ -26,6 +26,9 @@
 //! - `view`: `ValidatedLayer`, `Polygon`, `validateLayer`, `ringDefect`
 //! - `index`: `SpatialIndex`, `candidatePairsInto`, `crossLayerPairsInto`
 //! - `rects`: `decomposeInto`, `coveredArea`, `clippedArea`
+//! - `relation`: `pairThreshold2`, `projectedReach2`, `pairThresholdAny`
+//! - `width`: `narrowestFacing`, `narrowestWidth`, `narrowestWidth2`, `narrowestNeck`, `narrowestPair2`, `narrowestPairAny`, `polyEdges`
+//! - `boolean`: `unionInto`, `intersectionInto`, `subtractionInto`, `canonicalRingsInto`
 //! - aliases: `Point`, `Seg`, `Ring`, `GeometryStore`, `GeometryStoreBuilder`,
 //!   `ValidatedLayer`, `Polygon`
 
@@ -43,6 +46,9 @@ pub const store = @import("store.zig");
 pub const view = @import("view.zig");
 pub const index = @import("index.zig");
 pub const rects = @import("rects.zig");
+pub const relation = @import("relation.zig");
+pub const width = @import("width.zig");
+pub const boolean = @import("boolean.zig");
 
 pub const Dbu = dbu.Dbu;
 pub const DbuArea = dbu.DbuArea;
@@ -96,4 +102,10 @@ test {
     _ = view;
     _ = index;
     _ = rects;
+    _ = relation;
+    _ = width;
+    _ = boolean;
+    _ = @import("boolean_slab.zig");
+    _ = @import("boolean_octilinear.zig");
+    _ = @import("boolean_anyangle.zig");
 }

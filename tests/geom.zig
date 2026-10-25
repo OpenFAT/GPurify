@@ -8,4 +8,6 @@ test {
     _ = @import("geom/ops_predicates.zig");
     _ = @import("geom/index_pairs.zig");
     _ = @import("geom/rects_decomposition.zig");
+    _ = @import("geom/boolean_laws.zig");
+    _ = @import("geom/boolean_random.zig");
 }
