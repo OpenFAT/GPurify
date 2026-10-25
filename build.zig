@@ -16,9 +16,7 @@ const owners = [_]Owner{
 
 /// Gompute kernel roots: device-compiled leaves that import only `gompute`.
 const kernel_roots = [_]struct { []const u8, []const u8 }{
-    .{ "geom", "src/geom/kernels.zig" },
-    .{ "check", "src/check/kernels.zig" },
-    .{ "extract", "src/extract/kernels.zig" },
+    .{ "geom", "src/geom/root.zig" },
 };
 
 pub fn build(b: *Build) void {

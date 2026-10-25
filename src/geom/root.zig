@@ -14,7 +14,9 @@
 //! - `LayerId`, `PolyId` (ids.zig)
 //! - `Bbox` (bbox.zig)
 //! - `Device` (device.zig)
+//! - `linalg`: `dot`, `nrm2`, `spmv`, and the `axpy` / `xpay` Gompute specs
 
+pub const linalg = @import("linalg.zig");
 const dbu = @import("dbu.zig");
 const qty = @import("qty.zig");
 const intern = @import("intern.zig");
@@ -48,7 +50,14 @@ pub const PolyId = ids.PolyId;
 pub const Bbox = bbox.Bbox;
 pub const Device = device.Device;
 
+// The device compile reads only this root's comptime blocks: name every
+// kernel-owning file here.
+comptime {
+    _ = linalg;
+}
+
 test {
+    _ = linalg;
     _ = dbu;
     _ = qty;
     _ = intern;
