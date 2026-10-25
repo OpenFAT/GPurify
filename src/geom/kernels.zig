@@ -1,5 +1,9 @@
 //! Gompute kernels for geom's f64 vector algebra, compiled for the CPU and
 //! for CUDA/HIP from this one source. A leaf: it imports only `gompute`.
+//!
+//! Contents:
+//! - `pub const axpy`, `pub const Axpy = struct { a: f64 }`
+
 const g = @import("gompute");
 
 /// `out[i] = a * x[i] + y[i]`.
