@@ -185,8 +185,10 @@ test "a non-finite length is refused before anything else" {
     for ([_]f64{ std.math.nan(f64), std.math.inf(f64), -std.math.inf(f64) }) |bad| {
         try testing.expectError(error.NotFinite, g.toDbu(nm(bad)));
     }
-    // A length too small to reach one unit underflows to 0 and is still refused.
+    // A length too small to reach one unit is off grid, also when the
+    // scaling underflows it to exactly 0 (the fail-open case).
     try testing.expectError(error.NotOnGrid, g.toDbu(Qty(.length, .atto){ .raw = 1.0 }));
+    try testing.expectError(error.NotOnGrid, (try Grid.init(1)).toDbu(nm(5e-324)));
 }
 
 test "a grid resolution must be a positive count" {
