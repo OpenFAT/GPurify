@@ -17,6 +17,7 @@
 //! - `linalg`: `dot`, `nrm2`, `spmv`, and the `axpy` / `xpay` Gompute specs
 
 pub const linalg = @import("linalg.zig");
+pub const connectivity = @import("connectivity.zig");
 const dbu = @import("dbu.zig");
 const qty = @import("qty.zig");
 const intern = @import("intern.zig");
