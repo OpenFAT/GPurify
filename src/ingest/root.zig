@@ -9,14 +9,19 @@
 //!
 //! Contents:
 //! - `gds` (gds.zig): `Library`, `Xform`, `readGdsBytes`
+//! - `provenance` (provenance.zig), `Provenance`
 //! - `globMatches` (glob.zig)
 
 pub const gds = @import("gds.zig");
+pub const provenance = @import("provenance.zig");
 pub const globMatches = @import("glob.zig").globMatches;
+
+pub const Provenance = provenance.Provenance;
 
 test {
     _ = @import("glob.zig");
     _ = @import("gds.zig");
     _ = @import("gds_records.zig");
     _ = @import("gds_elements.zig");
+    _ = @import("provenance.zig");
 }
