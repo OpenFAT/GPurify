@@ -14,6 +14,8 @@ const Bbox = geom.Bbox;
 const Dbu = geom.Dbu;
 const max = geom.max_abs_dbu;
 
+// ---- private ----
+
 fn bbox(xlo: Dbu, ylo: Dbu, xhi: Dbu, yhi: Dbu) Bbox {
     return .{ .xlo = xlo, .ylo = ylo, .xhi = xhi, .yhi = yhi };
 }

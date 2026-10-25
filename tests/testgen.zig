@@ -7,13 +7,16 @@
 //! - `Rng` (testgen/rng.zig)
 //! - `prop`: `check`, `seeds`, `parseSeeds`, `shrinkRects`, `Why`, `LayerRect` (testgen/prop.zig)
 //! - `graph`: `graphWithPartition`, `GraphCase` (testgen/graph.zig)
+//! - `shapes`: `LayoutBuilder`, `Ids`, `rect`, `hole`, `lShape`, `plusShape`, `uShape`, `randomRectilinearLayer`, `polygonArea` (testgen/shapes.zig)
 
 pub const Rng = @import("testgen/rng.zig").Rng;
 pub const prop = @import("testgen/prop.zig");
 pub const graph = @import("testgen/graph.zig");
+pub const shapes = @import("testgen/shapes.zig");
 
 test {
     _ = @import("testgen/rng.zig");
     _ = prop;
     _ = graph;
+    _ = shapes;
 }
