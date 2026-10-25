@@ -3,4 +3,7 @@ test {
     _ = @import("ingest/layout.zig");
     _ = @import("ingest/provenance.zig");
     _ = @import("ingest/deck.zig");
+    _ = @import("ingest/deck_rules.zig");
+    _ = @import("ingest/deck_lvs.zig");
+    _ = @import("ingest/deck_errors.zig");
 }

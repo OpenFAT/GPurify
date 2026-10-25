@@ -7,7 +7,7 @@
 //! - `parseDeck`, `parseSource` (parse.zig); `lower` (lower.zig); `print`, `PrintError` (print.zig)
 //! - `fromTables`, `fromControls` (decompile.zig)
 //! - `Error`, `Diag`, `Diagnostic`, `render`, `locate` (diagnostic.zig)
-//! - tables.zig: `Deck`, `Reports`, `Edits`, `FillSpec`, `WidenSpec`, `PexModels`, `FillTreatment`, `SubstrateModel`, `TsvModel`, `DeviceParasitics`, `TemperatureLaw`, `Stages`, `ProcessCorner`, `CornerValues`, `Extraction`, `ExtractionKind`, `RuleSpec`, `ParamValue`, `NamedValue`, `RuleTable`, `Connectivity`, `Waiver`, `DeviceRecognition`, `DeviceValue`, `DeviceKind`, `LvsControls`, `UnusedFilter`, `LvsLde`, `LvsCount`, `LvsRange`, `LvsLimit`, `LvsTolerance`, `ProcessStack`, `absoluteUnit`, `pinNames`
+//! - tables.zig: `Deck`, `Reports`, `Edits`, `FillSpec`, `WidenSpec`, `PexModels`, `FillTreatment`, `SubstrateModel`, `TsvModel`, `DeviceParasitics`, `TemperatureLaw`, `Stages`, `ProcessCorner`, `CornerValues`, `Extraction`, `ExtractionKind`, `RuleSpec`, `ParamValue`, `NamedValue`, `RuleTable`, `Connectivity`, `Waiver`, `DeviceRecognition`, `DeviceValue`, `DeviceKind`, `LvsControls`, `UnusedFilter`, `ModelParam`, `Permute`, `SameNets`, `LdeWell`, `LvsLde`, `LvsCount`, `LvsRange`, `LvsLimit`, `LvsTolerance`, `ProcessStack`, `absoluteUnit`, `pinNames`
 //! - layers.zig: `LayerTable`, `DerivedOp`, `Range`, `max_cell_selections`
 //! - source.zig: `DeckSource`, `DerivedSource`, `RuleSource`, `ParamSource`, `NamedSource`, `ConnectivitySource`, `DeviceSource`, `StackSource`, `CornerSource`, `LvsSrc`
 
@@ -57,6 +57,10 @@ pub const DeviceValue = tables.DeviceValue;
 pub const DeviceKind = tables.DeviceKind;
 pub const LvsControls = tables.LvsControls;
 pub const UnusedFilter = tables.UnusedFilter;
+pub const ModelParam = tables.ModelParam;
+pub const Permute = tables.Permute;
+pub const SameNets = tables.SameNets;
+pub const LdeWell = tables.LdeWell;
 pub const LvsLde = tables.LvsLde;
 pub const LvsCount = tables.LvsCount;
 pub const LvsRange = tables.LvsRange;
