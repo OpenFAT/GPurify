@@ -65,4 +65,8 @@ test {
     _ = @import("check/drc/pdk_decks.zig");
     _ = @import("check/erc/fixture.zig");
     _ = @import("check/erc/common.zig");
+    _ = @import("check/erc/net_facts.zig");
+    _ = @import("check/erc/power_grid_laws.zig");
+    _ = @import("check/erc/effective_resistance_laws.zig");
+    _ = @import("check/erc/dispatch_deck.zig");
 }
