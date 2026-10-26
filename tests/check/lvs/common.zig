@@ -13,6 +13,7 @@
 //! - `pub const Result`, `pub fn compare`, `pub fn compareWith`, `pub fn decisive`, `pub fn expectMatch`, `pub fn expectNotMatch`,
 //!   `pub fn discrepancies`, `pub fn flip`, `pub fn flipSide`, `pub fn eql`, `pub fn contains`, `pub fn assertSame`,
 //!   `pub fn blamesDevice`, `pub fn blamesNet`
+//! - `pub const Reduced`, `pub fn reduce`, `pub fn graphEql`, `pub fn expectGraphEql`, `pub fn expectParams`
 //! - `pub fn writeVerdict`, `pub fn writeCanonical`, `pub fn writeDiscrepancy`
 
 const std = @import("std");
@@ -117,6 +118,17 @@ pub const GraphBuilder = struct {
 
 /// A comparison's whole answer; `deinit` frees it.
 pub const Result = lvs.Traced;
+
+/// A reduction's graph and merges; `deinit` frees both.
+pub const Reduced = struct {
+    g: Graph = .{},
+    merges: lvs.Merges = .{},
+
+    pub fn deinit(r: *Reduced) void {
+        r.g.deinit(gpa);
+        r.merges.deinit(gpa);
+    }
+};
 
 pub fn id(n: u32) StrId {
     return @fromBackingInt(@intCast(n));
@@ -347,6 +359,47 @@ pub fn blamesNet(d: Discrepancy, side: Side, index: u32) bool {
         .unpaired_net => |x| x.side == side and x.net == index,
         .unpaired_device, .terminal_mismatch, .parameter_mismatch, .undeclared_param, .model_mismatch, .class_imbalance => false,
     };
+}
+
+pub fn reduce(src: *const Graph, names: lvs.ParamNames) !Reduced {
+    var out: Reduced = .{};
+    errdefer out.deinit();
+    try lvs.reduceWith(gpa, src, names, &out.g, &out.merges);
+    return out;
+}
+
+/// Every column equal, as Rust's derived `PartialEq` on `Graph`.
+pub fn graphEql(a: *const Graph, b: *const Graph) bool {
+    inline for (@typeInfo(Graph).@"struct".field_names) |f| {
+        if (!std.meta.eql(@field(a, f).items.len, @field(b, f).items.len)) return false;
+        for (@field(a, f).items, @field(b, f).items) |x, y| if (!std.meta.eql(x, y)) return false;
+    }
+    return true;
+}
+
+pub fn expectGraphEql(want: *const Graph, got: *const Graph) !void {
+    if (!graphEql(want, got)) return error.TestGraphsDiffer;
+}
+
+/// One device's parameters, sorted by name, exactly `want` (sorted by name).
+pub fn expectParams(g: *const Graph, device: u32, want: []const P) !void {
+    const got = try gpa.dupe(lvs.Param, g.paramsOf(device));
+    defer gpa.free(got);
+    std.mem.sort(lvs.Param, got, {}, struct {
+        fn less(_: void, a: lvs.Param, b: lvs.Param) bool {
+            return @backingInt(a.name) < @backingInt(b.name);
+        }
+    }.less);
+    if (got.len != want.len) {
+        std.debug.print("params {any}, want {any}\n", .{ got, want });
+        return error.TestParamsDiffer;
+    }
+    for (got, want) |g_, w| {
+        if (g_.name != w[0] or g_.value != w[1]) {
+            std.debug.print("params {any}, want {any}\n", .{ got, want });
+            return error.TestParamsDiffer;
+        }
+    }
 }
 
 /// Rust's `{:?}` of the verdict, byte for byte.

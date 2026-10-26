@@ -14,4 +14,7 @@ test {
     _ = @import("check/topology_ports.zig");
     _ = @import("check/topology_laws.zig");
     _ = @import("check/lvs/digest.zig");
+    _ = @import("check/lvs/graph.zig");
+    _ = @import("check/lvs/compare.zig");
+    _ = @import("check/lvs/reduce.zig");
 }
