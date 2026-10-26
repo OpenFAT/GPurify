@@ -54,7 +54,9 @@ pub const Command = union(enum) {
     system: []const u8,
 };
 
-/// `--backend`: `auto` takes the first GPU backend that runs here, else the CPU.
+/// `--backend`: `auto` takes the first GPU backend that runs here, else the
+/// CPU, and sends a kernel call to it only where `zig build bench` measured
+/// the GPU faster; a named GPU backend takes every kernel call.
 pub const Backend = enum { auto, cpu, cuda, hip };
 
 /// A parsed command line; every slice is `argv`'s or the arena's.
