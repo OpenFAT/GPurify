@@ -45,4 +45,8 @@ test {
     _ = @import("check/drc/via_deck_more.zig");
     _ = @import("check/drc/patterning_rules.zig");
     _ = @import("check/drc/patterning_deck.zig");
+    _ = @import("check/deck/printer.zig");
+    _ = @import("check/deck/query.zig");
+    _ = @import("check/deck/custom.zig");
+    _ = @import("check/deck/builder.zig");
 }

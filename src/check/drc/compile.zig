@@ -54,7 +54,8 @@ pub fn fromDeck(gpa: Allocator, d: *const Deck, strings: *const StrTable, diag: 
         defer gpa.free(ids);
         for (ids, specs) |*id, s| id.* = s.id;
         std.mem.sortUnstable(StrId, ids, {}, lessId);
-        for (1..ids.len) |i| if (ids[i - 1] == ids[i]) {
+        // A deck may state no rule at all.
+        for (1..@max(ids.len, 1)) |i| if (ids[i - 1] == ids[i]) {
             diag.* = .{ .rule = ids[i] };
             return error.DuplicateRule;
         };

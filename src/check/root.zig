@@ -16,7 +16,9 @@
 //!   `DeviceTable`, `TerminalRole`, `recogniseInto`, `refuseConductingChannels`, `PortTable`, `bindPortsInto`
 //! - `drc` (drc/root.zig): `Kind`, `Rule`, `RuleSet`, `fromDeck`, `run`, the kind tables and families
 //! - `erc`: `kinds` (the ERC kind names, until wave 4)
-//! - `deck`: `compile` (`CompiledDeck`, `compile`, `fromDeck`), alias `CompiledDeck`
+//! - `deck`: `compile` (`CompiledDeck`, `compile`, `fromDeck`), `source` (`sourceOf`, `print`), `builder`
+//!   (`DeckBuilder`, `RuleRow`), `query` (`minWidth`, `requiredSpacing`, `enclosure`, ...), `custom`
+//!   (`CustomRule`, `CustomCtx`, `Findings`, `runCustom`); aliases `CompiledDeck`, `DeckBuilder`, `RuleRow`
 //! - `lvs`: layout versus schematic (lvs/root.zig: `Graph`, `compareTraced`, `checkLayout`, ...)
 //! - `rects`: `LayerRects`, `SortedRects`, owners, `polyDist2`, `segDist2`, `Holes`, `inMaterial`, ...
 pub const report = @import("report.zig");
@@ -25,13 +27,21 @@ pub const proximity = @import("proximity.zig");
 pub const proximity_distance = @import("proximity_distance.zig");
 pub const proximity_inside = @import("proximity_inside.zig");
 pub const drc = @import("drc/root.zig");
+/// Layout versus schematic: graphs, reduction, refinement, verdicts.
+pub const lvs = @import("lvs/root.zig");
 pub const erc = struct {
     pub const kinds = @import("erc/kinds.zig");
 };
 /// The deck compiled for the engine.
 pub const deck = struct {
     pub const compile = @import("deck/compile.zig");
+    pub const source = @import("deck/source.zig");
+    pub const builder = @import("deck/builder.zig");
+    pub const query = @import("deck/query.zig");
+    pub const custom = @import("deck/custom.zig");
     pub const CompiledDeck = compile.CompiledDeck;
+    pub const DeckBuilder = builder.DeckBuilder;
+    pub const RuleRow = builder.RuleRow;
 };
 
 /// Electrical structure from geometry: nets, devices, ports, tap reach.
@@ -52,9 +62,6 @@ pub const topology = struct {
     pub const PortTable = port.PortTable;
     pub const bindPortsInto = port.bindPortsInto;
 };
-
-/// Layout versus schematic: graphs, reduction, refinement, verdicts.
-pub const lvs = @import("lvs/root.zig");
 
 // The device compile reads only this root's comptime blocks: name every
 // kernel-owning file here.
@@ -94,5 +101,9 @@ test {
     _ = drc;
     _ = erc.kinds;
     _ = deck.compile;
+    _ = deck.source;
+    _ = deck.builder;
+    _ = deck.query;
+    _ = deck.custom;
     _ = lvs;
 }

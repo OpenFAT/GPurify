@@ -29,6 +29,7 @@ const params = @import("../drc/params.zig");
 const RuleSet = @import("../drc/rule_set.zig").RuleSet;
 const drc_compile = @import("../drc/compile.zig");
 const erc_kinds = @import("../erc/kinds.zig");
+const CustomRule = @import("custom.zig").CustomRule;
 
 /// Why a deck did not compile: the parser's errors, then the rule typer's.
 pub const Error = ingest_deck.Error || params.Error;
@@ -55,7 +56,7 @@ pub const Provenance = struct { id: StrId, origin: Origin };
 /// A deck ready to run. Every `StrId` is from the table it was compiled
 /// into and every length on `grid`, so it is meaningful only with a layout
 /// on that grid and that table. `deck`'s slices live in the caller's arena;
-/// `drc` and `provenance` are owned (`deinit`).
+/// `drc`, `custom` and `provenance` are owned (`deinit`).
 pub const CompiledDeck = struct {
     grid: Grid,
     /// The parsed tables: layers, connectivity, devices, stack, corners,
@@ -63,11 +64,17 @@ pub const CompiledDeck = struct {
     deck: Deck,
     /// Every DRC rule, typed, in deck order.
     drc: RuleSet,
-    /// Every rule's id in deck order, with where it came from.
+    /// Rule kinds written in code, run after the DRC rules; empty for a
+    /// deck compiled from text. Each one's `inputs` is owned.
+    custom: std.ArrayList(CustomRule) = .empty,
+    /// Every rule's id in deck order (custom rules last), with where it came
+    /// from: what a report says a consumer changed in a shipped deck.
     provenance: std.ArrayList(Provenance) = .empty,
 
     pub fn deinit(cd: *CompiledDeck, gpa: Allocator) void {
         cd.drc.deinit(gpa);
+        for (cd.custom.items) |rule| gpa.free(rule.inputs);
+        cd.custom.deinit(gpa);
         cd.provenance.deinit(gpa);
     }
 
