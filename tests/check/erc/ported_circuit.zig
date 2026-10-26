@@ -247,19 +247,23 @@ pub fn everyPlacement(arena: Allocator, out: *std.ArrayList(Fixture), f: Fixture
     try out.append(arena, try f.transformed(arena, .{ .turns = 2, .mirror = false }, 0, 0));
 }
 
-pub fn count(n: u32) Finding {
+/// Inline, so a literal argument makes `&.{...}` of findings static, not a dead stack temporary.
+pub inline fn count(n: u32) Finding {
     return .{ .measured = .count(n) };
 }
 
-pub fn length(nm: i64) Finding {
+/// Inline, so a literal argument makes `&.{...}` of findings static, not a dead stack temporary.
+pub inline fn length(nm: i64) Finding {
     return .{ .measured = .length(nm) };
 }
 
-pub fn ratio(x: f64) Finding {
+/// Inline, so a literal argument makes `&.{...}` of findings static, not a dead stack temporary.
+pub inline fn ratio(x: f64) Finding {
     return .{ .measured = .ratio(x) };
 }
 
-pub fn millivolts(x: f64) Finding {
+/// Inline, so a literal argument makes `&.{...}` of findings static, not a dead stack temporary.
+pub inline fn millivolts(x: f64) Finding {
     return .{ .measured = .voltage(.{ .raw = x }) };
 }
 

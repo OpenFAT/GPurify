@@ -101,15 +101,18 @@ pub fn expectInto(b: *const Board, arena: Allocator, out: *std.ArrayList(Expect)
     try expectEsd(b, arena, out);
 }
 
-pub fn count(n: u32) Finding {
+/// Inline, so a literal argument makes `&.{...}` of findings static, not a dead stack temporary.
+pub inline fn count(n: u32) Finding {
     return .{ .measured = Measurement.count(n) };
 }
 
-pub fn millivolts(x: f64) Finding {
+/// Inline, so a literal argument makes `&.{...}` of findings static, not a dead stack temporary.
+pub inline fn millivolts(x: f64) Finding {
     return .{ .measured = Measurement.voltage(.{ .raw = x }) };
 }
 
-pub fn length(nm: i64) Finding {
+/// Inline, so a literal argument makes `&.{...}` of findings static, not a dead stack temporary.
+pub inline fn length(nm: i64) Finding {
     return .{ .measured = Measurement.length(nm) };
 }
 
