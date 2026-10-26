@@ -14,6 +14,9 @@
 //! Contents:
 //! - `pub fn runPex(scratch: Allocator, run_arena: Allocator, device: Device, loaded: *const Loaded, extracted: *const Extracted, names: []const []const u8, out: *Outputs) Allocator.Error!StageStatus`
 //! - `pub fn reciprocityRefusal(arena: Allocator, accuracy: Accuracy) Allocator.Error!?[]const u8`
+//! - `pub const no_halo`, `pub fn couplingHalo(extraction: ingest.deck.Extraction) ?f64`
+//! - `pub fn pexRefusal(arena: Allocator, loaded: *const Loaded, err: extract.analytical.Error, layer: LayerId) Allocator.Error![]const u8`
+//! - `pub fn solveRefusal(arena: Allocator, loaded: *const Loaded, err: extract.capacitance.Error, diag: extract.capacitance.Diagnostic) Allocator.Error![]const u8`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -35,6 +38,9 @@ const run_ = @import("run.zig");
 const Outputs = run_.Outputs;
 const StageStatus = run_.StageStatus;
 const designExtent = @import("checks_erc.zig").designExtent;
+
+/// The refusal when the deck states no lateral coupling reach.
+pub const no_halo = "the deck states no `coupling_halo` on its `extraction` line, so no lateral coupling reach is the deck's";
 
 /// What one stack's network reads.
 const Pex = struct {
@@ -58,19 +64,14 @@ const Pex = struct {
         const poly_net = p.extracted.nets.netColumn();
         // The deck's lateral coupling reach: 0 for an `r` extraction, which
         // keeps no capacitance; no reach is every process's.
-        const halo: f64 = if (deck.extraction.kind == .r) 0 else deck.extraction.coupling_halo orelse {
-            why.* = "the deck states no `coupling_halo` on its `extraction` line, so no lateral coupling reach is the deck's";
+        const halo = couplingHalo(deck.extraction) orelse {
+            why.* = no_halo;
             return null;
         };
         var net: ParasiticNetwork = .empty;
         var refusal: extract.analytical.Refusal = .{ .layer = @fromBackingInt(0) };
         extract.analytical.extractInto(scratch, .{ .store = &loaded.store, .nets = p.nets, .conductors = conn.conductors, .global = conn.global, .vias = vias, .stack = stack, .halo = halo, .grid = grid }, &net, &refusal) catch |err| {
-            why.* = try std.fmt.allocPrint(p.run_arena, "layer {s}: {s}", .{ try layerName(p.run_arena, loaded, refusal.layer), switch (err) {
-                error.Undescribed => "no pex row gives this conductor a positive sheet resistance",
-                error.UndescribedVia => "no pex row gives this via layer a positive resistance per cut",
-                error.InvalidGeometry => "not valid rectilinear geometry, so its conductors cannot be merged exactly",
-                error.OutOfMemory => return error.OutOfMemory,
-            } });
+            why.* = try pexRefusal(p.run_arena, loaded, err, refusal.layer);
             return null;
         };
         if (p.selected.len != 0) if (try p.fieldSolve(stack, vias, &net, why) == null) return null;
@@ -250,6 +251,40 @@ pub fn reciprocityRefusal(arena: Allocator, accuracy: Accuracy) Allocator.Error!
     return try std.fmt.allocPrint(arena, "the capacitance matrix is not reciprocal: asymmetry {e} against the {e} its solve allows, after {d} iterations", .{ accuracy.asymmetry, accuracy.reciprocity, accuracy.iterations });
 }
 
+/// The deck's lateral coupling reach: 0 for an `r` extraction, which keeps
+/// no capacitance; null when the deck states none (`no_halo`).
+pub fn couplingHalo(extraction: ingest.deck.Extraction) ?f64 {
+    return if (extraction.kind == .r) 0 else extraction.coupling_halo;
+}
+
+/// Why the closed forms refused `layer`, named as the deck names it.
+pub fn pexRefusal(arena: Allocator, loaded: *const Loaded, err: extract.analytical.Error, layer: LayerId) Allocator.Error![]const u8 {
+    const why = switch (err) {
+        error.Undescribed => "no pex row gives this conductor a positive sheet resistance",
+        error.UndescribedVia => "no pex row gives this via layer a positive resistance per cut",
+        error.InvalidGeometry => "not valid rectilinear geometry, so its conductors cannot be merged exactly",
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+    return std.fmt.allocPrint(arena, "layer {s}: {s}", .{ try layerName(arena, loaded, layer), why });
+}
+
+/// Why a field solve produced no capacitance, naming the deck layer a mesh
+/// refusal is about.
+pub fn solveRefusal(arena: Allocator, loaded: *const Loaded, err: extract.capacitance.Error, diag: extract.capacitance.Diagnostic) Allocator.Error![]const u8 {
+    const mesh: []const u8 = switch (err) {
+        error.TooManyPanels => return "field solve: mesh would exceed the panel limit",
+        error.EmptyConductor => return "field solve: selected net has no geometry",
+        error.MissingThickness => "no pex row gives this layer a positive thickness and permittivity, so it cannot be meshed",
+        error.InvalidGeometry => "not valid rectilinear geometry, so it cannot be meshed exactly",
+        error.DielectricConflict => "its dielectric differs from another layer's at the same height, so the stack's permittivity there is not defined",
+        error.NotConverged => return std.fmt.allocPrint(arena, "field solve: did not converge: residual {d} after {d} iterations", .{ diag.failure.residual, diag.failure.iterations }),
+        error.Breakdown => return std.fmt.allocPrint(arena, "field solve: system broke down at iteration {d}", .{diag.failure.iterations}),
+        error.NonFinite => return std.fmt.allocPrint(arena, "field solve: the operator produced a non-finite value at iteration {d}", .{diag.failure.iterations}),
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+    return std.fmt.allocPrint(arena, "layer {s}: {s}", .{ try layerName(arena, loaded, diag.layer), mesh });
+}
+
 // ---- private ----
 
 fn stackOf(s: *const ProcessStack) extract.Stack {
@@ -277,23 +312,6 @@ fn layerName(arena: Allocator, loaded: *const Loaded, layer: LayerId) Allocator.
     const layers = &loaded.deck.deck.layers;
     if (@backingInt(layer) < layers.len()) return loaded.strings.resolve(layers.name(layer));
     return std.fmt.allocPrint(arena, "LayerId({d})", .{@backingInt(layer)});
-}
-
-/// Why a field solve produced no capacitance, naming the deck layer a mesh
-/// refusal is about.
-fn solveRefusal(arena: Allocator, loaded: *const Loaded, err: extract.capacitance.Error, diag: extract.capacitance.Diagnostic) Allocator.Error![]const u8 {
-    const mesh: []const u8 = switch (err) {
-        error.TooManyPanels => return "field solve: mesh would exceed the panel limit",
-        error.EmptyConductor => return "field solve: selected net has no geometry",
-        error.MissingThickness => "no pex row gives this layer a positive thickness and permittivity, so it cannot be meshed",
-        error.InvalidGeometry => "not valid rectilinear geometry, so it cannot be meshed exactly",
-        error.DielectricConflict => "its dielectric differs from another layer's at the same height, so the stack's permittivity there is not defined",
-        error.NotConverged => return std.fmt.allocPrint(arena, "field solve: did not converge: residual {d} after {d} iterations", .{ diag.failure.residual, diag.failure.iterations }),
-        error.Breakdown => return std.fmt.allocPrint(arena, "field solve: system broke down at iteration {d}", .{diag.failure.iterations}),
-        error.NonFinite => return std.fmt.allocPrint(arena, "field solve: the operator produced a non-finite value at iteration {d}", .{diag.failure.iterations}),
-        error.OutOfMemory => return error.OutOfMemory,
-    };
-    return std.fmt.allocPrint(arena, "layer {s}: {s}", .{ try layerName(arena, loaded, diag.layer), mesh });
 }
 
 /// `n`'s columns copied into `arena`.
