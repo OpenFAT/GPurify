@@ -23,4 +23,5 @@ test {
     _ = @import("check/drc/edge_rules.zig");
     _ = @import("check/drc/overlay_rules.zig");
     _ = @import("check/drc/via_rules.zig");
+    _ = @import("check/drc/tables.zig");
 }
