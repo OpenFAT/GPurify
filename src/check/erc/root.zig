@@ -27,6 +27,7 @@
 //! - the families: `topology`, `matching`, `domain`, `domain_devices`, `supply`, `antenna`, `electrical`, `reliability`, `esd`, `latchup`
 //! - `run_` (run.zig): `RunInputs`, `run`; `check_` (check.zig): `Inputs`, `check`
 //! - aliases: `Kind`, `RuleSet`, `Design`, `Inputs`, `check`, `fromDeck`
+//! - family parts: `domain_spacing` (voltage spacing, dielectric field, hv tag), `esd_path`, `esd_pins`, `esd_cross`, `esd_exposed`
 
 pub const kinds = @import("kinds.zig");
 pub const head = @import("head.zig");
@@ -73,6 +74,11 @@ pub const esd = @import("esd.zig");
 pub const latchup = @import("latchup.zig");
 pub const run_ = @import("run.zig");
 pub const check_ = @import("check.zig");
+pub const domain_spacing = @import("domain_spacing.zig");
+pub const esd_path = @import("esd_path.zig");
+pub const esd_pins = @import("esd_pins.zig");
+pub const esd_cross = @import("esd_cross.zig");
+pub const esd_exposed = @import("esd_exposed.zig");
 
 pub const Kind = kinds.Kind;
 pub const RuleSet = rule_set.RuleSet;
@@ -100,4 +106,9 @@ test {
     _ = compile;
     _ = run_;
     _ = check_;
+    _ = domain_spacing;
+    _ = esd_path;
+    _ = esd_pins;
+    _ = esd_cross;
+    _ = esd_exposed;
 }
