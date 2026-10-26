@@ -11,7 +11,7 @@ const Owner = struct { name: []const u8, deps: []const []const u8, kernels: bool
 const owners = [_]Owner{
     .{ .name = "geom", .deps = &.{"gompute"}, .kernels = true },
     .{ .name = "ingest", .deps = &.{"geom"} },
-    .{ .name = "check", .deps = &.{ "gompute", "geom", "ingest" } },
+    .{ .name = "check", .deps = &.{ "gompute", "geom", "ingest" }, .kernels = true },
     .{ .name = "extract", .deps = &.{ "gompute", "geom", "ingest", "check" }, .kernels = true },
     .{ .name = "gpurify", .deps = &.{ "geom", "ingest", "check", "extract" } },
 };
