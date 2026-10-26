@@ -64,7 +64,6 @@ pub fn run(gpa: Allocator, run_arena: Allocator, io: std.Io, dir: std.Io.Dir, in
     var store: GeometryStore = .empty;
     var provenance: ingest.Provenance = .{};
     var tags: std.ArrayList(u64) = .empty;
-    defer tags.deinit(gpa);
     try ingest.layout.flattenInto(run_arena, &lib, &loaded.deck.deck.layers, &loaded.strings, .reject, .top, &store, &provenance, &tags, &diag.load.gds);
     var scratch: std.heap.ArenaAllocator = .init(gpa);
     defer scratch.deinit();
