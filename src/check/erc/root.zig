@@ -25,6 +25,7 @@
 //!   (`narrowRingsInto`, `encloses`, `regionDist2`, `padNetsInto`), `em_allowed` (`allowedCurrent`)
 //! - `compile`: `fromDeck`; `build_row`, `build_stage`, `build_esd`, `build_layout`, `build_domain`: the kind builders; `validate`, `validate_more`
 //! - the families: `topology`, `matching`, `domain`, `domain_devices`, `supply`, `antenna`, `electrical`, `reliability`, `esd`, `latchup`
+//! - layout family parts: `topology_paths` (the path kinds, `driversInto`), `latchup_ring` (`checkGuardRing`, `outersInto`, `surrounds`)
 //! - `run_` (run.zig): `RunInputs`, `run`; `check_` (check.zig): `Inputs`, `check`
 //! - aliases: `Kind`, `RuleSet`, `Design`, `Inputs`, `check`, `fromDeck`
 
@@ -73,6 +74,8 @@ pub const esd = @import("esd.zig");
 pub const latchup = @import("latchup.zig");
 pub const run_ = @import("run.zig");
 pub const check_ = @import("check.zig");
+pub const topology_paths = @import("topology_paths.zig");
+pub const latchup_ring = @import("latchup_ring.zig");
 
 pub const Kind = kinds.Kind;
 pub const RuleSet = rule_set.RuleSet;
@@ -100,4 +103,6 @@ test {
     _ = compile;
     _ = run_;
     _ = check_;
+    _ = topology_paths;
+    _ = latchup_ring;
 }
