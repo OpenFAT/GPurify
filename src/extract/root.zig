@@ -21,6 +21,7 @@
 //! - `network`: `ParasiticNetwork`, `NodeId`, `Kind` (network.zig)
 //! - `quasistatic`: `extractInto`, `extractInductanceInto`, `overlay` (quasistatic.zig)
 //! - `compare`: `Comparison`, `Metric`, `Errors`, `errors`, `compareInto` (compare.zig)
+//! - `foreign`: `Read`, `Error`, `Diagnostic` (foreign.zig); `spef.readInto`, `dspf.readInto`
 //! - `reduce`: `reduce` (reduce.zig)
 //! - `analytical`: `Problem`, `Error`, `Refusal`, `extractInto`, `nodeRectsInto` (analytical.zig)
 
@@ -41,6 +42,9 @@ pub const quasistatic = @import("quasistatic.zig");
 pub const analytical = @import("analytical.zig");
 pub const reduce = @import("reduce.zig");
 pub const compare = @import("compare.zig");
+pub const foreign = @import("foreign.zig");
+pub const spef = @import("spef.zig");
+pub const dspf = @import("dspf.zig");
 pub const NetPolys = @import("net_polys.zig").NetPolys;
 pub const NearPairs = @import("field/near.zig").NearPairs;
 
@@ -73,6 +77,9 @@ test {
     _ = analytical;
     _ = reduce;
     _ = compare;
+    _ = foreign;
+    _ = spef;
+    _ = dspf;
     _ = @import("closed_form.zig");
     _ = @import("joins.zig");
     _ = @import("net_polys.zig");

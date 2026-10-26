@@ -15,6 +15,7 @@ test {
     _ = @import("extract/analytical.zig");
     _ = @import("extract/reduce.zig");
     _ = @import("extract/compare.zig");
+    _ = @import("extract/foreign.zig");
     if (paths.slow_tests) _ = @import("extract/capacitance_slow.zig");
     if (paths.gpu_tests) _ = @import("extract/gpu.zig");
 }
