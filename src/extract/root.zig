@@ -23,6 +23,8 @@
 //! - `compare`: `Comparison`, `Metric`, `Errors`, `errors`, `compareInto` (compare.zig)
 //! - `foreign`: `Read`, `Error`, `Diagnostic` (foreign.zig); `spef.readInto`, `dspf.readInto`
 //! - `fill`: `Treatment`, `Fill`, `treat` (fill.zig)
+//! - `tsv`: `Tsv`, `linerCapacitanceFf`, `addInto` (tsv.zig)
+//! - `device_region`: `Mos`, `addInto` (device_region.zig)
 //! - `reduce`: `reduce` (reduce.zig)
 //! - `analytical`: `Problem`, `Error`, `Refusal`, `extractInto`, `nodeRectsInto` (analytical.zig)
 
@@ -47,6 +49,8 @@ pub const foreign = @import("foreign.zig");
 pub const spef = @import("spef.zig");
 pub const dspf = @import("dspf.zig");
 pub const fill = @import("fill.zig");
+pub const tsv = @import("tsv.zig");
+pub const device_region = @import("device_region.zig");
 pub const NetPolys = @import("net_polys.zig").NetPolys;
 pub const NearPairs = @import("field/near.zig").NearPairs;
 
@@ -83,6 +87,8 @@ test {
     _ = spef;
     _ = dspf;
     _ = fill;
+    _ = tsv;
+    _ = device_region;
     _ = @import("closed_form.zig");
     _ = @import("joins.zig");
     _ = @import("net_polys.zig");
