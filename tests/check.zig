@@ -71,6 +71,7 @@ test {
     _ = @import("check/erc/dispatch_deck.zig");
     _ = @import("check/erc/reference_solve.zig");
     _ = @import("check/erc/reference_voltage.zig");
+    _ = @import("check/erc/reference_topology.zig");
     _ = @import("check/erc/topological_rules.zig");
     _ = @import("check/erc/supply_rules.zig");
     _ = @import("check/erc/ported_circuit.zig");

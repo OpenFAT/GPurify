@@ -102,7 +102,12 @@ pub fn reverseBiased(design: Design, intent: *const IntentMap, device: DeviceId)
 /// voltage when the pin's net is no supply.
 fn pinVolts(intent: *const IntentMap, nets: []const NetId, roles: anytype, k: u8) ??f64 {
     for (nets, roles) |net, role| switch (role) {
-        .pin => |p| if (p == k) return if (intent.nominalVoltage(net)) |v| v.raw else null,
+        .pin => |p| if (p == k) {
+            // Typed first: a bare `null` would coerce to the outer null,
+            // "no such pin", and pass a forward-biased diode as a clamp.
+            const volts: ?f64 = if (intent.nominalVoltage(net)) |v| v.raw else null;
+            return volts;
+        },
         else => {},
     };
     return null;
