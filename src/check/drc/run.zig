@@ -54,6 +54,9 @@ const overlay_enclosure = @import("overlay_enclosure.zig");
 const overlay_octilinear = @import("overlay_octilinear.zig");
 const overlay = @import("overlay.zig");
 const dfm = @import("dfm.zig");
+const via_cuts = @import("via_cuts.zig");
+const via_stack = @import("via_stack.zig");
+const via_connectors = @import("via_connectors.zig");
 
 /// Runs every rule of `rs` over `store`. `out` and `runs` are cleared
 /// first. `poly_net` is the extraction's net column (`NetTable.netColumn`)
@@ -106,20 +109,10 @@ pub fn run(gpa: Allocator, device: Device, rs: *const RuleSet, store: *const Geo
 /// not (`error.KindNotPorted`) until its family lands.
 pub fn ported(kind: Kind) bool {
     return switch (kind) {
-        .via_redundancy,
-        .cut_area_change,
-        .redundant_via,
-        .minimum_cut,
-        .via_stack,
-        .max_cut_spacing,
-        .via_array_spacing,
-        .cut_spacing,
-        .cut_class_spacing,
         .multi_patterning,
         .anchored_patterning,
         .sadp,
         .sadp_line_end,
-        .keep_out_zone,
         => false,
         else => true,
     };
@@ -199,22 +192,22 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .cover_density => |r| area_density.coverDensity(c, r),
         .critical_area => |r| area_critical.criticalArea(c, r),
         .mean_critical_area => |r| area_critical.meanCriticalArea(c, r),
+        .max_cut_spacing => |r| via_cuts.maxCutSpacing(c, r),
+        .redundant_via => |r| via_cuts.redundantVia(c, r),
+        .via_array_spacing => |r| via_cuts.viaArraySpacing(c, r),
+        .cut_spacing => |r| via_cuts.cutSpacing(c, r),
+        .cut_class_spacing => |r| via_cuts.cutClassSpacing(c, r),
+        .keep_out_zone => |r| via_cuts.keepOutZone(c, r),
+        .minimum_cut => |r| via_stack.minimumCut(c, r),
+        .via_stack => |r| via_stack.viaStack(c, r),
+        .cut_area_change => |r| via_connectors.cutAreaChange(c, r),
+        .via_redundancy => |r| via_connectors.viaRedundancy(c, r),
         // ponytail: families still to port refuse (never pass) until their
         // file lands; the deck compiler refuses these kinds by name.
-        .via_redundancy,
-        .cut_area_change,
-        .redundant_via,
-        .minimum_cut,
-        .via_stack,
-        .max_cut_spacing,
-        .via_array_spacing,
-        .cut_spacing,
-        .cut_class_spacing,
         .multi_patterning,
         .anchored_patterning,
         .sadp,
         .sadp_line_end,
-        .keep_out_zone,
         => report.refused,
     };
 }

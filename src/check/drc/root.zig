@@ -21,7 +21,7 @@
 //! - `rule_set`: `RuleSet`, `Slot`, `Csr`
 //! - `params`: `Error`, `Diagnostic`, `Reader`; `compile`: `fromDeck`; `validate`: `validate`
 //! - `rule_layers`: `layersOf`; `scratch`: `Scratch`, `Ctx`; `run_` (run.zig): `run`, `ported`
-//! - family files: `dfm`, `overlay`, `overlay_octilinear`, `overlay_enclosure`, `overlay_strips`, `presence`, `edge`, `grid`, `area_critical`, `area_density`, `area`, `density`, `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
+//! - family files: `via_cuts`, `via_stack`, `via_connectors`, `dfm`, `overlay`, `overlay_octilinear`, `overlay_enclosure`, `overlay_strips`, `presence`, `edge`, `grid`, `area_critical`, `area_density`, `area`, `density`, `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
 //!   `spacing_ends`, `spacing_net`, `spacing_table`
 //! - aliases: `Kind`, `Rule`, `RuleSet`, `Error`, `Diagnostic`, `fromDeck`, `run`
 
@@ -61,6 +61,9 @@ pub const overlay_enclosure = @import("overlay_enclosure.zig");
 pub const overlay_octilinear = @import("overlay_octilinear.zig");
 pub const overlay = @import("overlay.zig");
 pub const dfm = @import("dfm.zig");
+pub const via_cuts = @import("via_cuts.zig");
+pub const via_stack = @import("via_stack.zig");
+pub const via_connectors = @import("via_connectors.zig");
 
 pub const Kind = kinds.Kind;
 pub const Rule = rows.Rule;
@@ -105,4 +108,7 @@ test {
     _ = overlay_octilinear;
     _ = overlay;
     _ = dfm;
+    _ = via_cuts;
+    _ = via_stack;
+    _ = via_connectors;
 }
