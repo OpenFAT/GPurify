@@ -19,6 +19,7 @@ test {
     _ = @import("extract/tsv.zig");
     _ = @import("extract/substrate.zig");
     _ = @import("extract/closed_forms.zig");
+    _ = @import("extract/coupling.zig");
     if (paths.slow_tests) _ = @import("extract/capacitance_slow.zig");
     if (paths.slow_tests) _ = @import("extract/substrate_slow.zig");
     if (paths.gpu_tests) _ = @import("extract/gpu.zig");
