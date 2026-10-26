@@ -43,4 +43,6 @@ test {
     _ = @import("check/lvs/exhaustive.zig");
     _ = @import("check/drc/via_deck.zig");
     _ = @import("check/drc/via_deck_more.zig");
+    _ = @import("check/drc/patterning_rules.zig");
+    _ = @import("check/drc/patterning_deck.zig");
 }
