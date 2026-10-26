@@ -166,8 +166,9 @@ pub const Fixture = struct {
 /// One rule row of a run, names resolved.
 pub const Row = struct { id: []const u8, outcome: Outcome, examined: u64 };
 
-/// One finding of a run, names resolved, the marker in nanometres.
-pub const Found = struct { id: []const u8, measured: Measurement, at: [2]i64 };
+/// One finding of a run, names resolved, the marker in nanometres; its
+/// layer's deck name and its limit.
+pub const Found = struct { id: []const u8, measured: Measurement, at: [2]i64, layer: []const u8 = "", limit: ?Measurement = null };
 
 /// What a run produced, in the caller's arena.
 pub const Ran = struct { rows: []const Row, findings: []const Found };
@@ -273,7 +274,7 @@ pub fn run(arena: Allocator, f: *const Fixture) !Ran {
     const found = try arena.alloc(Found, out.len());
     for (found, 0..) |*fd, i| {
         const v = out.get(@intCast(i));
-        fd.* = .{ .id = try arena.dupe(u8, strings.resolve(v.rule)), .measured = v.measured, .at = .{ v.at.x, v.at.y } };
+        fd.* = .{ .id = try arena.dupe(u8, strings.resolve(v.rule)), .measured = v.measured, .at = .{ v.at.x, v.at.y }, .layer = if (@backingInt(v.layer) < cd.deck.layers.len()) try arena.dupe(u8, strings.resolve(cd.deck.layers.name(v.layer))) else "", .limit = v.limit };
     }
     return .{ .rows = rows, .findings = found };
 }
