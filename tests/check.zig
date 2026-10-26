@@ -41,4 +41,6 @@ test {
     _ = @import("check/lvs/oracle.zig");
     _ = @import("check/lvs/oracle_enum.zig");
     _ = @import("check/lvs/exhaustive.zig");
+    _ = @import("check/drc/via_deck.zig");
+    _ = @import("check/drc/via_deck_more.zig");
 }
