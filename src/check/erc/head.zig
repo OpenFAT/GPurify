@@ -3,8 +3,9 @@
 //! every kind shares: a whole table recorded skipped or refused, and one
 //! violation per flagged net. In: a table's head, the violations so far.
 //! Out: `RuleRun`s and violations. Ported from crates/check/src/erc/mod.rs
-//! (`Design`, `fill_rows`, `skip_rows`, `push_net_violations`) and
-//! ruleset.rs (`RuleHead`, `no_temperature`).
+//! (`Design`, `fill_rows`, `skip_rows`, `push_net_violations`), ruleset.rs
+//! (`RuleHead`, `no_temperature`) and rules/domain.rs (`terminal`,
+//! `push_device`).
 //!
 //! Contents:
 //! - `pub const Design = struct { store, nets, devices }`
@@ -12,7 +13,9 @@
 //! - `pub const Record = struct { gpa, out, runs }`, `fillRows(r, head: *const RuleHead, outcome: Outcome) Allocator.Error!void`,
 //!   `skipRows(r, head) Allocator.Error!void`, `noTemperature(r, usable: bool, head) Allocator.Error!void`,
 //!   `run(r, rule: StrId, before: u32, outcome: Outcome, examined: u64) Allocator.Error!void`,
-//!   `netViolations(r, design: Design, flagged: []const u32, rule: StrId, severity: Severity, measured: Measurement, limit: Measurement) Allocator.Error!void`
+//!   `netViolations(r, design: Design, flagged: []const u32, rule: StrId, severity: Severity, measured: Measurement, limit: Measurement) Allocator.Error!void`,
+//!   `deviceViolation(r, design: Design, device: u32, rule: StrId, severity: Severity, measured: Measurement, limit: Measurement) Allocator.Error!void`
+//! - `pub fn terminalNet(nets: []const NetId, roles: []const TerminalRole, role: TerminalRole) NetId`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -28,7 +31,9 @@ const Measurement = report.Measurement;
 const net_ = @import("../topology/net.zig");
 const NetId = net_.NetId;
 const NetTable = net_.NetTable;
-const DeviceTable = @import("../topology/device.zig").DeviceTable;
+const device_ = @import("../topology/device.zig");
+const DeviceTable = device_.DeviceTable;
+const TerminalRole = device_.TerminalRole;
 
 /// The extracted layout every rule reads.
 /// ponytail: the same three fields as lvs/project.zig's `Design`; one type
@@ -91,6 +96,21 @@ pub const Record = struct {
         try r.fillRows(head, if (usable) .refused else .{ .skipped = .no_design_intent });
     }
 
+    /// One violation at device `device`'s marker polygon.
+    pub fn deviceViolation(r: Record, design: Design, device: u32, rule: StrId, severity: Severity, measured: Measurement, limit: Measurement) Allocator.Error!void {
+        const marker = design.devices.marker.items[device];
+        try r.out.push(r.gpa, .{
+            .rule = rule,
+            .layer = design.store.polyLayer(marker),
+            .severity = severity,
+            .at = design.store.firstVertex(marker),
+            .measured = measured,
+            .limit = limit,
+            .shape_a = marker,
+            .shape_b = report.no_shape,
+        });
+    }
+
     /// One violation per flagged net, at its lowest polygon's first
     /// vertex; a net with no polygon is skipped.
     pub fn netViolations(r: Record, design: Design, flagged: []const u32, rule: StrId, severity: Severity, measured: Measurement, limit: Measurement) Allocator.Error!void {
@@ -111,3 +131,9 @@ pub const Record = struct {
         }
     }
 };
+
+/// The net on the first terminal with `role`, or `.none`.
+pub fn terminalNet(nets: []const NetId, roles: []const TerminalRole, role: TerminalRole) NetId {
+    for (nets, roles) |net, r| if (std.meta.eql(r, role)) return net;
+    return .none;
+}

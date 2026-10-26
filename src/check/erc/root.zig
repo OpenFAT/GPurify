@@ -21,6 +21,8 @@
 //! - `power_solve`: `SolveScratch`, `solveInto`; `power_transient`: `Stimulus`, `transientInto`; `power_probe`: `Probe`, `ProbeScratch`, `effectiveResistanceInto`
 //! - the kind tables: `topology_tables`, `supply_tables`, `antenna_tables`, `electrical_tables`, `esd_tables`, `latchup_tables`, `domain_tables`
 //! - `rule_set`: `RuleSet`, `Tables`, `TableOf`, `Slot`, `deinitTable`; `scratch`: `Scratch`
+//! - the helpers families share: `clamp_reach` (`clampRails`, `clampReachInto`, `reverseBiased`), `rings`
+//!   (`narrowRingsInto`, `encloses`, `regionDist2`, `padNetsInto`), `em_allowed` (`allowedCurrent`)
 //! - `compile`: `fromDeck`; `build_row`, `build_stage`, `build_esd`, `build_layout`, `build_domain`: the kind builders; `validate`, `validate_more`
 //! - the families: `topology`, `matching`, `domain`, `supply`, `antenna`, `electrical`, `reliability`, `esd`, `latchup`
 //! - `run_` (run.zig): `RunInputs`, `run`; `check_` (check.zig): `Inputs`, `check`
@@ -48,6 +50,9 @@ pub const latchup_tables = @import("latchup_tables.zig");
 pub const domain_tables = @import("domain_tables.zig");
 pub const rule_set = @import("rule_set.zig");
 pub const scratch = @import("scratch.zig");
+pub const clamp_reach = @import("clamp_reach.zig");
+pub const rings = @import("rings.zig");
+pub const em_allowed = @import("em_allowed.zig");
 pub const build_row = @import("build_row.zig");
 pub const build_stage = @import("build_stage.zig");
 pub const build_esd = @import("build_esd.zig");
