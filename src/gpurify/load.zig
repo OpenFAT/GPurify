@@ -15,6 +15,9 @@
 //! - `pub const Stage = enum`, `pub const Diagnostic = struct`, `pub const Error`
 //! - `pub fn load(gpa: Allocator, load_arena: Allocator, io: std.Io, dir: std.Io.Dir, inputs: Inputs, decks: []const NamedDeck, diag: *Diagnostic) Error!Loaded`
 //! - `pub fn loadBytes(gpa: Allocator, load_arena: Allocator, io: std.Io, dir: std.Io.Dir, inputs: Inputs, gds: []const u8, decks: []const NamedDeck, diag: *Diagnostic) Error!Loaded`
+//! - `pub const Die = struct { grid, deck, store, provenance }`
+//! - `pub fn loadDie(gpa: Allocator, load_arena: Allocator, io: std.Io, dir: std.Io.Dir, layout: []const u8, deck: []const u8, strings: *StrTable, diag: *Diagnostic) Error!Die`
+//! - `pub fn readDie(load_arena: Allocator, gds: []const u8, deck: []const u8, deck_file: []const u8, strings: *StrTable, diag: *Diagnostic) Error!Die`
 //! - `pub fn isDef(layout: []const u8) bool`
 //! - `pub fn internReportIds(gpa: Allocator, strings: *StrTable) Allocator.Error!void`
 
@@ -69,6 +72,16 @@ pub const Loaded = struct {
     design: ?lefdef.Design,
 };
 
+/// One layout read with its deck: what `load` reads besides the reference
+/// and the intent, and what a multi-die system reads per die. Its names are
+/// in the string table it was read into; it lives in the load arena.
+pub const Die = struct {
+    grid: Grid,
+    deck: CompiledDeck,
+    store: GeometryStore,
+    provenance: ingest.Provenance,
+};
+
 /// A deck a binary carries, built on the layout's grid into `strings` at the
 /// point a deck file would be compiled.
 pub const DeckFn = *const fn (gpa: Allocator, arena: Allocator, grid: Grid, strings: *StrTable, diag: *compile.Diag) compile.Error!CompiledDeck;
@@ -111,6 +124,32 @@ pub fn load(gpa: Allocator, load_arena: Allocator, io: std.Io, dir: std.Io.Dir, 
 /// it): what a layout edit checks before writing it.
 pub fn loadBytes(gpa: Allocator, load_arena: Allocator, io: std.Io, dir: std.Io.Dir, inputs: Inputs, gds: []const u8, decks: []const NamedDeck, diag: *Diagnostic) Error!Loaded {
     return loadFrom(gpa, load_arena, io, dir, inputs, gds, decks, diag);
+}
+
+/// Reads one layout and its deck file into `strings`, as `load` does: the
+/// deck file, then the layout's bytes, then `readDie`.
+pub fn loadDie(gpa: Allocator, load_arena: Allocator, io: std.Io, dir: std.Io.Dir, layout: []const u8, deck: []const u8, strings: *StrTable, diag: *Diagnostic) Error!Die {
+    const text = try readFile(load_arena, io, dir, deck, .deck, diag);
+    const bytes = try readGds(gpa, io, dir, layout, diag);
+    defer gpa.free(bytes);
+    return readDie(load_arena, bytes, text, deck, strings, diag);
+}
+
+/// Reads GDSII `gds` and the deck text `deck` (named `deck_file` in its
+/// diagnostic) into `strings`, layout names first: flattened through the
+/// deck, layers derived, labels bound.
+pub fn readDie(load_arena: Allocator, gds: []const u8, deck: []const u8, deck_file: []const u8, strings: *StrTable, diag: *Diagnostic) Error!Die {
+    diag.* = .{ .stage = .layout };
+    const lib = try ingest.gds.Library.parse(load_arena, gds, strings, &diag.gds);
+    var out: Die = .{ .grid = try lib.grid(&diag.gds), .deck = undefined, .store = .empty, .provenance = .{} };
+    out.deck = try compileDeck(load_arena, .{ .builtin = null, .text = deck, .path = deck_file }, out.grid, strings, diag);
+    diag.* = .{ .stage = .layout };
+    var tags: std.ArrayList(u64) = .empty;
+    try ingest.layout.flattenInto(load_arena, &lib, &out.deck.deck.layers, strings, .reject, .top, &out.store, &out.provenance, &tags, &diag.gds);
+    try ingest.layout.deriveLayersInto(load_arena, &out.store, &out.deck.deck.layers, &out.provenance, strings, tags.items);
+    diag.stage = .labels;
+    try ingest.resolveLabels(load_arena, &out.provenance, &out.store, &out.deck.deck.connectivity, &diag.label);
+    return out;
 }
 
 /// Whether `layout` names a DEF (`*.def`, any case).

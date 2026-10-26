@@ -11,4 +11,5 @@ test {
     _ = @import("gpurify/edits.zig");
     _ = @import("gpurify/incremental.zig");
     _ = @import("gpurify/def.zig");
+    _ = @import("gpurify/system_checks.zig");
 }
