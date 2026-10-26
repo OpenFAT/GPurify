@@ -14,6 +14,7 @@
 //!   `recogniseInto`), `channel` (`refuseConductingChannels`), `port` (`PortTable`, `bindPortsInto`),
 //!   `taps` (`untiedPoints*`); aliases `NetId`, `NetTable`, `extractNetsInto`, `DeviceId`,
 //!   `DeviceTable`, `TerminalRole`, `recogniseInto`, `refuseConductingChannels`, `PortTable`, `bindPortsInto`
+//! - `lvs`: layout versus schematic (lvs/root.zig: `Graph`, `compareTraced`, `checkLayout`, ...)
 //! - `rects`: `LayerRects`, `SortedRects`, owners, `polyDist2`, `segDist2`, `Holes`, `inMaterial`, ...
 pub const report = @import("report.zig");
 pub const rects = @import("rects.zig");
@@ -39,6 +40,9 @@ pub const topology = struct {
     pub const PortTable = port.PortTable;
     pub const bindPortsInto = port.bindPortsInto;
 };
+
+/// Layout versus schematic: graphs, reduction, refinement, verdicts.
+pub const lvs = @import("lvs/root.zig");
 
 // The device compile reads only this root's comptime blocks: name every
 // kernel-owning file here.
@@ -74,4 +78,5 @@ test {
     _ = topology.channel;
     _ = topology.port;
     _ = topology.taps;
+    _ = lvs;
 }

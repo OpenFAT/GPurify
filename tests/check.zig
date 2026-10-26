@@ -1,4 +1,4 @@
-//! check suite, ported from crates/check/tests/{report,topology}, plus the
+//! check suite, ported from crates/check/tests/{report,topology,lvs}, plus the
 //! dependency-order gate.
 test {
     _ = @import("check");
@@ -13,4 +13,17 @@ test {
     _ = @import("check/topology_devices.zig");
     _ = @import("check/topology_ports.zig");
     _ = @import("check/topology_laws.zig");
+    _ = @import("check/derived_layers.zig");
+    _ = @import("check/lvs/digest.zig");
+    _ = @import("check/lvs/graph.zig");
+    _ = @import("check/lvs/compare.zig");
+    _ = @import("check/lvs/reduce.zig");
+    _ = @import("check/lvs/controls.zig");
+    _ = @import("check/lvs/gates.zig");
+    _ = @import("check/lvs/checks.zig");
+    _ = @import("check/lvs/lde.zig");
+    _ = @import("check/lvs/measures.zig");
+    _ = @import("check/lvs/oracle.zig");
+    _ = @import("check/lvs/oracle_enum.zig");
+    _ = @import("check/lvs/exhaustive.zig");
 }
