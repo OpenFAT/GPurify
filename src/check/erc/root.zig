@@ -24,7 +24,7 @@
 //! - the helpers families share: `clamp_reach` (`clampRails`, `clampReachInto`, `reverseBiased`), `rings`
 //!   (`narrowRingsInto`, `encloses`, `regionDist2`, `padNetsInto`), `em_allowed` (`allowedCurrent`)
 //! - `compile`: `fromDeck`; `build_row`, `build_stage`, `build_esd`, `build_layout`, `build_domain`: the kind builders; `validate`, `validate_more`
-//! - the families: `topology`, `matching`, `domain`, `supply`, `antenna`, `electrical`, `reliability`, `esd`, `latchup`
+//! - the families: `topology`, `matching`, `domain`, `domain_devices`, `supply`, `antenna`, `electrical`, `reliability`, `esd`, `latchup`
 //! - `run_` (run.zig): `RunInputs`, `run`; `check_` (check.zig): `Inputs`, `check`
 //! - aliases: `Kind`, `RuleSet`, `Design`, `Inputs`, `check`, `fromDeck`
 
@@ -64,6 +64,7 @@ pub const compile = @import("compile.zig");
 pub const topology = @import("topology.zig");
 pub const matching = @import("matching.zig");
 pub const domain = @import("domain.zig");
+pub const domain_devices = @import("domain_devices.zig");
 pub const supply = @import("supply.zig");
 pub const antenna = @import("antenna.zig");
 pub const electrical = @import("electrical.zig");

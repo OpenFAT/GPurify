@@ -3,9 +3,6 @@
 //! crates/check/src/erc/rules/domain.rs.
 //!
 //! Contents:
-//! - `pub fn checkPowerSwitch(r: Record, design: Design, intent: *const IntentMap, switched: []const NetId, states: []const NetVoltage, t: *const PowerSwitchTable) Allocator.Error!void`
-//! - `pub fn checkHotCarrier(r: Record, design: Design, intent: *const IntentMap, t: *const HotCarrierTable) Allocator.Error!void`
-//! - `pub fn checkWellSharing(r: Record, design: Design, t: *const WellSharingTable) Allocator.Error!void`
 //! - `pub fn checkGateOxide(r: Record, design: Design, intent: *const IntentMap, voltage: *const NetVoltage, t: *const ModelLimitTable) Allocator.Error!void`
 //! - `pub fn checkDrainSource(r: Record, design: Design, intent: *const IntentMap, voltage: *const NetVoltage, t: *const ModelLimitTable) Allocator.Error!void`
 //! - `pub fn checkWellBias(r: Record, design: Design, intent: *const IntentMap, voltage: *const NetVoltage, t: *const WellBiasTable) Allocator.Error!void`
@@ -39,28 +36,6 @@ const UndrivenGateTable = tables.UndrivenGateTable;
 const VoltageSpacingTable = tables.VoltageSpacingTable;
 const WellBiasTable = tables.WellBiasTable;
 const WellSharingTable = tables.WellSharingTable;
-
-/// `PowerSwitchTable` rows. ponytail: not yet ported; every row refuses.
-pub fn checkPowerSwitch(r: Record, design: Design, intent: *const IntentMap, switched: []const NetId, states: []const NetVoltage, t: *const PowerSwitchTable) Allocator.Error!void {
-    _ = design;
-    _ = intent;
-    _ = switched;
-    _ = states;
-    try r.fillRows(&t.head, .refused);
-}
-
-/// `HotCarrierTable` rows. ponytail: not yet ported; every row refuses.
-pub fn checkHotCarrier(r: Record, design: Design, intent: *const IntentMap, t: *const HotCarrierTable) Allocator.Error!void {
-    _ = design;
-    _ = intent;
-    try r.fillRows(&t.head, .refused);
-}
-
-/// `WellSharingTable` rows. ponytail: not yet ported; every row refuses.
-pub fn checkWellSharing(r: Record, design: Design, t: *const WellSharingTable) Allocator.Error!void {
-    _ = design;
-    try r.fillRows(&t.head, .refused);
-}
 
 /// `ModelLimitTable` rows. ponytail: not yet ported; every row refuses.
 pub fn checkGateOxide(r: Record, design: Design, intent: *const IntentMap, voltage: *const NetVoltage, t: *const ModelLimitTable) Allocator.Error!void {

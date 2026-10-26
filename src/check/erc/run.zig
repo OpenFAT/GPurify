@@ -38,6 +38,7 @@ const Scratch = @import("scratch.zig").Scratch;
 const topology = @import("topology.zig");
 const matching = @import("matching.zig");
 const domain = @import("domain.zig");
+const domain_devices = @import("domain_devices.zig");
 const supply = @import("supply.zig");
 const antenna = @import("antenna.zig");
 const electrical = @import("electrical.zig");
@@ -99,9 +100,9 @@ pub fn run(gpa: Allocator, rs: *const RuleSet, in: RunInputs, scratch: *Scratch,
     try topology.checkNetType(r, d, in.facts, in.net_types, &t.net_type);
     try topology.checkCombinationalLoop(r, d, in.intent, &t.combinational_loop);
     try matching.checkMatching(r, d, &t.matching);
-    try domain.checkPowerSwitch(r, d, in.intent, in.switched, in.states, &t.power_switch);
-    try domain.checkHotCarrier(r, d, in.intent, &t.hot_carrier);
-    try domain.checkWellSharing(r, d, &t.well_sharing);
+    try domain_devices.checkPowerSwitch(r, d, in.intent, in.switched, in.states, &t.power_switch);
+    try domain_devices.checkHotCarrier(r, d, in.intent, &t.hot_carrier);
+    try domain_devices.checkWellSharing(r, d, &t.well_sharing);
 
     try supply.checkSupplyShort(r, d, &t.supply_short, scratch);
     try supply.checkSoftConnection(r, d, &t.soft_connection, &rs.connectivity, scratch);
