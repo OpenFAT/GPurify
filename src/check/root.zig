@@ -15,7 +15,7 @@
 //!   `taps` (`untiedPoints*`); aliases `NetId`, `NetTable`, `extractNetsInto`, `DeviceId`,
 //!   `DeviceTable`, `TerminalRole`, `recogniseInto`, `refuseConductingChannels`, `PortTable`, `bindPortsInto`
 //! - `drc` (drc/root.zig): `Kind`, `Rule`, `RuleSet`, `fromDeck`, `run`, the kind tables and families
-//! - `erc`: `kinds` (the ERC kind names, until wave 4)
+//! - `erc` (erc/root.zig): facts, voltage, the power grid and its solves, the kind tables, `RuleSet`, `check`
 //! - `deck`: `compile` (`CompiledDeck`, `compile`, `fromDeck`), `source` (`sourceOf`, `print`), `builder`
 //!   (`DeckBuilder`, `RuleRow`), `query` (`minWidth`, `requiredSpacing`, `enclosure`, ...), `custom`
 //!   (`CustomRule`, `CustomCtx`, `Findings`, `runCustom`); aliases `CompiledDeck`, `DeckBuilder`, `RuleRow`
@@ -29,9 +29,7 @@ pub const proximity_inside = @import("proximity_inside.zig");
 pub const drc = @import("drc/root.zig");
 /// Layout versus schematic: graphs, reduction, refinement, verdicts.
 pub const lvs = @import("lvs/root.zig");
-pub const erc = struct {
-    pub const kinds = @import("erc/kinds.zig");
-};
+pub const erc = @import("erc/root.zig");
 /// The deck compiled for the engine.
 pub const deck = struct {
     pub const compile = @import("deck/compile.zig");
@@ -99,7 +97,7 @@ test {
     _ = topology.port;
     _ = topology.taps;
     _ = drc;
-    _ = erc.kinds;
+    _ = erc;
     _ = deck.compile;
     _ = deck.source;
     _ = deck.builder;
