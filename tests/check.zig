@@ -74,4 +74,5 @@ test {
     _ = @import("check/erc/ported_antenna.zig");
     _ = @import("check/erc/ported_antenna_electrical.zig");
     _ = @import("check/erc/ported_density.zig");
+    _ = @import("check/erc/sky130_antenna.zig");
 }
