@@ -17,7 +17,7 @@
 //! - `pub const Board = struct`, `columns(b) usize`, `layout(b, arena) !Layout`, `intentJson(b, arena) ![]const u8`,
 //!   `supply(b, net) ?Supply`, `stateSupplies(b, arena, st) ![]const Supply`, `reach(b) [nets]?Reach`, `reachWith(b, supplies) [nets]?Reach`
 //! - `pub fn intentText(arena, domains: []const Domain, supplies: []const [3][]const u8, limits: []const []const u8) ![]const u8`
-//! - `pub fn rect(l: *Layout, arena, layer, r: Rect) !void`
+//! - `pub fn rect(l: *Layout, arena, layer, r: Rect) !void`, `pub fn riser(l: *Layout, arena, x: i64, base: i64, net: usize) !void`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -364,16 +364,16 @@ pub fn rect(l: *Layout, arena: Allocator, layer: []const u8, r: Rect) !void {
     try l.rect(arena, layer, r[0], r[1], r[2], r[3]);
 }
 
-// ---- private ----
-
 /// A met1 riser at column `x` (200 wide) from a cut at `base` to a via in
 /// `net`'s track.
-fn riser(l: *Layout, arena: Allocator, x: i64, base: i64, net: usize) !void {
+pub fn riser(l: *Layout, arena: Allocator, x: i64, base: i64, net: usize) !void {
     const ty = trackY(net);
     try rect(l, arena, "cont", .{ x + 50, base + 50, x + 150, base + 150 });
     try rect(l, arena, "met1", .{ x, base, x + 200, ty + track_h });
     try rect(l, arena, "via1", .{ x + 50, ty + 150, x + 150, ty + 250 });
 }
+
+// ---- private ----
 
 fn supplyIn(supplies: []const Supply, net: usize) ?Supply {
     for (supplies) |s| if (s.net == net) return s;

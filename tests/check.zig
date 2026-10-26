@@ -65,6 +65,8 @@ test {
     _ = @import("check/drc/pdk_decks.zig");
     _ = @import("check/erc/fixture.zig");
     _ = @import("check/erc/common.zig");
+    _ = @import("check/erc/voltage_rules.zig");
+    _ = @import("check/erc/esd_geometry.zig");
     _ = @import("check/erc/net_facts.zig");
     _ = @import("check/erc/power_grid_laws.zig");
     _ = @import("check/erc/effective_resistance_laws.zig");
@@ -91,4 +93,17 @@ test {
     _ = @import("check/erc/ported_density.zig");
     _ = @import("check/erc/sky130_antenna.zig");
     _ = @import("check/erc/closed_form_others.zig");
+    _ = @import("check/erc/ported_common.zig");
+    _ = @import("check/erc/ported_esd.zig");
+    _ = @import("check/erc/ported_esd_domains.zig");
+    _ = @import("check/erc/ported_voltage.zig");
+    _ = @import("check/erc/esd_contract.zig");
+    _ = @import("check/deck/esd_kinds.zig");
+    _ = @import("check/deck/path_and_ac_kinds.zig");
+    _ = @import("check/erc/dispatch.zig");
+    _ = @import("check/erc/ported_board.zig");
+    _ = @import("check/erc/reference_domain.zig");
+    _ = @import("check/erc/reference_coupling.zig");
+    _ = @import("check/erc/voltage_rules_other.zig");
+    _ = @import("check/erc/esd_geometry_latchup.zig");
 }

@@ -30,6 +30,7 @@
 //! - the electrical and antenna families' parts: `electrical_current` (branch-current rows), `electrical_thermal`
 //!   (`em_thermal`), `antenna_stage` (stage nets, figures), `antenna_row` (the row model), `antenna_density` (windows)
 //! - aliases: `Kind`, `RuleSet`, `Design`, `Inputs`, `check`, `fromDeck`
+//! - family parts: `domain_spacing` (voltage spacing, dielectric field, hv tag), `esd_path`, `esd_pins`, `esd_cross`, `esd_exposed`
 
 pub const kinds = @import("kinds.zig");
 pub const head = @import("head.zig");
@@ -83,6 +84,11 @@ pub const electrical_thermal = @import("electrical_thermal.zig");
 pub const antenna_stage = @import("antenna_stage.zig");
 pub const antenna_row = @import("antenna_row.zig");
 pub const antenna_density = @import("antenna_density.zig");
+pub const domain_spacing = @import("domain_spacing.zig");
+pub const esd_path = @import("esd_path.zig");
+pub const esd_pins = @import("esd_pins.zig");
+pub const esd_cross = @import("esd_cross.zig");
+pub const esd_exposed = @import("esd_exposed.zig");
 
 pub const Kind = kinds.Kind;
 pub const RuleSet = rule_set.RuleSet;
@@ -118,4 +124,9 @@ test {
     _ = antenna_row;
     _ = antenna_density;
     _ = reliability;
+    _ = domain_spacing;
+    _ = esd_path;
+    _ = esd_pins;
+    _ = esd_cross;
+    _ = esd_exposed;
 }
