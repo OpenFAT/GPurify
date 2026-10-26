@@ -78,4 +78,6 @@ test {
     _ = @import("check/erc/ported_esd_domains.zig");
     _ = @import("check/erc/ported_voltage.zig");
     _ = @import("check/erc/esd_contract.zig");
+    _ = @import("check/deck/esd_kinds.zig");
+    _ = @import("check/deck/path_and_ac_kinds.zig");
 }
