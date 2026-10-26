@@ -53,4 +53,13 @@ test {
     _ = @import("check/drc/overlay_deck.zig");
     _ = @import("check/drc/presence_deck.zig");
     _ = @import("check/drc/dfm_deck.zig");
+    _ = @import("check/drc/tables.zig");
+    _ = @import("check/drc/ruleset_refusals.zig");
+    _ = @import("check/drc/determinism.zig");
+    _ = @import("check/drc/octilinear.zig");
+    _ = @import("check/drc/drc_octilinear.zig");
+    _ = @import("check/drc/drc_kinds.zig");
+    _ = @import("check/drc/drc_kinds_edges.zig");
+    _ = @import("check/drc/sky130_rules.zig");
+    _ = @import("check/drc/pdk_decks.zig");
 }
