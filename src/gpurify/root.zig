@@ -24,7 +24,13 @@
 //!   - `netlist`: `writeSpice`
 //!   - `network`: the checks and node naming the three share
 //! - `liberty`: Liberty generation (liberty/*.zig): `generate`, `Request`, `Generated`, `spec`
+//!   (also `numbers`, `write`, `circuit`, `spice`, `session`, `measure`, `measure_static`, `measure_constraint`,
+//!   `assemble`, `field`, `prepare`, `static_caps`, `corner`, `generate_`, `File`, `Accuracy`)
+//! - `Device` (geom); `foreign`: `Read`, `Error`, `Diagnostic`, `readSpefInto`, `readDspfInto`,
+//!   `ParasiticNetwork`, `Comparison`, `Errors`, `compareInto`, `errors` (extract), for `gpurify compare`
 
+const geom_ = @import("geom");
+const extract_ = @import("extract");
 const load_ = @import("load.zig");
 const extracted = @import("extracted.zig");
 pub const reference = @import("reference.zig");
@@ -111,6 +117,24 @@ pub const liberty = struct {
     pub const Error = generate_.Error;
     pub const Accuracy = spec.Accuracy;
     pub const Diagnostic = spec.Diagnostic;
+};
+
+/// The backend a run's kernels go to (geom's).
+pub const Device = geom_.Device;
+
+/// Another tool's parasitic netlists, read and compared net by net
+/// (extract's), as `gpurify compare` does.
+pub const foreign = struct {
+    pub const Read = extract_.foreign.Read;
+    pub const Error = extract_.foreign.Error;
+    pub const Diagnostic = extract_.foreign.Diagnostic;
+    pub const readSpefInto = extract_.spef.readInto;
+    pub const readDspfInto = extract_.dspf.readInto;
+    pub const ParasiticNetwork = extract_.network.ParasiticNetwork;
+    pub const Comparison = extract_.compare.Comparison;
+    pub const Errors = extract_.compare.Errors;
+    pub const compareInto = extract_.compare.compareInto;
+    pub const errors = extract_.compare.errors;
 };
 
 // ---- private ----

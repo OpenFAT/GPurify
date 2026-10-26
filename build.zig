@@ -105,7 +105,24 @@ pub fn build(b: *Build) void {
     // `test-<owner>` runs the owner's unit tests and its tests/<owner>.zig
     // suite; `test` runs every one of them, the CLI's and testgen's.
     const test_all = b.step("test", "Run every suite");
-    test_all.dependOn(&b.addRunArtifact(b.addTest(.{ .name = "cli", .root_module = exe.root_module })).step);
+    // `test-cli`: the CLI's unit tests, then the built binary end to end on
+    // one corpus case against Rust's golden bytes (tests/golden.rs's job:
+    // exit code, stdout, stderr).
+    const test_cli = b.step("test-cli", "Run the CLI's tests and the binary against a golden");
+    test_cli.dependOn(&b.addRunArtifact(b.addTest(.{ .name = "cli", .root_module = exe.root_module })).step);
+    const golden_path = b.pathResolve(&.{ b.root.root_dir.path orelse ".", b.root.sub_path, "tests/golden/drc/DRC_VALID_ZERO.all" });
+    const golden = std.Io.Dir.cwd().readFileAlloc(b.graph.io, golden_path, b.allocator, .unlimited) catch @panic(golden_path);
+    const stdout_at = (std.mem.indexOf(u8, golden, "--- stdout\n") orelse @panic("golden without stdout")) + "--- stdout\n".len;
+    const stderr_at = std.mem.indexOf(u8, golden, "--- stderr\n") orelse @panic("golden without stderr");
+    const e2e = b.addRunArtifact(exe);
+    e2e.setCwd(b.path("."));
+    e2e.addArgs(&.{ "all", "tests/fixtures/drc/DRC_VALID_ZERO.gds", "--deck", "tests/fixtures/params.deck", "--format", "json" });
+    e2e.expectExitCode(std.fmt.parseInt(u8, golden["exit ".len..std.mem.indexOfScalar(u8, golden, '\n').?], 10) catch @panic("golden exit code"));
+    e2e.expectStdOutEqual(golden[stdout_at..stderr_at]);
+    e2e.expectStdErrEqual(golden[stderr_at + "--- stderr\n".len ..]);
+    e2e.has_side_effects = true; // reads tests/ files the cache cannot see
+    test_cli.dependOn(&e2e.step);
+    test_all.dependOn(test_cli);
     test_all.dependOn(&b.addRunArtifact(b.addTest(.{ .name = "testgen", .root_module = testgen })).step);
     for (owners) |o| {
         const step = b.step(b.fmt("test-{s}", .{o.name}), b.fmt("Run the {s} suites", .{o.name}));
