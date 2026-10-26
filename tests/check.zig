@@ -23,4 +23,7 @@ test {
     _ = @import("check/lvs/checks.zig");
     _ = @import("check/lvs/lde.zig");
     _ = @import("check/lvs/measures.zig");
+    _ = @import("check/lvs/oracle.zig");
+    _ = @import("check/lvs/oracle_enum.zig");
+    _ = @import("check/lvs/exhaustive.zig");
 }
