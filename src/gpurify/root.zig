@@ -67,6 +67,19 @@ pub const liberty = struct {
     pub const measure = @import("liberty/measure.zig");
     pub const measure_static = @import("liberty/measure_static.zig");
     pub const measure_constraint = @import("liberty/measure_constraint.zig");
+    pub const assemble = @import("liberty/assemble.zig");
+    pub const field = @import("liberty/field.zig");
+    pub const prepare = @import("liberty/prepare.zig");
+    pub const static_caps = @import("liberty/static_caps.zig");
+    pub const corner = @import("liberty/corner.zig");
+    pub const generate_ = @import("liberty/generate.zig");
+    pub const generate = generate_.generate;
+    pub const Request = generate_.Request;
+    pub const Generated = generate_.Generated;
+    pub const File = generate_.File;
+    pub const Error = generate_.Error;
+    pub const Accuracy = spec.Accuracy;
+    pub const Diagnostic = spec.Diagnostic;
 };
 
 test {
@@ -81,5 +94,5 @@ test {
     _ = reference;
     _ = pdks;
     std.testing.refAllDecls(liberty);
-    inline for (comptime std.meta.declarations(liberty)) |name| std.testing.refAllDecls(@field(liberty, name));
+    inline for (comptime std.meta.declarations(liberty)) |name| if (@TypeOf(@field(liberty, name)) == type and @typeInfo(@field(liberty, name)) == .@"struct") std.testing.refAllDecls(@field(liberty, name));
 }
