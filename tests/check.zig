@@ -24,4 +24,5 @@ test {
     _ = @import("check/drc/overlay_rules.zig");
     _ = @import("check/drc/via_rules.zig");
     _ = @import("check/drc/via_deck.zig");
+    _ = @import("check/drc/via_deck_more.zig");
 }
