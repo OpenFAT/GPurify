@@ -49,6 +49,8 @@ test {
     _ = @import("check/deck/query.zig");
     _ = @import("check/deck/custom.zig");
     _ = @import("check/deck/builder.zig");
+    _ = @import("check/deck/twins.zig");
+    _ = @import("check/deck/kinds.zig");
     _ = @import("check/deck/errors.zig");
     _ = @import("check/drc/overlay_laws.zig");
     _ = @import("check/drc/overlay_deck.zig");

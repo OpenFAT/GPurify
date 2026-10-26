@@ -18,7 +18,8 @@
 //! - `erc` (erc/root.zig): facts, voltage, the power grid and its solves, the kind tables, `RuleSet`, `check`
 //! - `deck`: `compile` (`CompiledDeck`, `compile`, `fromDeck`), `source` (`sourceOf`, `print`), `builder`
 //!   (`DeckBuilder`, `RuleRow`), `query` (`minWidth`, `requiredSpacing`, `enclosure`, ...), `custom`
-//!   (`CustomRule`, `CustomCtx`, `Findings`, `runCustom`); aliases `CompiledDeck`, `DeckBuilder`, `RuleRow`
+//!   (`CustomRule`, `CustomCtx`, `Findings`, `runCustom`), `rules` (`row`, `specs`, `RuleRow`), `expr`
+//!   (`Expr`, `layer`, `Bound`); aliases `CompiledDeck`, `DeckBuilder`, `RuleRow`
 //! - `lvs`: layout versus schematic (lvs/root.zig: `Graph`, `compareTraced`, `checkLayout`, ...)
 //! - `rects`: `LayerRects`, `SortedRects`, owners, `polyDist2`, `segDist2`, `Holes`, `inMaterial`, ...
 pub const report = @import("report.zig");
@@ -37,9 +38,11 @@ pub const deck = struct {
     pub const builder = @import("deck/builder.zig");
     pub const query = @import("deck/query.zig");
     pub const custom = @import("deck/custom.zig");
+    pub const rules = @import("deck/rules.zig");
+    pub const expr = @import("deck/expr.zig");
     pub const CompiledDeck = compile.CompiledDeck;
     pub const DeckBuilder = builder.DeckBuilder;
-    pub const RuleRow = builder.RuleRow;
+    pub const RuleRow = rules.RuleRow;
 };
 
 /// Electrical structure from geometry: nets, devices, ports, tap reach.
@@ -103,5 +106,7 @@ test {
     _ = deck.builder;
     _ = deck.query;
     _ = deck.custom;
+    _ = deck.rules;
+    _ = deck.expr;
     _ = lvs;
 }
