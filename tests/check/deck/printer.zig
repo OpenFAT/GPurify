@@ -60,8 +60,7 @@ test "every shipped deck survives printing" {
     }
 }
 
-// Deferred (deck twins: the Rust twins are written with the per-kind row
-// constructors, not ported): every_rust_twin_survives_printing.
+// every_rust_twin_survives_printing: in twins.zig, beside the twins.
 
 test "a length no decimal states is refused" {
     // Oracle: hand-derived: 1 nm is 3 units of the grid, and one unit is

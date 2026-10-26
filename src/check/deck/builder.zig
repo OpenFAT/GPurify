@@ -1,24 +1,23 @@
 //! A deck built in code, or a compiled deck overridden: statements by name
 //! into a `DeckSource`, then lowered and compiled as deck text is. In:
-//! layers, derived layers, rules (`RuleRow`: a kind, layer names and named
-//! parameters), custom rules, and the overrides `add`, `replace`, `remove`.
+//! layers, derived layers, rules (`RuleRow`: a kind, layer expressions and
+//! named parameters), custom rules, and the overrides `add`, `replace`, `remove`.
 //! Out: a `CompiledDeck` whose provenance says where each rule came from.
 //! What the builder refuses (an id used twice, an override of something
 //! absent, a length off the grid) is gathered, at most 50, and reported by
 //! `finish` as `error.Invalid` with one diagnostic each, worded as the
 //! parser words deck text. Ported from crates/check/src/deck/builder.rs;
-//! a layer is named by its string (no handle type), a derived layer is one
-//! operation over named operands (a nested expression is several layers),
-//! and the per-kind row constructors of rules.rs are not ported: a row
-//! states its kind's engine parameter names.
+//! a layer is named by its string (no handle type), and the statements
+//! with no refusal of their own (connectivity, devices, pex rows) are
+//! written straight into `doc`.
 //!
 //! Contents:
-//! - `pub const RuleRow = struct`, `pub const DeckBuilder = struct`
+//! - `pub const DeckBuilder = struct`
 //! - `DeckBuilder.init(arena: Allocator, grid: Grid, strings: *StrTable) DeckBuilder`
 //! - `DeckBuilder.fromDeck(arena: Allocator, base: *const CompiledDeck, strings: *StrTable) Allocator.Error!DeckBuilder`
 //! - `length(b: *DeckBuilder, nm: f64) Allocator.Error!Dbu`, `area(b, nm2: f64) Allocator.Error!DbuArea`
 //! - `layer(b, name: []const u8, stream: [2]u16) Allocator.Error!void`, `ignore(b, stream: [2]u16) Allocator.Error!void`
-//! - `derived(b, name: []const u8, op: DerivedOp, operands: []const []const u8, patterns: []const []const u8) Allocator.Error!void`
+//! - `derived(b, name: []const u8, comptime e: Expr) Allocator.Error!void`
 //! - `removeLayer(b, name: []const u8) Allocator.Error!void`
 //! - `rule(b, id: []const u8, row: RuleRow) Allocator.Error!void`, `add(b, id, row) Allocator.Error!void`,
 //!   `replace(b, id, row) Allocator.Error!void`, `remove(b, id: []const u8) Allocator.Error!void`
@@ -36,7 +35,6 @@ const ingest_deck = @import("ingest").deck;
 const DeckSource = ingest_deck.DeckSource;
 const RuleSource = ingest_deck.RuleSource;
 const NamedSource = ingest_deck.NamedSource;
-const DerivedOp = ingest_deck.DerivedOp;
 const Severity = @import("../report.zig").Severity;
 const compile = @import("compile.zig");
 const CompiledDeck = compile.CompiledDeck;
@@ -46,16 +44,9 @@ const Diag = compile.Diag;
 const source_ = @import("source.zig");
 const custom_ = @import("custom.zig");
 const CustomCheck = custom_.CustomCheck;
-
-/// One rule as a deck states it: an engine kind (`min_width`), its layers by
-/// name in the kind's order, and its parameters by engine name.
-pub const RuleRow = struct {
-    kind: []const u8,
-    layers: []const []const u8,
-    params: []const NamedSource = &.{},
-    /// Every finding of the rule a warning (catalog DRC-110).
-    warning: bool = false,
-};
+const expr = @import("expr.zig");
+const Expr = expr.Expr;
+const RuleRow = @import("rules.zig").RuleRow;
 
 /// A deck under construction. Every string and list lives in `arena`, the
 /// caller's, which must outlive the compiled deck's `deck` tables.
@@ -153,13 +144,11 @@ pub const DeckBuilder = struct {
         try b.doc.ignored.append(b.arena, stream);
     }
 
-    /// `layer name = operands[0] op operands[1] ..`: a derived layer.
-    /// `patterns` is a `with_text` op's pattern or an `in_cells` op's
-    /// patterns (the op's indices are renumbered at `finish`).
-    pub fn derived(b: *DeckBuilder, name: []const u8, op: DerivedOp, operands: []const []const u8, patterns: []const []const u8) Allocator.Error!void {
+    /// `layer name = e`: a derived layer, its inner operations `name#k`.
+    /// Refused when `e` is a plain layer or its construction refused.
+    pub fn derived(b: *DeckBuilder, name: []const u8, comptime e: Expr) Allocator.Error!void {
         try b.declare(name);
-        try b.doc.derived.append(b.arena, .{ .name = name, .op = op, .layers = operands });
-        try b.patterns.append(b.arena, patterns);
+        try b.lowerNamed(name, e);
     }
 
     /// Removes a layer, drawn or derived (with its hidden inner layers).
@@ -385,12 +374,37 @@ pub const DeckBuilder = struct {
         return null;
     }
 
-    /// A row in the parser's form; `warning` becomes its parameter.
+    fn lowerNamed(b: *DeckBuilder, name: []const u8, e: Expr) Allocator.Error!void {
+        if (e.fault) |why| return b.refuse("{s}", .{why});
+        if (e.node == .layer) return b.refuse("a derived layer needs an operator (and, or, not) or an operation (`.sized(..)`)", .{});
+        try expr.lowerNamed(b.arena, .{ .derived = &b.doc.derived, .patterns = &b.patterns }, name, e.node);
+    }
+
+    /// A row in the parser's form: each layer argument that is not a plain
+    /// layer lowered as `id@k` in deck order, the layers put in the engine's
+    /// order, and `warning` a parameter.
     fn lowerRule(b: *DeckBuilder, id: []const u8, row: RuleRow) Allocator.Error!RuleSource {
+        const named = try b.arena.alloc([]const u8, row.layers.len);
+        var inline_count: u32 = 0;
+        for (row.layers, named) |arg, *n| {
+            if (arg.node == .layer and arg.fault == null) {
+                n.* = arg.node.layer;
+                continue;
+            }
+            inline_count += 1;
+            n.* = try std.fmt.allocPrint(b.arena, "{s}@{d}", .{ id, inline_count });
+            try b.lowerNamed(n.*, arg);
+        }
+        const layers = if (row.slots.len == 0 or named.len < row.slots.len) named else blk: {
+            const ordered = try b.arena.alloc([]const u8, named.len);
+            for (row.slots, 0..) |slot, i| ordered[i] = named[slot];
+            @memcpy(ordered[row.slots.len..], named[row.slots.len..]);
+            break :blk ordered;
+        };
         var params: std.ArrayList(NamedSource) = .empty;
         try params.appendSlice(b.arena, row.params);
         if (row.warning) try params.append(b.arena, .{ .name = "warning", .value = .{ .value = .{ .flag = true } } });
-        return .{ .id = id, .kind = row.kind, .layers = row.layers, .params = params.items };
+        return .{ .id = id, .kind = row.kind, .layers = layers, .params = params.items };
     }
 };
 
