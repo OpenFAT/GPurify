@@ -15,6 +15,9 @@
 //!   `xor`: `Xor`, `run` (xor.zig)
 //! - `fill`: `fillInto`, `fillGds` (fill.zig); `enhance`: `enhanceGds` (enhance.zig);
 //!   `incremental`: `DrcState`, `check`, `recheck`, `reach` (incremental.zig)
+//! - `system`: `SystemRun`, `run`, `checkSystem`, `allModels` (system.zig); `system_checks`: bumps,
+//!   bonds, alignment, `assemble`, pins, ESD rails (system_checks.zig)
+//! - `Die`, `loadDie`, `readDie` (load.zig)
 //! - `export`: the report writers (export/*.zig)
 //!   - `header`: `Header`, `Error`, `Diagnostic`
 //!   - `json`: `writeReport`, `writeString`
@@ -42,6 +45,8 @@ pub const xor = @import("xor.zig");
 pub const fill = @import("fill.zig");
 pub const enhance = @import("enhance.zig");
 pub const incremental = @import("incremental.zig");
+pub const system = @import("system.zig");
+pub const system_checks = @import("system_checks.zig");
 const run_ = @import("run.zig");
 pub const designExtent = @import("checks_erc.zig").designExtent;
 pub const paramNames = @import("checks_lvs.zig").paramNames;
@@ -55,6 +60,9 @@ pub const LoadDiagnostic = load_.Diagnostic;
 pub const load = load_.load;
 pub const loadBytes = load_.loadBytes;
 pub const isDef = load_.isDef;
+pub const Die = load_.Die;
+pub const loadDie = load_.loadDie;
+pub const readDie = load_.readDie;
 pub const internReportIds = load_.internReportIds;
 
 pub const Extracted = extracted.Extracted;
