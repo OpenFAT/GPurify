@@ -61,6 +61,9 @@ pub const liberty = struct {
     pub const spec = @import("liberty/spec.zig");
     pub const numbers = @import("liberty/numbers.zig");
     pub const write = @import("liberty/write.zig");
+    pub const circuit = @import("liberty/circuit.zig");
+    pub const spice = @import("liberty/spice.zig");
+    pub const session = @import("liberty/session.zig");
 };
 
 test {
@@ -75,4 +78,5 @@ test {
     _ = reference;
     _ = pdks;
     std.testing.refAllDecls(liberty);
+    inline for (comptime std.meta.declarations(liberty)) |name| std.testing.refAllDecls(@field(liberty, name));
 }
