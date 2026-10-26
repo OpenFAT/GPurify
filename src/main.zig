@@ -18,6 +18,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Writer = std.Io.Writer;
 const gpurify = @import("gpurify");
+const float = gpurify.float;
 const args = @import("cli/args.zig");
 const compare = @import("cli/compare.zig");
 const errors = @import("cli/errors.zig");
@@ -278,8 +279,18 @@ fn reports(arena: Allocator, gpa: Allocator, pex: bool, ran: Ran, w: *Writer, wh
         for (pairs.items) |pair| {
             const a = p.points[pair.i];
             const b = p.points[pair.j];
-            // ponytail: Zig's `{d:.6}`; Rust's `{:.6}` differs only on an exact tie in the 7th digit.
-            try w.print("p2p {s} ({d}, {d}) um to ({d}, {d}) um: {d:.6} ohm\n", .{ p.net, um(a[0], per_um), um(a[1], per_um), um(b[0], per_um), um(b[1], per_um), pair.ohms });
+            // Rust's `{}` for the points and `{:.6}` for the ohms, exactly.
+            try w.print("p2p {s} (", .{p.net});
+            try float.display(w, um(a[0], per_um));
+            try w.writeAll(", ");
+            try float.display(w, um(a[1], per_um));
+            try w.writeAll(") um to (");
+            try float.display(w, um(b[0], per_um));
+            try w.writeAll(", ");
+            try float.display(w, um(b[1], per_um));
+            try w.writeAll(") um: ");
+            try float.fixed6(w, pair.ohms);
+            try w.writeAll(" ohm\n");
         }
     }
     for (wanted.coupling.items) |c| {
@@ -288,7 +299,9 @@ fn reports(arena: Allocator, gpa: Allocator, pex: bool, ran: Ran, w: *Writer, wh
             return error.Refused;
         };
         const ff = try gpurify.p2p.coupling(arena, loaded, extracted, network, c.a, c.b, why);
-        try w.print("coupling {s} {s}: {d:.6} fF\n", .{ c.a, c.b, ff });
+        try w.print("coupling {s} {s}: ", .{ c.a, c.b });
+        try float.fixed6(w, ff);
+        try w.writeAll(" fF\n");
     }
 }
 

@@ -26,7 +26,7 @@
 //! - `liberty`: Liberty generation (liberty/*.zig): `generate`, `Request`, `Generated`, `spec`
 //!   (also `numbers`, `write`, `circuit`, `spice`, `session`, `measure`, `measure_static`, `measure_constraint`,
 //!   `assemble`, `field`, `prepare`, `static_caps`, `corner`, `generate_`, `File`, `Accuracy`)
-//! - `Device` (geom); `foreign`: `Read`, `Error`, `Diagnostic`, `readSpefInto`, `readDspfInto`,
+//! - `Device`, `float` (geom); `foreign`: `Read`, `Error`, `Diagnostic`, `readSpefInto`, `readDspfInto`,
 //!   `ParasiticNetwork`, `Comparison`, `Errors`, `compareInto`, `errors` (extract), for `gpurify compare`
 
 const geom_ = @import("geom");
@@ -121,6 +121,8 @@ pub const liberty = struct {
 
 /// The backend a run's kernels go to (geom's).
 pub const Device = geom_.Device;
+/// Rust-exact float text (geom's), for report lines the CLI prints.
+pub const float = geom_.float;
 
 /// Another tool's parasitic netlists, read and compared net by net
 /// (extract's), as `gpurify compare` does.
