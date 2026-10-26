@@ -76,4 +76,5 @@ test {
     _ = @import("check/erc/ported_common.zig");
     _ = @import("check/erc/ported_esd.zig");
     _ = @import("check/erc/ported_esd_domains.zig");
+    _ = @import("check/erc/ported_voltage.zig");
 }
