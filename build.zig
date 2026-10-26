@@ -63,6 +63,9 @@ pub fn build(b: *Build) void {
         // A kernel root's host side asks `has_cuda`/`has_hip` before naming a
         // raw kernel, which is a compile error in a build without artifacts.
         if (o.kernels) m.addImport("gompute_kernels", kernels.kernels);
+        // The shipped decks live in pdks/ at the root, outside src/gpurify.
+        if (std.mem.eql(u8, o.name, "gpurify")) for ([_][]const u8{ "sky130", "gf180mcu", "ihp_sg13g2", "generic_finfet" }) |deck|
+            m.addAnonymousImport(b.fmt("{s}.deck", .{deck}), .{ .root_source_file = b.path(b.fmt("pdks/{s}.deck", .{deck})) });
         mods.put(b.allocator, o.name, m) catch @panic("OOM");
     }
 
