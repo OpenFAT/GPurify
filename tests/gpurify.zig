@@ -9,4 +9,5 @@ test {
     _ = @import("gpurify/test_all.zig");
     _ = @import("gpurify/triage.zig");
     _ = @import("gpurify/edits.zig");
+    _ = @import("gpurify/incremental.zig");
 }
