@@ -25,4 +25,5 @@ test {
     _ = @import("check/drc/via_rules.zig");
     _ = @import("check/drc/tables.zig");
     _ = @import("check/drc/ruleset_refusals.zig");
+    _ = @import("check/drc/determinism.zig");
 }
