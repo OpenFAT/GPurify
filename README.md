@@ -94,3 +94,7 @@ nix develop -c zig build test -Doptimize=ReleaseSafe -Dgpu-tests=true # CPU vs G
 
 [ARCHITECTURE.md](ARCHITECTURE.md) has the design; [AGENTS.md](AGENTS.md)
 the working rules.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
