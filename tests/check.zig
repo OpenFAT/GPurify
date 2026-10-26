@@ -66,4 +66,5 @@ test {
     _ = @import("check/erc/fixture.zig");
     _ = @import("check/erc/common.zig");
     _ = @import("check/erc/voltage_rules.zig");
+    _ = @import("check/erc/esd_geometry.zig");
 }
