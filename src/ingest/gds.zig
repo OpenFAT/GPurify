@@ -66,6 +66,24 @@ pub const Error = error{
     /// The database unit is not a whole fraction of a micrometre.
     /// `diag.metres_per_dbu`.
     UnsupportedUnits,
+    /// A placed vertex or label lies outside ±`geom.max_abs_dbu` once its
+    /// placements are composed. `diag.coordinate`.
+    CoordinateOutOfRange,
+    /// A structure reaches itself through its references, whether a root
+    /// reaches it or not. `diag.cell`.
+    CyclicHierarchy,
+    /// The layout would flatten to more than `flatten.max_flat_polygons`
+    /// polygons, counted before anything is expanded. `diag.count`.
+    TooManyPolygons,
+    /// Under `LabelDepth.all`, the layout would place more labels than
+    /// `flatten.max_flat_polygons`. `diag.count`.
+    TooManyLabels,
+    /// A placement chain deeper than `flatten.max_hierarchy_depth`.
+    /// `diag.cell`.
+    HierarchyTooDeep,
+    /// A shape or text on a stream pair the deck neither declares nor
+    /// ignores, under `UnknownLayers.reject`. `diag.stream`.
+    UnknownLayer,
     /// The file could not be read or un-gzipped.
     Io,
     OutOfMemory,
@@ -78,10 +96,16 @@ pub const Diagnostic = struct {
     offset: usize = 0,
     /// The record type, or the element's (`UnsupportedRecord`).
     record: u16 = 0,
-    /// The cell (`MissingCell`, `DuplicateCell`).
+    /// The cell (`MissingCell`, `DuplicateCell`, `CyclicHierarchy`, `HierarchyTooDeep`).
     cell: ?StrId = null,
     /// The `UNITS` record's metres per database unit (`UnsupportedUnits`).
     metres_per_dbu: f64 = 0,
+    /// The coordinate out of the domain (`CoordinateOutOfRange`).
+    coordinate: i64 = 0,
+    /// The flat count over the cap (`TooManyPolygons`, `TooManyLabels`).
+    count: u64 = 0,
+    /// The undeclared layer/datatype pair (`UnknownLayer`).
+    stream: [2]u16 = .{ 0, 0 },
 };
 
 /// An exact instance transform: integral magnification, optional reflection
@@ -146,7 +170,7 @@ pub const Cell = struct {
 };
 
 /// One shape: a ring of at least three vertices in the coordinate columns,
-/// counter-clockwise (but see `gds_elements.zig` on keyholes), without the
+/// counter-clockwise, or clockwise as a hole split from a keyhole, without the
 /// closing point the format repeats.
 pub const Elem = struct {
     layer: u16,

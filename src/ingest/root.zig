@@ -18,8 +18,17 @@
 //! - `intent` (intent.zig): `parseIntent`, `readIntent`, `DesignIntent`
 //! - `system` (system.zig): `parseSystem`, `readSystem`, `System`
 //! - `lefdef` (lefdef.zig): `readLefInto`, `readDef`, `defUnits`, `flatten`, `toGds`
-//! - `provenance` (provenance.zig), `Provenance`
+//! - `provenance` (provenance.zig), `Provenance`; `resolveLabels`, `LabelError` (label_bind.zig)
+//! - `layout`: `flattenInto`, `UnknownLayers`, `LabelDepth` (flatten.zig),
+//!   `flatPolygons`, `max_hierarchy_depth`, `max_flat_polygons` (flat_count.zig),
+//!   `deriveLayersInto` (derive_layers.zig), `blackBoxesInto` (black_boxes.zig),
+//!   `withBoxes`, `StreamBox` (gds_edit.zig)
+//! - `gds_fixture` (gds_fixture.zig): GDSII bytes for tests, never for a run
 //! - `globMatches` (glob.zig)
+
+const flatten = @import("flatten.zig");
+const counting = @import("flat_count.zig");
+const edit = @import("gds_edit.zig");
 
 pub const gds = @import("gds.zig");
 pub const deck = @import("deck/deck.zig");
@@ -28,8 +37,25 @@ pub const system = @import("system.zig");
 pub const lefdef = @import("lefdef.zig");
 pub const provenance = @import("provenance.zig");
 pub const globMatches = @import("glob.zig").globMatches;
+pub const resolveLabels = @import("label_bind.zig").resolveLabels;
+pub const LabelError = @import("label_bind.zig").Error;
+pub const gds_fixture = @import("gds_fixture.zig");
 
 pub const Provenance = provenance.Provenance;
+
+/// Flattening a parsed `gds.Library` into a `GeometryStore`, and its edits.
+pub const layout = struct {
+    pub const flattenInto = flatten.flattenInto;
+    pub const UnknownLayers = flatten.UnknownLayers;
+    pub const LabelDepth = flatten.LabelDepth;
+    pub const flatPolygons = counting.flatPolygons;
+    pub const max_hierarchy_depth = counting.max_hierarchy_depth;
+    pub const max_flat_polygons = counting.max_flat_polygons;
+    pub const deriveLayersInto = @import("derive_layers.zig").deriveLayersInto;
+    pub const blackBoxesInto = @import("black_boxes.zig").blackBoxesInto;
+    pub const withBoxes = edit.withBoxes;
+    pub const StreamBox = edit.StreamBox;
+};
 
 /// The reference-netlist readers and their tables.
 pub const netlist = struct {
@@ -56,6 +82,13 @@ test {
     _ = @import("gds.zig");
     _ = @import("gds_records.zig");
     _ = @import("gds_elements.zig");
+    _ = @import("gds_keyhole.zig");
+    _ = @import("gds_edit.zig");
+    _ = @import("flat_count.zig");
+    _ = @import("flatten.zig");
+    _ = @import("derive_layers.zig");
+    _ = @import("label_bind.zig");
+    _ = @import("black_boxes.zig");
     _ = @import("intent.zig");
     _ = @import("system.zig");
     _ = @import("lefdef_tests.zig");

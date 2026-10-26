@@ -1,6 +1,7 @@
 //! ingest suite: the readers on whole inputs, ported from crates/ingest/tests.
 test {
     _ = @import("ingest/layout.zig");
+    _ = @import("ingest/flatten.zig");
     _ = @import("ingest/provenance.zig");
     _ = @import("ingest/deck.zig");
     _ = @import("ingest/deck_rules.zig");

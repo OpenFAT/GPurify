@@ -1,16 +1,19 @@
 //! GDSII bytes for the reader's tests, written from the Stream Format manual
 //! and never from the reader: boundaries, references and texts → a library
-//! byte string. Test-only; nothing outside a `test` block imports it.
+//! byte string. Test-only: re-exported for the suites, never read by a run.
 //! Ported from the helpers of crates/ingest/src/layout.rs's tests.
 //!
 //! Contents:
-//! - `pub const Boundary`, `pub const Ref`, `pub const Cell`
+//! - `pub const Prop`, `pub const Boundary`, `pub const Ref`, `pub const Text`, `pub const Cell`
 //! - `pub fn record(out: *std.ArrayList(u8), gpa: Allocator, tag: u16, payload: []const u8) !void`
 //! - `pub fn gdsReal(value: f64) [8]u8`
 //! - `pub fn library(gpa: Allocator, cells: []const Cell, metres_per_dbu: ?f64) ![]u8`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+
+/// One `PROPATTR`/`PROPVALUE` pair.
+pub const Prop = struct { i16, []const u8 };
 
 /// One BOUNDARY element: a stream pair, an open point list (the closing point
 /// is added), and `PROPATTR`/`PROPVALUE` pairs.
@@ -19,7 +22,7 @@ pub const Boundary = struct {
     datatype: u16,
     xs: []const i32,
     ys: []const i32,
-    props: []const struct { i16, []const u8 } = &.{},
+    props: []const Prop = &.{},
 };
 
 /// One `SREF`: the cell placed, the `STRANS` flags, the angle in degrees, the
@@ -33,11 +36,15 @@ pub const Ref = struct {
     mag: i32 = 1,
 };
 
-/// One structure: its name, boundaries and references.
+/// One `TEXT`: a stream pair, its point, and its string.
+pub const Text = struct { layer: u16, texttype: u16, x: i32, y: i32, string: []const u8 };
+
+/// One structure: its name, boundaries, references, then texts.
 pub const Cell = struct {
     name: []const u8,
     boundaries: []const Boundary = &.{},
     refs: []const Ref = &.{},
+    texts: []const Text = &.{},
 };
 
 /// Appends one record: length, tag, payload.
@@ -99,6 +106,16 @@ pub fn library(gpa: Allocator, cells: []const Cell, metres_per_dbu: ?f64) ![]u8 
             if (r.mag != 1) try record(&out, gpa, 0x1B05, &gdsReal(@floatFromInt(r.mag)));
             if (r.angle != 0) try record(&out, gpa, 0x1C05, &gdsReal(r.angle));
             try record(&out, gpa, 0x1003, &(be(i32, r.x) ++ be(i32, r.y)));
+            try record(&out, gpa, 0x1100, &.{});
+        }
+        for (cell.texts) |t| {
+            try record(&out, gpa, 0x0C00, &.{});
+            try record(&out, gpa, 0x0D02, &be(u16, t.layer));
+            try record(&out, gpa, 0x1602, &be(u16, t.texttype));
+            // Read and discarded by the reader; a real writer emits it.
+            try record(&out, gpa, 0x1701, &be(u16, 0x0005));
+            try record(&out, gpa, 0x1003, &(be(i32, t.x) ++ be(i32, t.y)));
+            try asciiRecord(&out, gpa, 0x1906, t.string);
             try record(&out, gpa, 0x1100, &.{});
         }
         try record(&out, gpa, 0x0700, &.{});

@@ -6,14 +6,11 @@
 //! keeps its layer, type, point and string. Cites: the GDSII Stream Format
 //! manual, release 6.0 (`PATHTYPE` 0/2/4 end caps). Ported from
 //! crates/ingest/src/layout.rs (`boundary`, `path`, `reference`, `text`,
-//! `element_record`, `push_keyhole` and its ring tests).
+//! `element_record`, the ring tests).
 //!
-//! Keyholes: Rust splits a ring that revisits a vertex or folds back along
-//! one line (how GDSII writes a hole) into its outer and holes through
-//! `geom::boolean::canonical_rings_into` (`push_keyhole`). That sweep is wave
-//! 2's (ARCHITECTURE.md), and `push_keyhole` with its ring tests moves with
-//! it; until then such a ring is kept whole, which geometry validation
-//! refuses as self-intersecting: fail closed.
+//! Keyholes: a ring that revisits a vertex or folds back along one line
+//! (how GDSII writes a hole) is split into its outer and holes by
+//! `gds_keyhole.zig`; a `PATH` outline running back over itself likewise.
 //!
 //! Contents:
 //! - `pub const Scratch`, `Scratch.deinit(s: *Scratch, gpa: Allocator) void`
@@ -34,6 +31,7 @@ const Library = gds.Library;
 const Xform = gds.Xform;
 const rec = @import("gds_records.zig");
 const Tag = rec.Tag;
+const keyhole = @import("gds_keyhole.zig");
 
 /// Per-element scratch, reused across the stream and freed by `parse`.
 pub const Scratch = struct {
@@ -42,8 +40,10 @@ pub const Scratch = struct {
     dirs: std.ArrayList([2]i64) = .empty,
     left: std.ArrayList([2]i64) = .empty,
     right: std.ArrayList([2]i64) = .empty,
+    keyhole: keyhole.Scratch = .{},
 
     pub fn deinit(s: *Scratch, gpa: Allocator) void {
+        s.keyhole.deinit(gpa);
         s.pts.deinit(gpa);
         s.dirs.deinit(gpa);
         s.left.deinit(gpa);
@@ -93,7 +93,7 @@ pub const Reader = struct {
         }
         const vert_len = lib.xs.items.len - first;
         if (layer == null or datatype == null or !seen_xy or vert_len < 3) return rec.unsupported(r.diag, kind, start);
-        // DEFERRED(wave 2): Rust `push_keyhole` splits a keyhole here.
+        if (try keyhole.pushKeyhole(r.gpa, lib, &r.scratch.keyhole, first, layer.?, datatype.?)) return end;
         // Every BOUNDARY/BOX is an outer ring, stored counter-clockwise
         // whatever the file's winding: KLayout writes hulls clockwise.
         if (ringIsClockwise(lib.xs.items[first..], lib.ys.items[first..])) {
@@ -187,8 +187,9 @@ pub const Reader = struct {
             i -= 1;
             try r.pushVertex(s.left.items[i]);
         }
-        // DEFERRED(wave 2): a path running back over itself strokes a
-        // keyhole, which Rust `push_keyhole` splits here.
+        // A path running back over itself strokes an outline that revisits
+        // a vertex: read as a written keyhole is, the region it sweeps.
+        if (try keyhole.pushKeyhole(r.gpa, lib, &s.keyhole, first, layer.?, datatype.?)) return end;
         try r.pushElem(layer.?, datatype.?, first);
         return end;
     }
