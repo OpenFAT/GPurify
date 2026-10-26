@@ -34,6 +34,14 @@ const width = @import("width.zig");
 const width_edges = @import("width_edges.zig");
 const width_step = @import("width_step.zig");
 const pattern = @import("pattern.zig");
+const spacing = @import("spacing.zig");
+const spacing_ends = @import("spacing_ends.zig");
+const spacing_net = @import("spacing_net.zig");
+const spacing_table = @import("spacing_table.zig");
+const facing_edges = @import("facing_edges.zig");
+const facing = @import("facing.zig");
+const facing_keep_out = @import("facing_keep_out.zig");
+const facing_span = @import("facing_span.zig");
 
 /// Runs every rule of `rs` over `store`. `out` and `runs` are cleared
 /// first. `poly_net` is the extraction's net column (`NetTable.netColumn`)
@@ -86,13 +94,6 @@ pub fn run(gpa: Allocator, device: Device, rs: *const RuleSet, store: *const Geo
 /// not (`error.KindNotPorted`) until its family lands.
 pub fn ported(kind: Kind) bool {
     return switch (kind) {
-        .min_spacing,
-        .min_spacing_diff,
-        .projection_spacing,
-        .eol_spacing,
-        .prl_spacing,
-        .corner_to_corner,
-        .wide_dependent_spacing,
         .min_area,
         .min_enclosed_area,
         .cheesing,
@@ -121,7 +122,6 @@ pub fn ported(kind: Kind) bool {
         .minimum_cut,
         .via_stack,
         .metal_width_via,
-        .stack_spacing,
         .max_cut_spacing,
         .via_array_spacing,
         .cut_spacing,
@@ -133,9 +133,6 @@ pub fn ported(kind: Kind) bool {
         .forbidden,
         .must_contain,
         .must_be_inside,
-        .net_spacing,
-        .spacing_table,
-        .attached_wide_spacing,
         .edge_min_length,
         .edge_spacing,
         .edge_enclosure,
@@ -147,17 +144,8 @@ pub fn ported(kind: Kind) bool {
         .region_density,
         .min_interior_angle,
         .polygon_validity,
-        .tip_spacing_table,
-        .forbidden_spacing,
-        .eol_within_spacing,
-        .eol_keep_out,
-        .eol_extension_spacing,
         .origin,
         .keep_out_zone,
-        .two_width_spacing_table,
-        .span_length,
-        .convex_corner_spacing,
-        .exact_pitch,
         => false,
         else => true,
     };
@@ -179,15 +167,28 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .min_step => |r| width_step.minStep(c, r),
         .min_step_adjacent => |r| width_step.minStepAdjacent(c, r),
         .pattern_match => |r| pattern.patternMatch(c, r),
+        .min_spacing => |r| spacing.minSpacing(c, r),
+        .min_spacing_diff => |r| spacing.minSpacingDiff(c, r),
+        .projection_spacing => |r| spacing.projectionSpacing(c, r),
+        .eol_spacing => |r| spacing_ends.eolSpacing(c, r),
+        .prl_spacing => |r| spacing.prlSpacing(c, r),
+        .corner_to_corner => |r| spacing_ends.cornerToCorner(c, r),
+        .wide_dependent_spacing => |r| spacing.wideDependent(c, r.layer, r.width_threshold, 0, r.limit),
+        .attached_wide_spacing => |r| spacing.wideDependent(c, r.layer, r.width_threshold, r.attached, r.limit),
+        .net_spacing => |r| spacing_net.netSpacing(c, r),
+        .stack_spacing => |r| spacing_net.stackSpacing(c, r),
+        .spacing_table => |r| spacing_table.spacingTable(c, r),
+        .two_width_spacing_table => |r| spacing_table.twoWidthTable(c, r),
+        .tip_spacing_table => |r| facing.tipSpacingTable(c, r),
+        .forbidden_spacing => |r| facing.forbiddenSpacing(c, r),
+        .eol_within_spacing => |r| facing.eolWithinSpacing(c, r),
+        .eol_keep_out => |r| facing_keep_out.eolKeepOut(c, r),
+        .eol_extension_spacing => |r| facing_keep_out.eolExtensionSpacing(c, r),
+        .span_length => |r| facing_span.spanLength(c, r),
+        .convex_corner_spacing => |r| facing_span.convexCornerSpacing(c, r),
+        .exact_pitch => |r| facing_span.exactPitch(c, r),
         // ponytail: families still to port refuse (never pass) until their
         // file lands; the deck compiler refuses these kinds by name.
-        .min_spacing,
-        .min_spacing_diff,
-        .projection_spacing,
-        .eol_spacing,
-        .prl_spacing,
-        .corner_to_corner,
-        .wide_dependent_spacing,
         .min_area,
         .min_enclosed_area,
         .cheesing,
@@ -216,7 +217,6 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .minimum_cut,
         .via_stack,
         .metal_width_via,
-        .stack_spacing,
         .max_cut_spacing,
         .via_array_spacing,
         .cut_spacing,
@@ -228,9 +228,6 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .forbidden,
         .must_contain,
         .must_be_inside,
-        .net_spacing,
-        .spacing_table,
-        .attached_wide_spacing,
         .edge_min_length,
         .edge_spacing,
         .edge_enclosure,
@@ -242,17 +239,8 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .region_density,
         .min_interior_angle,
         .polygon_validity,
-        .tip_spacing_table,
-        .forbidden_spacing,
-        .eol_within_spacing,
-        .eol_keep_out,
-        .eol_extension_spacing,
         .origin,
         .keep_out_zone,
-        .two_width_spacing_table,
-        .span_length,
-        .convex_corner_spacing,
-        .exact_pitch,
         => report.refused,
     };
 }

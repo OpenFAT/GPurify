@@ -21,7 +21,8 @@
 //! - `rule_set`: `RuleSet`, `Slot`, `Csr`
 //! - `params`: `Error`, `Diagnostic`, `Reader`; `compile`: `fromDeck`; `validate`: `validate`
 //! - `rule_layers`: `layersOf`; `scratch`: `Scratch`, `Ctx`; `run_` (run.zig): `run`, `ported`
-//! - family files: `width`, `width_edges`, `width_step`, `pattern`
+//! - family files: `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
+//!   `spacing_ends`, `spacing_net`, `spacing_table`
 //! - aliases: `Kind`, `Rule`, `RuleSet`, `Error`, `Diagnostic`, `fromDeck`, `run`
 
 pub const kinds = @import("kinds.zig");
@@ -38,6 +39,16 @@ pub const width = @import("width.zig");
 pub const width_edges = @import("width_edges.zig");
 pub const width_step = @import("width_step.zig");
 pub const pattern = @import("pattern.zig");
+pub const runs = @import("runs.zig");
+pub const parts = @import("parts.zig");
+pub const spacing = @import("spacing.zig");
+pub const spacing_ends = @import("spacing_ends.zig");
+pub const spacing_net = @import("spacing_net.zig");
+pub const spacing_table = @import("spacing_table.zig");
+pub const facing_edges = @import("facing_edges.zig");
+pub const facing = @import("facing.zig");
+pub const facing_keep_out = @import("facing_keep_out.zig");
+pub const facing_span = @import("facing_span.zig");
 
 pub const Kind = kinds.Kind;
 pub const Rule = rows.Rule;
@@ -60,4 +71,14 @@ test {
     _ = width_edges;
     _ = width_step;
     _ = pattern;
+    _ = runs;
+    _ = parts;
+    _ = spacing;
+    _ = spacing_ends;
+    _ = spacing_net;
+    _ = spacing_table;
+    _ = facing_edges;
+    _ = facing;
+    _ = facing_keep_out;
+    _ = facing_span;
 }

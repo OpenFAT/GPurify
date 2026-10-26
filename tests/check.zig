@@ -14,4 +14,6 @@ test {
     _ = @import("check/topology_ports.zig");
     _ = @import("check/topology_laws.zig");
     _ = @import("check/drc/width_rules.zig");
+    _ = @import("check/drc/spacing_rules.zig");
+    _ = @import("check/drc/spacing_deck.zig");
 }

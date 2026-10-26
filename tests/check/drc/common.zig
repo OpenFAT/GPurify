@@ -8,6 +8,7 @@
 //!
 //! Contents:
 //! - `pub const rule_id`, `other_rule`, `a`, `b`, `pub const gpa`
+//! - `pub const Built`, `Built.deinit`, `Built.of`, `pub fn finish(lb: *LayoutBuilder) !Built`, `pub fn single(rule: Rule) [1]Item`
 //! - `pub const Sink`, `Sink.deinit`, `pub fn runRules(sink: *Sink, store: *const GeometryStore, rules: []const Item) !void`, `pub const Item`
 //! - `pub const Layout`, `Layout.deinit`, `rect`, `rects`, `polygon`, `transformed`
 //! - `pub const Symmetry`, `pub const symmetries`, `pub const offsets`, `pub fn apply(s: Symmetry, p: [2]i64) [2]i64`
@@ -16,7 +17,9 @@
 //! - `pub const Claim`, `pub fn checkCase(name: []const u8, text: []const u8, layout: *const Layout, expect: []const Claim) !void`,
 //!   `checkEverywhere`, `checkUnder`, `checkAxes`, `byRule`
 //! - `pub fn deck(arena: Allocator, rules: []const u8) ![]const u8`, `oneLayerDeck`, `newDeck`
-//! - `pub fn floorSqrt(n: i64) i64`, `pub fn ring(l: *Layout, layer: []const u8, outer: [4]i64, hole: [4]i64) !void`, `met1`
+//! - `pub fn floorSqrt(n: i64) i64`, `pub fn ring(l: *Layout, layer: []const u8, outer: [4]i64, hole: [4]i64) !void`,
+//!   `pub fn met1(boxes: []const [4]i64) !Layout`, `layoutOf`, `everywhere`, `axes`, `steps`, `opt`, `below`, `slice`,
+//!   `pub const Opt`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -45,6 +48,24 @@ pub const other_rule: StrId = @fromBackingInt(1);
 pub const a: LayerId = @fromBackingInt(0);
 
 pub const b: LayerId = @fromBackingInt(1);
+
+/// A built store and its handles.
+pub const Built = struct {
+    store: GeometryStore = .empty,
+    ids: testgen.shapes.Ids = .{},
+
+    pub fn deinit(b_: *Built) void {
+        b_.store.deinit(gpa);
+        b_.ids.deinit(gpa);
+    }
+
+    pub fn of(b_: *const Built, h: testgen.shapes.Handle) geom.PolyId {
+        return b_.ids.of(h);
+    }
+};
+
+/// At most one finding, held by value.
+pub const Opt = struct { f: [1]Finding, n: u1 };
 
 /// A rule with its id, as a test states it.
 pub const Item = struct { id: StrId, rule: drc.Rule };
@@ -191,6 +212,20 @@ pub const Run = struct {
 
 /// A rule's claims: its id and every finding it must report, exactly.
 pub const Claim = struct { id: []const u8, findings: []const Finding };
+
+/// One rule under `rule_id`.
+pub fn single(rule: drc.Rule) [1]Item {
+    return .{.{ .id = rule_id, .rule = rule }};
+}
+
+/// A store and the ids its builder's handles became, freed together.
+pub fn finish(lb: *testgen.shapes.LayoutBuilder) !Built {
+    var out: Built = .{};
+    errdefer out.deinit();
+    try lb.finish(gpa, &out.store, &out.ids);
+    lb.deinit(gpa);
+    return out;
+}
 
 /// Runs `rules` over `store` on the CPU, no nets, replacing what the sink held.
 pub fn runRules(sink: *Sink, store: *const GeometryStore, rules: []const Item) !void {
@@ -388,8 +423,55 @@ pub fn ring(l: *Layout, layer: []const u8, outer: [4]i64, hole: [4]i64) !void {
 }
 
 /// `met1` rectangles `[xlo, ylo, xhi, yhi]`.
-pub fn met1(l: *Layout, boxes: []const [4]i64) !void {
-    try l.rects("met1", boxes);
+pub fn met1(boxes: []const [4]i64) !Layout {
+    return layoutOf("met1", boxes);
+}
+
+/// Rectangles `[xlo, ylo, xhi, yhi]` on `layer`, a new layout.
+pub fn layoutOf(layer: []const u8, boxes: []const [4]i64) !Layout {
+    var l: Layout = .{};
+    errdefer l.deinit();
+    try l.rects(layer, boxes);
+    return l;
+}
+
+/// `checkEverywhere` of one rule's claims (a `[]const Finding` or an
+/// `Opt`), the layout then freed.
+pub fn everywhere(name: []const u8, text: []const u8, layout: Layout, id: []const u8, findings: anytype) !void {
+    var l = layout;
+    defer l.deinit();
+    const held = findings;
+    return checkEverywhere(name, text, &l, &.{.{ .id = id, .findings = slice(&held) }});
+}
+
+/// `checkAxes` of one rule's claims, the layout then freed.
+pub fn axes(name: []const u8, text: []const u8, layout: Layout, id: []const u8, findings: anytype) !void {
+    var l = layout;
+    defer l.deinit();
+    const held = findings;
+    return checkAxes(name, text, &l, &.{.{ .id = id, .findings = slice(&held) }});
+}
+
+/// The limit swept one grid step either side.
+pub fn steps(limit: i64) [3]i64 {
+    return .{ limit - 1, limit, limit + 1 };
+}
+
+/// One finding when `cond`, none otherwise: a claim built in a branch.
+pub fn opt(cond: bool, f: Finding) Opt {
+    return .{ .f = .{f}, .n = @intFromBool(cond) };
+}
+
+/// One finding measuring `measured` when it is below `limit`.
+pub fn below(measured: i64, limit: i64) Opt {
+    return opt(measured < limit, .length(measured));
+}
+
+/// The findings of an `Opt` or a slice, as a slice into `held`.
+pub fn slice(held: anytype) []const Finding {
+    const T = @TypeOf(held.*);
+    if (T == Opt) return held.f[0..held.n];
+    return held.*;
 }
 
 // ---- private ----
@@ -407,7 +489,12 @@ fn same(x: Measurement, y: Measurement) bool {
 fn pinnedFirst(_: void, p: Finding, q: Finding) bool {
     const kp = [2]bool{ p.at == null, p.measured == null };
     const kq = [2]bool{ q.at == null, q.measured == null };
-    return @intFromBool(kp[0]) * 2 + @intFromBool(kp[1]) < @intFromBool(kq[0]) * 2 + @intFromBool(kq[1]);
+    const rank = struct {
+        fn of(k: [2]bool) u8 {
+            return @as(u8, @intFromBool(k[0])) * 2 + @intFromBool(k[1]);
+        }
+    }.of;
+    return rank(kp) < rank(kq);
 }
 
 fn everySymmetry(_: Symmetry) bool {
