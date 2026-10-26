@@ -29,4 +29,5 @@ test {
     _ = @import("check/drc/octilinear.zig");
     _ = @import("check/drc/drc_octilinear.zig");
     _ = @import("check/drc/drc_kinds.zig");
+    _ = @import("check/drc/drc_kinds_edges.zig");
 }
