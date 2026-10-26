@@ -123,9 +123,12 @@ pub const Validated = struct {
 };
 
 /// The buffers every pair rule refills; one `*Scratch` means rules run
-/// sequentially. `device` picks the backend of the pair-distance kernel.
+/// sequentially. `device` picks the backend of the pair-distance kernel,
+/// and `resident` is the run's device copy of the store it reads (borrowed
+/// from the spine for the scratch's life; null uploads per call).
 pub const Scratch = struct {
     device: geom.Device = .cpu,
+    resident: ?*geom.ResidentStore = null,
     validated: Validated = .{},
     /// A boolean result: a merged layer.
     layer_out: ValidatedLayer = .empty,
@@ -301,7 +304,7 @@ pub fn prepareAny(gpa: Allocator, store: *const GeometryStore, layer: LayerId, l
     const rows = store.polysOnLayer(layer);
     try s.index_a.build(gpa, store, layer);
     try geom.index.candidatePairsInto(gpa, store, &s.index_a, limit, &s.pairs);
-    try distance.pairDistancesInto(gpa, s.device, store, s.pairs.items, limit, &s.dists);
+    try distance.pairDistancesInto(gpa, s.device, s.resident, store, s.pairs.items, limit, &s.dists);
     try s.holes.build(gpa, store, &.{layer});
     joinNested(store, &s.holes, s.pairs.items, s.dists.items);
     try labelPairsInto(gpa, rows.start, rows.len(), s.pairs.items, s.dists.items, 1, &s.edges, &s.labels);
@@ -322,7 +325,7 @@ pub fn prepareMerged(gpa: Allocator, store: *const GeometryStore, layer: LayerId
 pub fn crossPairs(gpa: Allocator, store: *const GeometryStore, a: LayerId, b: LayerId, limit: Dbu, s: *Scratch) Error!void {
     try s.index_b.build(gpa, store, b);
     try geom.index.crossLayerPairsInto(gpa, store, a, &s.index_b, limit, &s.pairs);
-    try distance.pairDistancesInto(gpa, s.device, store, s.pairs.items, limit, &s.dists);
+    try distance.pairDistancesInto(gpa, s.device, s.resident, store, s.pairs.items, limit, &s.dists);
     try s.holes.build(gpa, store, &.{ a, b });
     joinNested(store, &s.holes, s.pairs.items, s.dists.items);
 }

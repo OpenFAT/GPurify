@@ -1,12 +1,14 @@
 //! `zig build bench`: every GPU-capable kernel timed on the CPU (one thread
-//! and every thread) and on the GPU across a size sweep, so `min_gpu_work`
-//! is set from measured crossovers, not guesses (ARCHITECTURE.md, GPU:
-//! Selection). In: nothing but the machine. Out: one table on stdout, a row
-//! per kernel and size, then each kernel's crossover. GPU timings include
-//! the kernel load, the one bulk upload (geom.bulk) and the download; the
-//! BEM rows also show the steady per-iteration call, since a solve uploads
-//! once and applies many times. Ported in spirit from examples/bench_all.rs
-//! (the scale corpus sweep); a timing is not a check, so nothing is gated.
+//! and every thread) and on the GPU across a size sweep, against the
+//! startup calibration `--backend auto` runs (gpurify/calibrate.zig), which
+//! it prints first with its cost (ARCHITECTURE.md, GPU: Selection). In:
+//! nothing but the machine. Out: one table on stdout, a row per kernel and
+//! size, then each kernel's crossover. GPU timings include the kernel load
+//! and the per-call bulk upload (geom.bulk) and download; `setup` is what
+//! is uploaded once and amortized: a BEM solve's columns over its applies,
+//! the resident store over one call per spacing rule of the sky130 deck.
+//! Ported in spirit from examples/bench_all.rs (the scale corpus sweep); a
+//! timing is not a check, so nothing is gated.
 //!
 //! Contents:
 //! - `pub fn main(init: std.process.Init) !void`
@@ -19,6 +21,7 @@ const geom = @import("geom");
 const check = @import("check");
 const extract = @import("extract");
 const testgen = @import("testgen");
+const gpurify = @import("gpurify");
 const density = check.drc.density;
 const distance = check.proximity_distance;
 
@@ -36,6 +39,33 @@ const Bench = struct {
     out: *Io.Writer,
     threads: u16,
     backend: ?geom.Device.Backend,
+    /// The sky130 deck's spacing rules: the pair-distance calls one DRC run
+    /// makes over one resident store.
+    spacing_rules: u32,
+
+    /// `--backend auto`'s calibration: each class's fitted lines, its
+    /// threshold, and the wall time it costs at startup.
+    fn calibration(b: Bench) !void {
+        const backend = b.backend orelse return b.out.print("\ncalibration: no GPU here, auto stays on the CPU\n", .{});
+        // The first run in a process pays the kernel loads; the second is
+        // what calibration itself costs.
+        var ms: [2]f64 = undefined;
+        var fits: gpurify.calibrate.Fits = undefined;
+        for (&ms) |*t| {
+            const start = Io.Timestamp.now(b.io, .awake);
+            fits = try gpurify.calibrate.measure(b.gpa, b.io, backend, b.threads);
+            t.* = @as(f64, @floatFromInt(start.durationTo(Io.Timestamp.now(b.io, .awake)).nanoseconds)) / std.time.ns_per_ms;
+        }
+        const min = gpurify.calibrate.minWork(fits);
+        try b.out.print("\ncalibration ({d:.0} ms first in the process, {d:.0} ms again): cost = fixed + per-work\n  {s:>9} {s:>12} {s:>12} {s:>12} {s:>12} {s:>14}\n", .{ ms[0], ms[1], "class", "cpu us", "cpu ns/work", "gpu us", "gpu ns/work", "min_work" });
+        inline for (.{ "float", "resident", "streamed" }) |name| {
+            const f = @field(fits, name);
+            try b.out.print("  {s:>9} {d:>12.1} {d:>12.5} {d:>12.1} {d:>12.5}", .{ name, f.cpu.fixed_ns / 1e3, f.cpu.per_work_ns, f.gpu.fixed_ns / 1e3, f.gpu.per_work_ns });
+            const w = @field(min, name);
+            if (w == std.math.maxInt(u64)) try b.out.print(" {s:>14}\n", .{"never"}) else try b.out.print(" {d:>14}\n", .{w});
+        }
+        try b.out.flush();
+    }
 
     /// The dense potential or field rows, `P` panels: P² pair evaluations
     /// per apply, f64.
@@ -66,7 +96,7 @@ const Bench = struct {
             op.setThreads(b.threads);
             row.cpun = try timeMs(b.io, Cpu{ .op = &op, .x = x, .y = y }, Cpu.run);
             const backend = b.backend orelse continue;
-            const device: geom.Device = .{ .backend = backend, .min_gpu_work = 0, .threads = b.threads };
+            const device: geom.Device = .{ .backend = backend, .min_work = .always, .threads = b.threads };
             const Setup = struct {
                 gpa: Allocator,
                 device: geom.Device,
@@ -95,7 +125,9 @@ const Bench = struct {
 
     /// The capped exact distance of every candidate pair on the scale
     /// corpus's finger layer, 500 DBU apart: edge pairs (16 per rectangle
-    /// pair), integer.
+    /// pair), integer. `setup` is the store's one upload (`ResidentStore`),
+    /// amortized over one call per sky130 spacing rule; `gpu` a call over
+    /// the resident store: the pair list up, the distances down.
     fn pairs(b: Bench) !void {
         const sizes = [_]u32{ 1_000, 10_000, 100_000, 1_000_000, 4_000_000 };
         var rows: [sizes.len]Row = undefined;
@@ -127,25 +159,45 @@ const Bench = struct {
             row.cpu1 = try timeMs(b.io, Cpu{ .store = &corpus.store, .pairs = list.items, .threads = 1, .out = got }, Cpu.run);
             row.cpun = try timeMs(b.io, Cpu{ .store = &corpus.store, .pairs = list.items, .threads = b.threads, .out = got }, Cpu.run);
             const backend = b.backend orelse continue;
-            const Gpu = struct {
+            const Upload = struct {
                 gpa: Allocator,
                 backend: geom.Device.Backend,
                 store: *const geom.GeometryStore,
                 pairs: []const geom.index.Pair,
                 out: []i64,
                 fn run(c: @This()) !void {
-                    try distance.cappedDistancesGpu(c.gpa, c.backend, c.store, c.pairs, c.out);
+                    var resident: geom.ResidentStore = .empty;
+                    defer resident.deinit();
+                    try distance.cappedDistancesGpu(c.gpa, c.backend, &resident, c.store, c.pairs[0..1], c.out[0..1]);
+                }
+            };
+            row.setup = try timeMs(b.io, Upload{ .gpa = b.gpa, .backend = backend, .store = &corpus.store, .pairs = list.items, .out = got }, Upload.run);
+            var resident: geom.ResidentStore = .empty;
+            defer resident.deinit();
+            const Gpu = struct {
+                gpa: Allocator,
+                backend: geom.Device.Backend,
+                resident: *geom.ResidentStore,
+                store: *const geom.GeometryStore,
+                pairs: []const geom.index.Pair,
+                out: []i64,
+                fn run(c: @This()) !void {
+                    try distance.cappedDistancesGpu(c.gpa, c.backend, c.resident, c.store, c.pairs, c.out);
                     std.mem.doNotOptimizeAway(c.out.ptr);
                 }
             };
-            row.gpu = try timeMs(b.io, Gpu{ .gpa = b.gpa, .backend = backend, .store = &corpus.store, .pairs = list.items, .out = got }, Gpu.run);
+            row.gpu = try timeMs(b.io, Gpu{ .gpa = b.gpa, .backend = backend, .resident = &resident, .store = &corpus.store, .pairs = list.items, .out = got }, Gpu.run);
         }
-        try b.table("pair distances (i64)", "pairs", "edge pairs", &rows, 1);
+        try b.table("pair distances (i64), resident store", "pairs", "edge pairs", &rows, b.spacing_rules);
+        const last = rows[rows.len - 1];
+        if (last.gpu) |gpu| try b.out.print("  one DRC run, {d} spacing rules at {d} pairs: GPU {d:.1} ms upload + {d} x {d:.1} ms = {d:.1} ms; CPU {d} x {d:.1} ms = {d:.1} ms\n", .{ b.spacing_rules, last.size, last.setup.?, b.spacing_rules, gpu, last.setup.? + gpu * @as(f64, @floatFromInt(b.spacing_rules)), b.spacing_rules, cpuBest(last), cpuBest(last) * @as(f64, @floatFromInt(b.spacing_rules)) });
+        try b.out.flush();
     }
 
     /// The density windows' covered areas: a die of `S` DBU tiled by
     /// 1000-DBU squares at a 2000 pitch, 20000-DBU windows every 10000 (a
-    /// window holds ~100 rectangles), integer. Work: windows.
+    /// window holds ~100 rectangles), integer. Work: rectangle visits
+    /// (`density.visits`), the estimate the GPU threshold reads.
     fn windows(b: Bench) !void {
         const sides = [_]i64{ 100_000, 300_000, 1_000_000, 2_000_000, 5_000_000 };
         var rows: [sides.len]Row = undefined;
@@ -164,7 +216,7 @@ const Bench = struct {
             try bins.fill(b.gpa, grid, rects);
             const got = try b.gpa.alloc(i64, grid.count());
             defer b.gpa.free(got);
-            row.* = .{ .size = rects.len, .work = grid.count(), .cpu1 = null, .cpun = null, .setup = null, .gpu = null };
+            row.* = .{ .size = rects.len, .work = density.visits(grid, &bins), .cpu1 = null, .cpun = null, .setup = null, .gpu = null };
             const Cpu = struct {
                 grid: density.Grid,
                 bins: *const density.Bins,
@@ -191,7 +243,7 @@ const Bench = struct {
             };
             row.gpu = try timeMs(b.io, Gpu{ .gpa = b.gpa, .backend = backend, .grid = grid, .bins = &bins, .out = got }, Gpu.run);
         }
-        try b.table("density windows (i64)", "rects", "windows", &rows, 1);
+        try b.table("density windows (i64)", "rects", "visits", &rows, 1);
     }
 
     /// `geom.linalg.axpy` over `n` f64 (xpay is the same zip shape): the
@@ -293,7 +345,8 @@ pub fn main(init: std.process.Init) !void {
     const threads: u16 = @intCast(@min(std.Thread.getCpuCount() catch 1, 64));
     const backend: ?geom.Device.Backend = if (extract.gpu.compiled) |b| (if (geom.Device.available(b)) b else null) else null;
     try out.print("gpurify bench: {d} CPU threads, GPU {s}\n", .{ threads, if (backend) |b| @tagName(b) else "none (CPU columns only)" });
-    const b = Bench{ .gpa = gpa, .io = io, .out = out, .threads = threads, .backend = backend };
+    const b = Bench{ .gpa = gpa, .io = io, .out = out, .threads = threads, .backend = backend, .spacing_rules = try spacingRules(gpa) };
+    try b.calibration();
     try b.bem(.potential);
     try b.bem(.field);
     try b.pairs();
@@ -349,6 +402,19 @@ fn Zip(comptime backend: g.Backend) type {
             std.mem.doNotOptimizeAway(c.z[c.z.len - 1]);
         }
     };
+}
+
+/// The sky130 deck's `min_spacing` rules.
+fn spacingRules(gpa: Allocator) !u32 {
+    var arena_state: std.heap.ArenaAllocator = .init(gpa);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var strings: geom.StrTable = .empty;
+    var diag: check.deck.compile.Diag = .{};
+    const deck = try check.deck.compile.compile(arena, arena, gpurify.pdks.sky130, try .init(1000), &strings, &diag);
+    var n: u32 = 0;
+    for (0..deck.drc.len()) |at| n += @intFromBool(deck.drc.get(@intCast(at)) == .min_spacing);
+    return n;
 }
 
 /// `n` uniform values in `[0, scale)`.

@@ -5,15 +5,17 @@
 //! On a DEF layout the integration checks run first. Then every DRC rule,
 //! the deck's custom rules after them; in a staged deck, stage by stage (a
 //! custom rule in the last), and once a stage finds an error the later
-//! stages' rules are not run but recorded `skipped: earlier_stage`.
+//! stages' rules are not run but recorded `skipped: earlier_stage`. The
+//! pair-distance kernel reads the store from the run's `resident` copy.
 //!
 //! Contents:
-//! - `pub fn runDrc(scratch: Allocator, run_arena: Allocator, device: Device, loaded: *const Loaded, extracted: *const Extracted, out: *Outputs) Error!StageStatus`
+//! - `pub fn runDrc(scratch: Allocator, run_arena: Allocator, device: Device, resident: *ResidentStore, loaded: *const Loaded, extracted: *const Extracted, out: *Outputs) Error!StageStatus`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const geom = @import("geom");
 const Device = geom.Device;
+const ResidentStore = geom.ResidentStore;
 const StrId = geom.StrId;
 const check = @import("check");
 const report = check.report;
@@ -29,7 +31,7 @@ const StageStatus = run_.StageStatus;
 const Error = run_.Error;
 const integration = @import("integration.zig");
 
-pub fn runDrc(scratch: Allocator, run_arena: Allocator, device: Device, loaded: *const Loaded, extracted: *const Extracted, out: *Outputs) Error!StageStatus {
+pub fn runDrc(scratch: Allocator, run_arena: Allocator, device: Device, resident: *ResidentStore, loaded: *const Loaded, extracted: *const Extracted, out: *Outputs) Error!StageStatus {
     const deck = &loaded.deck;
     var violations: Violations = .{};
     var runs: std.ArrayList(RuleRun) = .empty;
@@ -39,7 +41,7 @@ pub fn runDrc(scratch: Allocator, run_arena: Allocator, device: Device, loaded: 
     }
     const stages = deck.deck.stages.name.len;
     if (stages == 0) {
-        try rulesInto(scratch, device, loaded, extracted, &deck.drc, deck.custom.items, &violations, &runs);
+        try rulesInto(scratch, device, resident, loaded, extracted, &deck.drc, deck.custom.items, &violations, &runs);
         try run_.appendStage(run_arena, out, &violations, runs.items);
         return .ran;
     }
@@ -64,7 +66,7 @@ pub fn runDrc(scratch: Allocator, run_arena: Allocator, device: Device, loaded: 
             for (customs.items) |rule| try out.runs.append(run_arena, held(rule.id));
             continue;
         }
-        try rulesInto(scratch, device, loaded, extracted, &staged, customs.items, &violations, &runs);
+        try rulesInto(scratch, device, resident, loaded, extracted, &staged, customs.items, &violations, &runs);
         dirty = std.mem.findScalar(report.Severity, violations.severity.items, .@"error") != null;
         try run_.appendStage(run_arena, out, &violations, runs.items);
     }
@@ -74,8 +76,8 @@ pub fn runDrc(scratch: Allocator, run_arena: Allocator, device: Device, loaded: 
 // ---- private ----
 
 /// `rules`, then `customs`, into `violations` and `runs` (cleared first).
-fn rulesInto(scratch: Allocator, device: Device, loaded: *const Loaded, extracted: *const Extracted, rules: *const RuleSet, customs: []const CustomRule, violations: *Violations, runs: *std.ArrayList(RuleRun)) Error!void {
-    try check.drc.run(scratch, device, rules, &loaded.store, extracted.nets.netColumn(), violations, runs);
+fn rulesInto(scratch: Allocator, device: Device, resident: *ResidentStore, loaded: *const Loaded, extracted: *const Extracted, rules: *const RuleSet, customs: []const CustomRule, violations: *Violations, runs: *std.ArrayList(RuleRun)) Error!void {
+    try check.drc.run(scratch, device, resident, rules, &loaded.store, extracted.nets.netColumn(), violations, runs);
     try check.deck.custom.runCustom(scratch, customs, &loaded.store, &extracted.nets, loaded.grid, &loaded.strings, violations, runs);
 }
 

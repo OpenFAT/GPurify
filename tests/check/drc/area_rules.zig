@@ -336,7 +336,7 @@ test "a derived layer does not widen the boundary less die" {
     try set.push(gpa, RULE, .{ .global_density = .{ .layer = A, .boundary = null, .limit = 0.6, .sense = .maximum } }, .@"error");
     var sink: Sink = .{};
     defer sink.deinit();
-    try check.drc.run(gpa, .cpu, &set, &built.store, null, &sink.out, &sink.runs);
+    try check.drc.run(gpa, .cpu, null, &set, &built.store, null, &sink.out, &sink.runs);
     try testing.expectEqual(@as(u32, 1), sink.out.len());
     try testing.expect(sink.out.get(0).measured.eql(.ratio(0.7)));
     try testing.expectEqual([2]i64{ 500, 500 }, at(&sink, 0));

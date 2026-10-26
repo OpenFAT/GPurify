@@ -12,7 +12,9 @@
 //! - Determinism: every run is made twice and must be byte-identical; a
 //!   field-solved run is made again on one thread and must match (Rust's
 //!   `RAYON_NUM_THREADS=1`). The eight `PEX_NEG_*` field solves are the
-//!   slow cells: they run under `-Dslow-tests` only.
+//!   slow cells: they run under `-Dslow-tests` only. Under `-Dgpu-tests`
+//!   every `all` run is made again with every kernel call on the GPU (the
+//!   DRC pair distances over the run's resident store) and must match.
 //! A golden file no run produces is stale and fails the test.
 
 const std = @import("std");
@@ -21,6 +23,7 @@ const Allocator = std.mem.Allocator;
 const paths = @import("paths");
 const gpurify = @import("gpurify");
 const fixtures = @import("fixtures.zig");
+const Device = @import("geom").Device;
 const gpa = testing.allocator;
 const io = testing.io;
 
@@ -36,8 +39,8 @@ const Job = struct { domain: []const u8, id: []const u8, command: Command, qs_ne
 // ---- private ----
 
 /// What the CLI prints for `job`: exit code, stdout, stderr, as Rust's
-/// golden harness joins them. `threads` is the field solve's.
-fn render(arena: Allocator, root: std.Io.Dir, job: Job, threads: u16) ![]const u8 {
+/// golden harness joins them, the kernels on `device`.
+fn render(arena: Allocator, root: std.Io.Dir, job: Job, device: Device) ![]const u8 {
     var run_arena: std.heap.ArenaAllocator = .init(gpa);
     defer run_arena.deinit();
     const layout = try std.fmt.allocPrint(arena, "tests/fixtures/{s}/{s}.gds", .{ job.domain, job.id });
@@ -48,7 +51,6 @@ fn render(arena: Allocator, root: std.Io.Dir, job: Job, threads: u16) ![]const u
         .pex, .pex_qs => .{ .pex = true },
         .lvs => .{ .lvs = true },
     };
-    const device: @import("geom").Device = .{ .backend = .cpu, .min_gpu_work = std.math.maxInt(u64), .threads = threads };
     const options: gpurify.RunOptions = .{ .checks = checks, .quasistatic_nets = if (job.command == .pex_qs) job.qs_nets else &.{}, .device = device };
     var diag: gpurify.RunDiagnostic = .{};
     const r = try gpurify.run(gpa, run_arena.allocator(), io, root, inputs, options, &.{}, &diag);
@@ -104,6 +106,18 @@ fn compareGolden(arena: Allocator, root: std.Io.Dir, golden: []const u8, got: []
     return try std.fmt.allocPrint(arena, "{s}: differs from its golden at byte {d}\n    golden: {s}\n    now:    {s}", .{ golden, at, want[from..@min(want.len, at + 120)], got[from..@min(got.len, at + 120)] });
 }
 
+/// Every kernel call on `threads` CPU threads.
+fn cpu(threads: u16) Device {
+    return .{ .backend = .cpu, .min_work = .never, .threads = threads };
+}
+
+/// Every kernel call on this build's GPU backend; an error, never a skip,
+/// in a build without device kernels.
+fn gpuDevice() !Device {
+    const backend = @import("extract").gpu.compiled orelse return error.BuiltWithoutGpuKernels;
+    return .{ .backend = backend, .min_work = .always, .threads = 8 };
+}
+
 fn lessString(_: void, a: []const u8, b: []const u8) bool {
     return std.mem.order(u8, a, b) == .lt;
 }
@@ -142,10 +156,12 @@ test "every corpus output is its golden and deterministic" {
             try produced.put(arena, golden, {});
             jobs += 1;
             const job: Job = .{ .domain = case.domain, .id = case.id, .command = command, .qs_nets = qs_nets };
-            const first = try render(arena, root, job, 8);
-            if (!std.mem.eql(u8, first, try render(arena, root, job, 8)))
+            const first = try render(arena, root, job, cpu(8));
+            if (!std.mem.eql(u8, first, try render(arena, root, job, cpu(8))))
                 try failures.append(arena, try std.fmt.allocPrint(arena, "{s}: two runs of the same inputs differ", .{golden}));
-            if (command == .pex_qs and !std.mem.eql(u8, first, try render(arena, root, job, 1)))
+            if (paths.gpu_tests and command == .all and !std.mem.eql(u8, first, try render(arena, root, job, try gpuDevice())))
+                try failures.append(arena, try std.fmt.allocPrint(arena, "{s}: the GPU run differs from the CPU run", .{golden}));
+            if (command == .pex_qs and !std.mem.eql(u8, first, try render(arena, root, job, cpu(1))))
                 try failures.append(arena, try std.fmt.allocPrint(arena, "{s}: one thread and many threads differ", .{golden}));
             if (command == .pex) qs_nets = try quasistaticNets(arena, first);
             if (try compareGolden(arena, root, golden, first)) |failure| try failures.append(arena, failure);

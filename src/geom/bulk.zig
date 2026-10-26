@@ -8,6 +8,12 @@
 //! Every region starts on a 256-byte boundary, the alignment both drivers
 //! give an allocation, so a kernel sees each column as if it were its own.
 //!
+//! The copy is the cost (measured on an RTX 4060 Laptop, PCIe 4.0 x8: the
+//! driver moves 50 MB of pageable memory in 4.3 ms, pinned in 4.2 ms, but
+//! packing it into a fresh staging block takes 19 ms of page faults and
+//! copying). So a lone column goes up straight from the caller's memory,
+//! and a staging block is only written, never cleared first.
+//!
 //! Contents:
 //! - `pub const alignment`
 //! - `pub fn upload(comptime Raw: type, raw: *Raw, gpa: Allocator, columns: []const []const u8, scratch: []const usize, offsets: []usize, addresses: []usize) !Raw.Buffer`
@@ -44,17 +50,23 @@ pub fn upload(
     }
     const staged = if (scratch.len > 0) offsets[columns.len] else end;
 
-    // ponytail: pageable staging block; a pinned one (Context.allocPinned)
-    // lets the driver DMA without its own bounce copy, if uploads ever show.
-    const block = try gpa.alloc(u8, staged);
-    defer gpa.free(block);
-    @memset(block, 0);
-    for (columns, offsets[0..columns.len]) |col, o| @memcpy(block[o..][0..col.len], col);
-
     // A zero-byte allocation is not portable; every buffer is at least one word.
     var buffer = try raw.alloc(@max(end, 8));
     errdefer buffer.free();
-    if (staged > 0) try buffer.upload(block.ptr, staged);
+    if (columns.len == 1) {
+        if (columns[0].len > 0) try buffer.upload(columns[0].ptr, columns[0].len);
+    } else if (staged > 0) {
+        // Pageable on purpose: pinned moves no faster here and costs 16 ms
+        // a 50 MB block to lock.
+        const block = try gpa.alloc(u8, staged);
+        defer gpa.free(block);
+        for (columns, offsets[0..columns.len], 0..) |col, o, i| {
+            @memcpy(block[o..][0..col.len], col);
+            const next = if (i + 1 < columns.len) offsets[i + 1] else staged;
+            @memset(block[o + col.len .. next], 0);
+        }
+        try buffer.upload(block.ptr, staged);
+    }
     const base = address(buffer.handle);
     for (addresses, offsets) |*a, o| a.* = base + o;
     return buffer;

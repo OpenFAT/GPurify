@@ -79,7 +79,7 @@ fn largest(cd: *const CompiledDeck, keep: anytype, boxes: []const Box) !?i128 {
     defer out.deinit(gpa);
     var runs: std.ArrayList(check.report.RuleRun) = .empty;
     defer runs.deinit(gpa);
-    try check.drc.run(gpa, .cpu, &set, &built.store, null, &out, &runs);
+    try check.drc.run(gpa, .cpu, null, &set, &built.store, null, &out, &runs);
     for (runs.items) |r| try testing.expectEqual(check.report.Outcome.ran, r.outcome);
     var best: ?i128 = null;
     for (0..out.len()) |k| {

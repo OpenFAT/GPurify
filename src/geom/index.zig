@@ -5,7 +5,7 @@
 //! exactly. Ported from crates/geom/src/index.rs.
 //!
 //! Contents:
-//! - `pub const Pair = struct { a: PolyId, b: PolyId }`
+//! - `pub const Pair = extern struct { a: PolyId, b: PolyId }`
 //! - `pub const SpatialIndex = struct`, `SpatialIndex.empty`, `deinit`,
 //!   `build(ix: *SpatialIndex, gpa: Allocator, store: *const GeometryStore, layer: LayerId) Allocator.Error!void`,
 //!   `isEmpty(ix: *const SpatialIndex) bool`
@@ -24,7 +24,7 @@ const PolyId = ids.PolyId;
 const GeometryStore = @import("store.zig").GeometryStore;
 
 /// Two store rows; on one layer `a < b`.
-pub const Pair = struct {
+pub const Pair = extern struct {
     a: PolyId,
     b: PolyId,
 

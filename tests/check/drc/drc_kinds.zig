@@ -269,7 +269,7 @@ test "net spacing without nets is refused not clean" {
     defer built.deinit();
     var sink: common.Sink = .{};
     defer sink.deinit();
-    try check.drc.run(gpa, .cpu, &cd.drc, &built.store, null, &sink.out, &sink.runs);
+    try check.drc.run(gpa, .cpu, null, &cd.drc, &built.store, null, &sink.out, &sink.runs);
     try testing.expectEqual(@as(usize, 2), sink.runs.items.len);
     for (sink.runs.items) |run| {
         try testing.expectEqual(Outcome.refused, run.outcome);

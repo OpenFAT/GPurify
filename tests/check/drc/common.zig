@@ -232,7 +232,7 @@ pub fn runRules(sink: *Sink, store: *const GeometryStore, rules: []const Item) !
     var set: drc.RuleSet = .{};
     defer set.deinit(gpa);
     for (rules) |r| try set.push(gpa, r.id, r.rule, .@"error");
-    try drc.run(gpa, .cpu, &set, store, null, &sink.out, &sink.runs);
+    try drc.run(gpa, .cpu, null, &set, store, null, &sink.out, &sink.runs);
 }
 
 pub fn apply(s: Symmetry, p: [2]i64) [2]i64 {
@@ -288,7 +288,7 @@ pub fn run(text: []const u8, layout: *const Layout) !Run {
     defer out.deinit(gpa);
     var runs: std.ArrayList(RuleRun) = .empty;
     defer runs.deinit(gpa);
-    try drc.run(gpa, .cpu, &compiled.drc, &store, nets.netColumn(), &out, &runs);
+    try drc.run(gpa, .cpu, null, &compiled.drc, &store, nets.netColumn(), &out, &runs);
     const rows = try arena.alloc(Row, runs.items.len);
     for (rows, runs.items) |*r, rr| {
         var found: std.ArrayList(@typeInfo(@FieldType(Row, "findings")).pointer.child) = .empty;
