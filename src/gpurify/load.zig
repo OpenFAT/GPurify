@@ -153,7 +153,6 @@ fn loadFrom(gpa: Allocator, arena: Allocator, io: std.Io, dir: std.Io.Dir, input
     diag.* = .{ .stage = .layout, .path = inputs.layout };
     const layers = &out.deck.deck.layers;
     var tags: std.ArrayList(u64) = .empty;
-    defer tags.deinit(gpa);
     try ingest.layout.flattenInto(arena, &lib, layers, &out.strings, .reject, .top, &out.store, &out.provenance, &tags, &diag.gds);
     try ingest.layout.deriveLayersInto(arena, &out.store, layers, &out.provenance, &out.strings, tags.items);
     try ingest.layout.blackBoxesInto(arena, &lib, out.deck.deck.lvs.blackbox, layers, &out.strings, &out.provenance, &diag.gds);

@@ -6,8 +6,15 @@
 //!   `isDef`, `internReportIds` (load.zig)
 //! - `reference`: `readReferences`, `readReferenceText` (reference.zig)
 //! - `Extracted`, `ExtractError`, `ExtractDiagnostic`, `extract`, `extractLayout` (extracted.zig)
+//! - `Checks`, `RunOptions`, `Outputs`, `Corner`, `Summary`, `StageStatus`, `CheckError`, `RunError`,
+//!   `RunDiagnostic`, `Run`, `run`, `runChecks`, `summarize`, `appendStage` (run.zig);
+//!   `designExtent` (checks_erc.zig), `paramNames` (checks_lvs.zig)
 //! - `pdks`: the four shipped decks, `pdks.decks` by name (pdks.zig)
 //! - `integration`: the DEF integration checks (integration.zig)
+//! - `triage`: `Clusters`, `clusterInto` (triage.zig); `p2p`: `resistanceInto`, `coupling` (p2p.zig);
+//!   `xor`: `Xor`, `run` (xor.zig)
+//! - `fill`: `fillInto`, `fillGds` (fill.zig); `enhance`: `enhanceGds` (enhance.zig);
+//!   `incremental`: `DrcState`, `check`, `recheck`, `reach` (incremental.zig)
 //! - `export`: the report writers (export/*.zig)
 //!   - `header`: `Header`, `Error`, `Diagnostic`
 //!   - `json`: `writeReport`, `writeString`
@@ -23,6 +30,15 @@ const extracted = @import("extracted.zig");
 pub const reference = @import("reference.zig");
 pub const pdks = @import("pdks.zig");
 pub const integration = @import("integration.zig");
+pub const triage = @import("triage.zig");
+pub const p2p = @import("p2p.zig");
+pub const xor = @import("xor.zig");
+pub const fill = @import("fill.zig");
+pub const enhance = @import("enhance.zig");
+pub const incremental = @import("incremental.zig");
+const run_ = @import("run.zig");
+pub const designExtent = @import("checks_erc.zig").designExtent;
+pub const paramNames = @import("checks_lvs.zig").paramNames;
 
 pub const Inputs = load_.Inputs;
 pub const Loaded = load_.Loaded;
@@ -40,6 +56,21 @@ pub const ExtractError = extracted.Error;
 pub const ExtractDiagnostic = extracted.Diagnostic;
 pub const extract = extracted.extract;
 pub const extractLayout = extracted.extractLayout;
+
+pub const Checks = run_.Checks;
+pub const RunOptions = run_.RunOptions;
+pub const Outputs = run_.Outputs;
+pub const Corner = run_.Corner;
+pub const Summary = run_.Summary;
+pub const StageStatus = run_.StageStatus;
+pub const CheckError = run_.Error;
+pub const RunError = run_.RunError;
+pub const RunDiagnostic = run_.Diagnostic;
+pub const Run = run_.Run;
+pub const run = run_.run;
+pub const runChecks = run_.runChecks;
+pub const summarize = run_.summarize;
+pub const appendStage = run_.appendStage;
 
 /// The report writers: text, JSON, SPEF, DSPF, SPICE.
 pub const @"export" = struct {
@@ -82,17 +113,22 @@ pub const liberty = struct {
     pub const Diagnostic = spec.Diagnostic;
 };
 
-test {
+// ---- private ----
+
+/// `std.testing.refAllDecls`, recursing into the namespaces this module
+/// declares, so a pub function no test calls yet is still compiled.
+fn refAll(comptime T: type) void {
     const std = @import("std");
-    std.testing.refAllDecls(@This());
-    std.testing.refAllDecls(@"export");
-    inline for (.{ "header", "json", "text", "network", "envelope", "spef", "dspf", "netlist" }) |name| {
-        std.testing.refAllDecls(@field(@"export", name));
+    inline for (comptime std.meta.declarations(T)) |name| {
+        const decl = @field(T, name);
+        if (@TypeOf(decl) == type) switch (@typeInfo(decl)) {
+            .@"struct", .@"union", .@"enum" => refAll(decl),
+            else => {},
+        } else _ = &@field(T, name);
     }
-    _ = load_;
-    _ = extracted;
-    _ = reference;
-    _ = pdks;
-    std.testing.refAllDecls(liberty);
-    inline for (comptime std.meta.declarations(liberty)) |name| if (@TypeOf(@field(liberty, name)) == type and @typeInfo(@field(liberty, name)) == .@"struct") std.testing.refAllDecls(@field(liberty, name));
+}
+
+test {
+    refAll(@This());
+    inline for (.{ @import("checks_drc.zig"), @import("checks_erc.zig"), @import("checks_lvs.zig"), @import("checks_pex.zig"), @import("checks_after.zig") }) |file| refAll(file);
 }

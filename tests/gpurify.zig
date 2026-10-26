@@ -7,4 +7,11 @@ test {
     _ = @import("gpurify/liberty.zig");
     _ = @import("gpurify/liberty_diffusions.zig");
     if (@import("paths").ngspice_tests) _ = @import("gpurify/liberty_ngspice.zig");
+    _ = @import("gpurify/fixtures.zig");
+    _ = @import("gpurify/golden.zig");
+    _ = @import("gpurify/test_all.zig");
+    _ = @import("gpurify/triage.zig");
+    _ = @import("gpurify/edits.zig");
+    _ = @import("gpurify/incremental.zig");
+    _ = @import("gpurify/def.zig");
 }

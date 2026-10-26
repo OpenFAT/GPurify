@@ -24,6 +24,7 @@ pub fn build(b: *Build) void {
     const hip_arch = b.option([]const u8, "hip-arch", "HIP arch (gfx1100, ...), `none` to omit") orelse "gfx1100";
     const gpu_tests = b.option(bool, "gpu-tests", "Run the CPU-vs-GPU differentials; fails without a CUDA/HIP driver") orelse false;
     const ngspice_tests = b.option(bool, "ngspice-tests", "Run the Liberty differential against ngspice; fails without ngspice on PATH") orelse false;
+    const update_goldens = b.option(bool, "update-goldens", "Write missing or changed tests/golden files, then fail so the change is reviewed") orelse false;
     const slow_tests = b.option(bool, "slow-tests", "Run the field-solve tests too slow for Debug (on by default outside Debug)") orelse (optimize != .debug);
 
     const gompute_dep = b.dependency("gompute", .{});
@@ -49,6 +50,7 @@ pub fn build(b: *Build) void {
     paths.addOption(bool, "gpu_tests", gpu_tests);
     paths.addOption(bool, "slow_tests", slow_tests);
     paths.addOption(bool, "ngspice_tests", ngspice_tests);
+    paths.addOption(bool, "update_goldens", update_goldens);
     const paths_import: Import = .{ .name = "paths", .module = paths.createModule() };
 
     var mods: std.StringArrayHashMapUnmanaged(*Build.Module) = .empty;
@@ -116,7 +118,10 @@ pub fn build(b: *Build) void {
         });
         suite.addImport(o.name, mods.get(o.name).?);
         for (o.deps) |d| suite.addImport(d, mods.get(d).?);
-        step.dependOn(&b.addRunArtifact(b.addTest(.{ .name = b.fmt("{s}-suite", .{o.name}), .root_module = suite })).step);
+        // A suite reads tests/ data (goldens, fixtures) the cache cannot see.
+        const suite_run = b.addRunArtifact(b.addTest(.{ .name = b.fmt("{s}-suite", .{o.name}), .root_module = suite }));
+        suite_run.has_side_effects = true;
+        step.dependOn(&suite_run.step);
         test_all.dependOn(step);
     }
 }
