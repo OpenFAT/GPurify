@@ -1,11 +1,9 @@
 //! The field-solve readout: the matrix read out as a `ParasiticNetwork`,
 //! and the overlay onto the analytical network. Ported from
 //! crates/extract/tests/pex/quasistatic.rs; the scale corpus is replaced by
-//! hand-drawn combs (mesh.zig's), and the overlay test against the closed
-//! forms (`field_solving_one_of_two_coupled_nets_keeps_their_coupling`)
-//! waits for `analytical` (wave 3).
+//! hand-drawn combs (mesh.zig's).
 //!
-//! Contents: helpers `combs`, `solve`, `serialise`; then the tests.
+//! Contents: helpers `combs`, `facingCombs`, `solve`, `serialise`; then the tests.
 
 const std = @import("std");
 const testing = std.testing;
@@ -34,6 +32,20 @@ fn combs() [8]Box {
             const x: i64 = @intCast(f * 2_000);
             out[4 * k + 1 + f] = .{ .layer = @intCast(k), .net = @intCast(k), .r = .{ x, y + 400, x + 400, y + 2_400 } };
         }
+    }
+    return out;
+}
+
+/// Two combs on layer 0 (`m1`), nets 0 and 1: comb 1's rail 400 nm above
+/// comb 0's finger tips, so the closed forms couple them laterally.
+fn facingCombs() [8]Box {
+    var out: [8]Box = undefined;
+    out[0] = .{ .layer = 0, .net = 0, .r = .{ 0, 0, 6_000, 400 } };
+    out[4] = .{ .layer = 0, .net = 1, .r = .{ 0, 2_800, 6_000, 3_200 } };
+    for (0..3) |f| {
+        const x: i64 = @intCast(f * 2_000);
+        out[1 + f] = .{ .layer = 0, .net = 0, .r = .{ x, 400, x + 400, 2_400 } };
+        out[5 + f] = .{ .layer = 0, .net = 1, .r = .{ x + 1_000, 3_200, x + 1_400, 5_200 } };
     }
     return out;
 }
@@ -219,4 +231,45 @@ test "inductance readout doubles each net's node and joins them by its series l 
     try testing.expectEqual(network.Kind.mutual_inductance, net.kind.items[tail + 4]);
     try testing.expectEqual(NodeId.at(2), net.to.items[tail + 4]);
     try testing.expectEqual(0.0 + (m[1] + m[2]) / 2.0 * 1e12, net.value.items[tail + 4]);
+}
+
+test "field solving one of two coupled nets keeps their coupling" {
+    // Oracle: law. Field-solving either one of two analytically coupled
+    // nets keeps every node in range and keeps the closed forms' coupling to
+    // the other: the solve never sees the unsolved net, so the overlay keeps
+    // the analytical estimate (Rust's test, on two combs facing across a
+    // 400 nm gap in place of the scale corpus).
+    var c = try Case.init(&facingCombs(), &.{}, 3);
+    defer c.deinit();
+    const vias: extract.Vias = .{ .cut = &.{@fromBackingInt(1)}, .connects = &.{.{ @fromBackingInt(0), @fromBackingInt(2) }} };
+    const problem: extract.analytical.Problem = .{ .store = &c.store, .nets = &c.nets, .conductors = &.{ @fromBackingInt(0), @fromBackingInt(2) }, .global = &.{}, .vias = vias, .stack = fixture.coarse.stack(), .halo = 10.0, .grid = fixture.grid };
+    var refusal: extract.analytical.Refusal = .{};
+    var coarse: ParasiticNetwork = .empty;
+    defer coarse.deinit(gpa);
+    try extract.analytical.extractInto(gpa, problem, &coarse, &refusal);
+    var coupled: f64 = 0.0;
+    for (coarse.kind.items, coarse.value.items) |k, v| {
+        if (k == .coupling_cap) coupled += v;
+    }
+    try testing.expect(coupled > 0.0);
+    for ([_]u32{ 0, 1 }) |net| {
+        var matrix: capacitance.CapMatrix = .empty;
+        defer matrix.deinit(gpa);
+        var solved: ParasiticNetwork = .empty;
+        defer solved.deinit(gpa);
+        var diag: capacitance.Diagnostic = .{};
+        _ = try quasistatic.extractInto(gpa, fixture.device, c.problem(&fixture.coarse), &.{net}, &matrix, &solved, &diag);
+        var n: ParasiticNetwork = .empty;
+        defer n.deinit(gpa);
+        try extract.analytical.extractInto(gpa, problem, &n, &refusal);
+        try quasistatic.overlay(gpa, &n, &solved);
+        const nodes = n.nodeCount();
+        var kept: f64 = 0.0;
+        for (n.from.items, n.to.items, n.kind.items, n.value.items) |from, to, k, v| {
+            try testing.expect(@backingInt(from) < nodes);
+            if (to != .ground) try testing.expect(@backingInt(to) < nodes);
+            if (k == .coupling_cap) kept += v;
+        }
+        try testing.expectApproxEqAbs(coupled, kept, 1e-12);
+    }
 }

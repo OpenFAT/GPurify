@@ -402,6 +402,12 @@ fn junctionsFarad(gpa: Allocator, problem: Problem, order: []const u32, out: []f
         }
         var femtofarads: f64 = 0.0;
         for (first..regions.len()) |region| {
+            // A junction layer no row describes has unknown parasitics, not
+            // none: an unstated row reads height 0, so lands here (F30).
+            if (!@import("../stack.zig").described(problem.stack, regions.layer.items[region])) {
+                refused.* = regions.layer.items[region];
+                return error.MissingThickness;
+            }
             const row = @backingInt(regions.layer.items[region]);
             const area_af_um2 = if (row < problem.stack.area_cap_af_um2.len) problem.stack.area_cap_af_um2[row] else 0.0;
             const fringe_af_um = if (row < problem.stack.fringe_cap_af_um.len) problem.stack.fringe_cap_af_um[row] else 0.0;
