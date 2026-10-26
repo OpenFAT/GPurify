@@ -114,7 +114,7 @@ pub fn eolKeepOut(c: *const Ctx, r: rows.EolKeepOut) Error!Verdict {
             // EXCEPTWITHIN: a figure reaching into a side zone is exempt.
             if (r.except_within) |w| if (inSideZone(&material, end, r, w, f.figure)) continue;
             const limit: Measurement = if (f.measured.kind == .count) .count(0) else .area(0);
-            try c.push(.{ .rule = c.rule, .layer = r.layer, .severity = .@"error", .at = geom.ops.centre(f.bounds), .measured = f.measured, .limit = limit, .shape_a = owners[end.figure], .shape_b = owners[f.figure] });
+            try c.push(.{ .rule = c.rule, .layer = r.layer, .severity = .@"error", .at = rects.centre(f.bounds), .measured = f.measured, .limit = limit, .shape_a = owners[end.figure], .shape_b = owners[f.figure] });
         }
     }
     return scratch.ran(examined);

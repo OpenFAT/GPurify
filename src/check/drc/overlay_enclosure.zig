@@ -138,12 +138,12 @@ pub fn enclosure(c: *const Ctx, outer: LayerId, inner_layer: LayerId, limit: Dbu
         if (mode == .full_width) {
             // An unhosted inner is `must_be_inside`'s; a host spanned is met.
             if (!hosted or best == 0) continue;
-            try c.push(.{ .rule = c.rule, .layer = inner_layer, .severity = .@"error", .at = best_at orelse geom.ops.centre(inner_box), .measured = .length(@min(-best, geom.max_abs_dbu)), .limit = .length(0), .shape_a = inner, .shape_b = host_id });
+            try c.push(.{ .rule = c.rule, .layer = inner_layer, .severity = .@"error", .at = best_at orelse rects.centre(inner_box), .measured = .length(@min(-best, geom.max_abs_dbu)), .limit = .length(0), .shape_a = inner, .shape_b = host_id });
             continue;
         }
         const measured: Measurement = .length(std.math.clamp(best, 0, geom.max_abs_dbu));
         if (!measured.violates(.length(limit), .minimum)) continue;
-        const at = if (hosted and best_at != null) best_at.? else geom.ops.centre(inner_box);
+        const at = if (hosted and best_at != null) best_at.? else rects.centre(inner_box);
         try c.push(.{ .rule = c.rule, .layer = inner_layer, .severity = .@"error", .at = at, .measured = measured, .limit = .length(limit), .shape_a = inner, .shape_b = if (hosted) host_id else report.no_shape });
     }
     return scratch.ran(examined);

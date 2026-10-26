@@ -17,6 +17,7 @@ const Bbox = geom.Bbox;
 const LayerId = geom.LayerId;
 const ValidatedLayer = geom.ValidatedLayer;
 const report = @import("../report.zig");
+const rects = @import("../rects.zig");
 const Verdict = report.Verdict;
 const rows = @import("rows.zig");
 const scratch = @import("scratch.zig");
@@ -32,7 +33,7 @@ const Short = struct { area: DbuArea, extent: Bbox, figures: u64 };
 /// `radius`. One violation when above `limit`. `examined` counts figures.
 pub fn criticalArea(c: *const Ctx, r: rows.CriticalArea) Error!Verdict {
     const s = try shortArea(c, r.layer, r.radius) orelse return report.refused;
-    if (s.area > r.limit) try c.finding(r.layer, geom.ops.centre(s.extent), .area(s.area), .area(r.limit), report.no_shape);
+    if (s.area > r.limit) try c.finding(r.layer, rects.centre(s.extent), .area(s.area), .area(r.limit), report.no_shape);
     return scratch.ran(s.figures);
 }
 
@@ -51,7 +52,7 @@ pub fn meanCriticalArea(c: *const Ctx, r: rows.MeanCriticalArea) Error!Verdict {
         extent = extent.merge(s.extent);
         examined = s.figures;
     }
-    if (mean > area.toF64(r.limit)) try c.finding(r.layer, geom.ops.centre(extent), .area(@intFromFloat(@floor(mean))), .area(r.limit), report.no_shape);
+    if (mean > area.toF64(r.limit)) try c.finding(r.layer, rects.centre(extent), .area(@intFromFloat(@floor(mean))), .area(r.limit), report.no_shape);
     return scratch.ran(examined);
 }
 

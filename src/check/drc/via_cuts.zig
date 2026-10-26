@@ -91,7 +91,7 @@ pub fn maxCutSpacing(c: *const Ctx, r: rows.MaxCutSpacing) Error!Verdict {
             .{ .length(@intCast(@divTrunc(isqrtUp(d2) + 1, 2))), .length(r.limit) }
         else
             .{ .count(0), .count(1) };
-        try c.push(.{ .rule = c.rule, .layer = r.cut, .severity = .@"error", .at = geom.ops.centre(own.b), .measured = measured, .limit = limit, .shape_a = row, .shape_b = report.no_shape });
+        try c.push(.{ .rule = c.rule, .layer = r.cut, .severity = .@"error", .at = rects.centre(own.b), .measured = measured, .limit = limit, .shape_a = row, .shape_b = report.no_shape });
     }
     return ran(cuts.len());
 }
@@ -113,7 +113,7 @@ pub fn redundantVia(c: *const Ctx, r: rows.RedundantVia) Error!Verdict {
         const count = n + 1;
         if (count >= r.min_count) continue;
         const row: PolyId = @fromBackingInt(@as(u32, @intCast(row_)));
-        try c.finding(r.layer, geom.ops.centre(c.store.polyBbox(row)), .count(count), .count(r.min_count), row);
+        try c.finding(r.layer, rects.centre(c.store.polyBbox(row)), .count(count), .count(r.min_count), row);
     }
     return ran(cuts.len());
 }
@@ -288,7 +288,7 @@ pub fn keepOutZone(c: *const Ctx, r: rows.KeepOutZone) Error!Verdict {
             if (group.len == 2) if (group[0].part.intersection(group[1].part)) |shared| {
                 sum -= shared.area();
             };
-            try c.push(.{ .rule = c.rule, .layer = r.layer, .severity = .@"error", .at = geom.ops.centre(bounds), .measured = .area(sum), .limit = .area(0), .shape_a = cut, .shape_b = @fromBackingInt(group[0].other) });
+            try c.push(.{ .rule = c.rule, .layer = r.layer, .severity = .@"error", .at = rects.centre(bounds), .measured = .area(sum), .limit = .area(0), .shape_a = cut, .shape_b = @fromBackingInt(group[0].other) });
         }
     }
     return ran(examined);

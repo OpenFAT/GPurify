@@ -130,7 +130,7 @@ pub fn cutSize(c: *const Ctx, r: rows.CutSize) Error!Verdict {
             }
             break :blk .{ .area(@divTrunc(twice, 2)), .area(geom.mulWide(short, long)) };
         } else continue;
-        try c.finding(r.layer, geom.ops.centre(b), measured, limit, owner);
+        try c.finding(r.layer, rects.centre(b), measured, limit, owner);
     }
     return ran(figures.len());
 }
@@ -151,7 +151,7 @@ pub fn cutClass(c: *const Ctx, r: rows.CutClass) Error!Verdict {
             if (k[0] == sides[0] and k[1] == sides[1]) break true;
         } else false;
         if (isRectangle(poly) and known) continue;
-        try c.finding(r.layer, geom.ops.centre(b), .count(0), .count(1), owner);
+        try c.finding(r.layer, rects.centre(b), .count(0), .count(1), owner);
     }
     return ran(figures.len());
 }
@@ -180,7 +180,7 @@ pub fn allowedWidth(c: *const Ctx, r: rows.AllowedWidth) Error!Verdict {
             nearest = w;
         };
         const first = s.rects.items[s.rect_start.items[idx]];
-        try c.finding(r.layer, geom.ops.centre(first), .length(width), .length(nearest), owner);
+        try c.finding(r.layer, rects.centre(first), .length(width), .length(nearest), owner);
     }
     return ran(figures.len());
 }
@@ -215,7 +215,7 @@ pub fn protrusionWidth(c: *const Ctx, r: rows.ProtrusionWidth) Error!Verdict {
     for (s.owners.items, 0..) |owner, idx| {
         const part = attached.get(@intCast(idx));
         const width = isqrt(try geom.width.narrowestWidth2(gpa, part, &s.facing));
-        try c.finding(r.layer, geom.ops.centre(part.bbox()), .length(width), .length(r.limit), owner);
+        try c.finding(r.layer, rects.centre(part.bbox()), .length(width), .length(r.limit), owner);
     }
     return ran(figures.len());
 }

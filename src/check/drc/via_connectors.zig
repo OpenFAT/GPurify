@@ -181,7 +181,7 @@ pub fn cutAreaChange(c: *const Ctx, r: rows.CutAreaChange) Error!Verdict {
         const limit = bands.limit(start.items[at + 1] - start.items[at]) orelse continue;
         const change: DbuArea = @intCast(@abs(was[at] - is[at]));
         if (change <= limit) continue;
-        try c.finding(r.pre, geom.ops.centre(k.bounds.items[at]), .area(change), .area(limit), report.no_shape);
+        try c.finding(r.pre, rects.centre(k.bounds.items[at]), .area(change), .area(limit), report.no_shape);
     }
     return ran(n);
 }
@@ -236,7 +236,7 @@ pub fn viaRedundancy(c: *const Ctx, r: rows.ViaRedundancy) Error!Verdict {
     }
     const rate: f64 = if (vias == 0) 1.0 else 1.0 - @as(f64, @floatFromInt(dead)) / @as(f64, @floatFromInt(vias));
     if (rate < r.limit) if (first_dead) |b| {
-        try c.finding(r.cut, geom.ops.centre(b), .ratio(rate), .ratio(r.limit), report.no_shape);
+        try c.finding(r.cut, rects.centre(b), .ratio(rate), .ratio(r.limit), report.no_shape);
     };
     return ran(vias);
 }

@@ -67,7 +67,7 @@ pub fn enclosureOctilinear(c: *const Ctx, outer: LayerId, inner_layer: LayerId, 
     for (0..drawn.len()) |poly| {
         const shape = drawn.get(@intCast(poly));
         const host = if (covered[poly]) home[poly] else null;
-        var reading: Reading = .{ .twice = 0, .at = geom.ops.centre(shape.bbox()) };
+        var reading: Reading = .{ .twice = 0, .at = rects.centre(shape.bbox()) };
         var host_row: PolyId = report.no_shape;
         if (host) |figure| {
             try edgesInto(gpa, shape, &inner_edges);

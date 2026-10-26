@@ -16,6 +16,7 @@ const Bbox = geom.Bbox;
 const Point = geom.Point;
 const Ring = geom.Ring;
 const report = @import("../report.zig");
+const rects = @import("../rects.zig");
 const Verdict = report.Verdict;
 const Measurement = report.Measurement;
 const rows = @import("rows.zig");
@@ -85,7 +86,7 @@ pub fn minStep(c: *const Ctx, r: rows.MinStep) Error!Verdict {
                         break :blk .{ .count(run), .count(fewest - 1) };
                     },
                 };
-                try c.finding(r.layer, geom.ops.centre(box), found[0], found[1], owner);
+                try c.finding(r.layer, rects.centre(box), found[0], found[1], owner);
             }
         }
     }
@@ -133,7 +134,7 @@ pub fn minStepAdjacent(c: *const Ctx, r: rows.MinStepAdjacent) Error!Verdict {
                 for ([3]usize{ e, blamed[0], blamed[1] }) |i| for ([2]Point{ vertex(ring, i), vertex(ring, i + 1) }) |p| {
                     box = box.include(p.x, p.y);
                 };
-                try c.finding(r.layer, geom.ops.centre(box), .length(length(ring, e)), .length(r.limit), owner);
+                try c.finding(r.layer, rects.centre(box), .length(length(ring, e)), .length(r.limit), owner);
             }
         }
     }

@@ -38,7 +38,7 @@ pub fn minLength(c: *const Ctx, r: rows.LayerLimit) Error!Verdict {
     if (!axisAligned(edges)) return report.refused;
     for (edges) |e| {
         const measured = length(e);
-        if (measured < r.limit) try c.finding(r.layer, geom.ops.centre(segBbox(e)), .length(measured), .length(r.limit), report.no_shape);
+        if (measured < r.limit) try c.finding(r.layer, rects.centre(segBbox(e)), .length(measured), .length(r.limit), report.no_shape);
     }
     return scratch.ran(edges.len);
 }
@@ -115,7 +115,7 @@ pub fn enclosure(c: *const Ctx, r: rows.EdgeEnclosure) Error!Verdict {
     for (list) |e| {
         if (e.a.eql(e.b)) continue;
         const measured = try coveredDepth(gpa, e, r.limit, &outer);
-        if (measured < r.limit) try c.finding(r.edges, geom.ops.centre(segBbox(e)), .length(measured), .length(r.limit), report.no_shape);
+        if (measured < r.limit) try c.finding(r.edges, rects.centre(segBbox(e)), .length(measured), .length(r.limit), report.no_shape);
     }
     return scratch.ran(list.len);
 }

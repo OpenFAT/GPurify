@@ -84,7 +84,7 @@ pub fn spanLength(c: *const Ctx, r: rows.LayerTable) Error!Verdict {
             examined += 1;
             const next = tables.nextLegal(legal, ch.hi - ch.lo) orelse continue;
             const region: Bbox = if (across_x) .{ .xlo = ch.lo, .ylo = ch.from, .xhi = ch.hi, .yhi = ch.to } else .{ .xlo = ch.from, .ylo = ch.lo, .xhi = ch.to, .yhi = ch.hi };
-            try c.finding(r.layer, geom.ops.centre(region), .length(ch.hi - ch.lo), .length(next), c.s.owners.items[figure]);
+            try c.finding(r.layer, rects.centre(region), .length(ch.hi - ch.lo), .length(next), c.s.owners.items[figure]);
         }
     }
     return scratch.ran(examined);
