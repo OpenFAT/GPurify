@@ -1,6 +1,11 @@
 //! ingest suite: the readers on whole inputs, ported from crates/ingest/tests.
 test {
     _ = @import("ingest/layout.zig");
+    _ = @import("ingest/flatten.zig");
+    _ = @import("ingest/mirror.zig");
+    _ = @import("ingest/labels.zig");
+    _ = @import("ingest/derive.zig");
+    _ = @import("ingest/gds_writer.zig");
     _ = @import("ingest/provenance.zig");
     _ = @import("ingest/deck.zig");
     _ = @import("ingest/deck_rules.zig");

@@ -16,6 +16,11 @@ const Diagnostic = lefdef.Diagnostic;
 const exactUnits = lefdef.exactUnits;
 const deck = @import("deck/deck.zig");
 const gds = @import("gds.zig");
+const flatten = @import("flatten.zig");
+const derive_layers = @import("derive_layers.zig");
+const label_bind = @import("label_bind.zig");
+const Provenance = @import("provenance.zig").Provenance;
+const PlacedLabel = @import("provenance.zig").PlacedLabel;
 const gpa = testing.allocator;
 
 /// A technology with two metals and a cut, in the reference's own layer
@@ -339,12 +344,10 @@ test "what is not read is refused with its line" {
 
 test "the written stream reads back shape for shape" {
     // Oracle: round trip through the GDS reader: the GDSII `toGds` writes is
-    // read back by `gds.Library` at the DEF's units, every shape on its
-    // layer at its coordinates, and a `TEXT` of the net on each of the five
-    // net shapes (the macro pin, two wires, the via's metals; not the
-    // obstruction or the cut). The Rust test's second half, binding the
-    // labels through `Library::flatten` and `resolve_labels`, waits for
-    // wave 2's GeometryStore.
+    // read back and flattened at the DEF's units, every shape on its layer at
+    // its coordinates, and a `TEXT` of the net on each of the five net shapes
+    // (the macro pin, two wires, the via's metals; not the obstruction or the
+    // cut), each bound to the shape under it.
     const f = try Fixture.init();
     defer f.deinit();
     const a = f.arena();
@@ -360,15 +363,23 @@ test "the written stream reads back shape for shape" {
     var library = try gds.Library.parse(gpa, bytes, &strings, &gds_diag);
     defer library.deinit(gpa);
     try testing.expectEqual(1000, (try library.grid(&gds_diag)).dbu_per_um);
-    // Every element back, as `layer xlo ylo xhi yhi`, sorted.
+    var store: geom.GeometryStore = .empty;
+    defer store.deinit(gpa);
+    var provenance: Provenance = .{};
+    defer provenance.deinit(gpa);
+    var tags: std.ArrayList(u64) = .empty;
+    defer tags.deinit(gpa);
+    try flatten.flattenInto(gpa, &library, &parsed.layers, &strings, .reject, .top, &store, &provenance, &tags, &gds_diag);
+    try derive_layers.deriveLayersInto(gpa, &store, &parsed.layers, &provenance, &strings, tags.items);
+    var unplaced: PlacedLabel = undefined;
+    try label_bind.resolveLabels(gpa, &provenance, &store, &parsed.connectivity, &unplaced);
+    // Every row back, as `layer xlo ylo xhi yhi`, sorted.
     var read: std.ArrayList([]const u8) = .empty;
-    for (0..library.elems.len) |k| {
-        const e = library.elems.get(k);
-        const xs = library.xs.items[e.vert_start..][0..e.vert_len];
-        const ys = library.ys.items[e.vert_start..][0..e.vert_len];
-        const layer = parsed.layers.ofStream(e.layer, e.datatype).?;
-        const name = strings.resolve(parsed.layers.name(layer));
-        try read.append(a, try std.fmt.allocPrint(a, "{s} {d} {d} {d} {d}", .{ name, std.mem.min(i64, xs), std.mem.min(i64, ys), std.mem.max(i64, xs), std.mem.max(i64, ys) }));
+    for (0..store.polyCount()) |row| {
+        const poly: geom.PolyId = @fromBackingInt(@intCast(row));
+        const b = store.polyBbox(poly);
+        const name = strings.resolve(parsed.layers.name(store.polyLayer(poly)));
+        try read.append(a, try std.fmt.allocPrint(a, "{s} {d} {d} {d} {d}", .{ name, b.xlo, b.ylo, b.xhi, b.yhi }));
     }
     var want: std.ArrayList([]const u8) = .empty;
     for (shapes) |s| {
@@ -379,8 +390,9 @@ test "the written stream reads back shape for shape" {
     std.mem.sort([]const u8, want.items, {}, lessText);
     try testing.expectEqual(want.items.len, read.items.len);
     for (want.items, read.items) |w, r| try testing.expectEqualStrings(w, r);
-    try testing.expectEqual(5, library.texts.len);
-    for (library.texts.items(.string)) |s| try testing.expectEqualStrings("n", strings.resolve(s));
+    try testing.expectEqual(5, provenance.placed.len);
+    for (provenance.placed.items(.name)) |s| try testing.expectEqualStrings("n", strings.resolve(s));
+    try testing.expectEqual(5, provenance.labels().len);
     var no_layer = try a.dupe(FlatShape, shapes);
     no_layer[0].shape.layer = "M9";
     try testing.expectError(error.Invalid, lefdef.toGds(gpa, no_layer, 1000, "top", &parsed.layers, &parsed.connectivity, &strings, &f.diag));

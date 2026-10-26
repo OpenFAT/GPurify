@@ -3,8 +3,8 @@
 //! In: placed labels in the root frame, `(PolyId, StrId)` attachments, black
 //! boxes. Out: `(PolyId, StrId)` rows ascending by `PolyId`, arrival order
 //! kept among equal ids. Ported from crates/ingest/src/provenance.rs (data
-//! types and the label / place / box APIs; `resolve_labels`, which reads a
-//! finished `GeometryStore`, is wave 2's).
+//! types and the label / place / box APIs; `resolve_labels` is
+//! `label_bind.zig`).
 //!
 //! Contents:
 //! - `pub const PlacedLabel`, `pub const Label`, `pub const BlackBox`, `pub const BoxPin`
