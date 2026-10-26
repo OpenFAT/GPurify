@@ -2,8 +2,7 @@
 //! a `Request` → a `Generated`, the Verilog blackbox and one `.lib` per PVT
 //! corner, in memory for the caller to write. Ported from src/liberty/mod.rs
 //! (`LibError`, `Generated`, `Request`, `generate`, `cross_check`,
-//! `lef_pins`, `area_um2`) with the engine's `design_extent`
-//! (src/engine/run.rs).
+//! `lef_pins`, `area_um2`).
 //!
 //! The accuracy ladder, cheapest first: `interface` (pins, `pg_pin`s,
 //! directions, area; no simulator), `analytical` (closed-form wire C plus
@@ -41,6 +40,7 @@ const session = @import("session.zig");
 const write = @import("write.zig");
 const prepare_ = @import("prepare.zig");
 const corner_ = @import("corner.zig");
+const designExtent = @import("../checks_erc.zig").designExtent;
 
 /// Everything a run needs besides the layout; the reference netlist comes
 /// with `Loaded` and is cross-checked whenever present.
@@ -224,26 +224,6 @@ fn areaUm2(loaded: *const Loaded) f64 {
     if (die.isEmpty()) return 0.0;
     const per_um: f64 = @floatFromInt(loaded.grid.dbu_per_um);
     return @as(f64, @floatFromInt(die.width())) * @as(f64, @floatFromInt(die.height())) / (per_um * per_um);
-}
-
-/// The deck's outline layer's extent when drawn, else every drawn
-/// (non-derived) layer's.
-/// ponytail: duplicate of the engine's design_extent; dedupe when run.zig lands.
-fn designExtent(loaded: *const Loaded) Bbox {
-    const deck = &loaded.deck.deck;
-    const store = &loaded.store;
-    if (deck.boundary) |layer| if (@backingInt(layer) < store.layerCount()) {
-        var outline: Bbox = .empty;
-        for (store.layerBboxes(layer)) |b| outline = outline.merge(b);
-        if (!outline.isEmpty()) return outline;
-    };
-    var die: Bbox = .empty;
-    for (0..store.layerCount()) |l| {
-        const layer: geom.LayerId = @fromBackingInt(@intCast(l));
-        if (deck.layers.isDerived(layer)) continue;
-        for (store.layerBboxes(layer)) |b| die = die.merge(b);
-    }
-    return die;
 }
 
 test "lef pins are read inside the named macro only" {

@@ -37,6 +37,7 @@ const extract = @import("extract");
 const ParasiticNetwork = extract.network.ParasiticNetwork;
 const Loaded = @import("../load.zig").Loaded;
 const Extracted = @import("../extracted.zig").Extracted;
+const checks_pex = @import("../checks_pex.zig");
 const Diagnostic = @import("spec.zig").Diagnostic;
 
 /// How the wiring is field-solved.
@@ -59,14 +60,6 @@ pub const spice_mesh: FieldMesh = .{ .edge_nm = 200, .window_nm = 3000 };
 /// `Solve`: a layer the mesh cannot take, or a solve that did not converge;
 /// `diag.message` is the one `pex` reports for the same refusal.
 pub const Error = error{Solve} || Allocator.Error;
-
-/// Rust's `{}` of an `f64`.
-const Display = struct {
-    v: f64,
-    pub fn format(d: Display, w: *std.Io.Writer) std.Io.Writer.Error!void {
-        return geom.float.display(w, d.v);
-    }
-};
 
 /// Field-solves the wiring of `targets` (layout net ids) into `out`
 /// (cleared): one node per net, canonical order.
@@ -146,7 +139,7 @@ pub fn fieldSolve(arena: Allocator, loaded: *const Loaded, extracted: *const Ext
         var why: extract.capacitance.Diagnostic = .{};
         _ = extract.capacitance.extractColumnsInto(arena, .cpu, problem, window.items, &.{driven.items}, meshing, solver, &matrix, &why) catch |err| {
             if (err == error.OutOfMemory) return error.OutOfMemory;
-            diag.message = try solveRefusal(arena, loaded, err, why);
+            diag.message = try checks_pex.solveRefusal(arena, loaded, err, why);
             return error.Solve;
         };
         // The net's column: by reciprocity its row, so its total is its
@@ -216,24 +209,6 @@ fn sortByKey(comptime K: type, map: *std.AutoArrayHashMapUnmanaged(K, f64)) void
         }
     };
     map.sort(Ctx{ .keys = map.keys() });
-}
-
-/// Why a field solve produced no capacitance, naming the deck layer a mesh
-/// refusal is about.
-/// ponytail: duplicate of the engine's solve_refusal; dedupe when run.zig lands.
-fn solveRefusal(arena: Allocator, loaded: *const Loaded, err: extract.capacitance.Error, why: extract.capacitance.Diagnostic) Allocator.Error![]const u8 {
-    const name = loaded.strings.resolve(loaded.deck.deck.layers.name(why.layer));
-    return switch (err) {
-        error.MissingThickness => arena.print("layer {s}: no pex row gives this layer a positive thickness and permittivity, so it cannot be meshed", .{name}),
-        error.InvalidGeometry => arena.print("layer {s}: not valid rectilinear geometry, so it cannot be meshed exactly", .{name}),
-        error.DielectricConflict => arena.print("layer {s}: its dielectric differs from another layer's at the same height, so the stack's permittivity there is not defined", .{name}),
-        error.TooManyPanels => arena.dupe(u8, "field solve: mesh would exceed the panel limit"),
-        error.EmptyConductor => arena.dupe(u8, "field solve: selected net has no geometry"),
-        error.NotConverged => arena.print("field solve: did not converge: residual {f} after {d} iterations", .{ Display{ .v = why.failure.residual }, why.failure.iterations }),
-        error.Breakdown => arena.print("field solve: system broke down at iteration {d}", .{why.failure.iterations}),
-        error.NonFinite => arena.print("field solve: the operator produced a non-finite value at iteration {d}", .{why.failure.iterations}),
-        error.OutOfMemory => error.OutOfMemory,
-    };
 }
 
 /// The same wiring with every conductor's overlapping shapes on a layer
