@@ -14,12 +14,24 @@
 //!   `recogniseInto`), `channel` (`refuseConductingChannels`), `port` (`PortTable`, `bindPortsInto`),
 //!   `taps` (`untiedPoints*`); aliases `NetId`, `NetTable`, `extractNetsInto`, `DeviceId`,
 //!   `DeviceTable`, `TerminalRole`, `recogniseInto`, `refuseConductingChannels`, `PortTable`, `bindPortsInto`
+//! - `drc` (drc/root.zig): `Kind`, `Rule`, `RuleSet`, `fromDeck`, `run`, the kind tables and families
+//! - `erc`: `kinds` (the ERC kind names, until wave 4)
+//! - `deck`: `compile` (`CompiledDeck`, `compile`, `fromDeck`), alias `CompiledDeck`
 //! - `rects`: `LayerRects`, `SortedRects`, owners, `polyDist2`, `segDist2`, `Holes`, `inMaterial`, ...
 pub const report = @import("report.zig");
 pub const rects = @import("rects.zig");
 pub const proximity = @import("proximity.zig");
 pub const proximity_distance = @import("proximity_distance.zig");
 pub const proximity_inside = @import("proximity_inside.zig");
+pub const drc = @import("drc/root.zig");
+pub const erc = struct {
+    pub const kinds = @import("erc/kinds.zig");
+};
+/// The deck compiled for the engine.
+pub const deck = struct {
+    pub const compile = @import("deck/compile.zig");
+    pub const CompiledDeck = compile.CompiledDeck;
+};
 
 /// Electrical structure from geometry: nets, devices, ports, tap reach.
 pub const topology = struct {
@@ -74,4 +86,7 @@ test {
     _ = topology.channel;
     _ = topology.port;
     _ = topology.taps;
+    _ = drc;
+    _ = erc.kinds;
+    _ = deck.compile;
 }
