@@ -90,7 +90,7 @@ fn dispatch(env: Env, arena: Allocator, argv: []const []const u8, out: *Writer, 
     parsed.options.device = .{ .backend = try backendOf(parsed.backend, err), .min_gpu_work = min_gpu_work, .threads = parsed.threads orelse cpuThreads() };
     switch (parsed.command) {
         .lib => |lib| return liberty(env, arena, parsed.inputs, lib, out, err),
-        .system => return fail(err, "system: the multi-die engine (src/engine/system.rs) is not yet ported to Zig", .{}),
+        .system => |path| return system(env, arena, &parsed, path, out, err),
         // An edit writes its layout, then reports DRC on what it wrote.
         .edit => |edit| {
             try writeEdit(env, arena, parsed.inputs, edit.edit, edit.output, err);
@@ -164,6 +164,34 @@ fn writeEdit(env: Env, arena: Allocator, inputs: gpurify.Inputs, edit: args.Edit
 }
 
 /// One whole run, rendered in the requested format into `text`.
+/// `system`: several dies and their netlist, checked as one assembly. A
+/// system has no one deck or layout, so the header names the system file
+/// for both; the text report is its violations and summary (src/cli/mod.rs).
+fn system(env: Env, arena: Allocator, cli_: *const args.Cli, path: []const u8, out: *Writer, err: *Writer) Failure!u8 {
+    var diag: gpurify.system.Diagnostic = .{};
+    const ran = gpurify.system.run(env.gpa, arena, env.io, env.dir, path, cli_.inputs.reference[0], &diag) catch |e| {
+        try errors.writeSystem(err, e, &diag);
+        return error.Reported;
+    };
+    var text: Writer.Allocating = .init(arena);
+    const o = &ran.outputs;
+    switch (cli_.format) {
+        .json => {
+            const header: gpurify.@"export".Header = .{ .tool_version = tool_version, .deck_path = path, .layout_path = path };
+            gpurify.@"export".json.writeReport(&text.writer, &header, &ran.strings, ran.grid, &o.violations, &o.waived, o.runs.items) catch |e| switch (e) {
+                error.Unrepresentable => return fail(err, "json: a value the report cannot represent", .{}),
+                error.WriteFailed => return error.WriteFailed,
+            };
+        },
+        .text, .spef, .dspf => {
+            try gpurify.@"export".text.writeViolations(&text.writer, &ran.strings, ran.grid, &o.violations, &o.waived);
+            try gpurify.@"export".text.writeSummary(&text.writer, ran.summary);
+        },
+    }
+    try out.writeAll(text.written());
+    return @intFromBool(!ran.summary.passed());
+}
+
 fn render(env: Env, arena: Allocator, cli_: *const args.Cli, text: *Writer, err: *Writer) Failure!gpurify.Summary {
     const decks = &gpurify.pdks.decks;
     const inputs = cli_.inputs;
@@ -442,8 +470,8 @@ test "drc on the shipped sky130 deck passes a 1 um met1 square and fails a 100 n
 
 test "a refusal exits 1 with one error line and no report" {
     // Oracle: src/cli/mod.rs: every failure is `error: <why>` on stderr, exit
-    // 1, and nothing on stdout; `system` refuses until its engine is ported
-    // (never pretends); a missing layout names the input at fault.
+    // 1, and nothing on stdout; a missing system description or layout
+    // names the input at fault.
     const testing = std.testing;
     var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena_state.deinit();
@@ -452,7 +480,7 @@ test "a refusal exits 1 with one error line and no report" {
     defer tmp.cleanup();
     const cases = [_]struct { []const []const u8, []const u8 }{
         .{ &.{ "drc", "t.gds" }, "error: --deck <deck> is required\n" },
-        .{ &.{ "system", "s.json", "--reference", "r.spice" }, "error: system: the multi-die engine (src/engine/system.rs) is not yet ported to Zig\n" },
+        .{ &.{ "system", "s.json", "--reference", "r.spice" }, "error: system: " },
         .{ &.{ "compare", "a.spef" }, "error: compare takes two parasitic netlists: compare <reference> <candidate>\n" },
         .{ &.{ "drc", "missing.gds", "--deck", "sky130" }, "error: layout missing.gds: " },
         .{ &.{ "lib", "missing.gds", "--deck", "sky130", "--spec", "missing.json", "--output-dir", "o" }, "error: missing.json: " },

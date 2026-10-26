@@ -7,6 +7,7 @@
 //! - `pub fn writeLoad(w: *std.Io.Writer, err: anyerror, d: *const gpurify.LoadDiagnostic) std.Io.Writer.Error!void`
 //! - `pub fn writeRun(w: *std.Io.Writer, err: anyerror, d: *const gpurify.RunDiagnostic) std.Io.Writer.Error!void`
 //! - `pub fn writeExtract(w: *std.Io.Writer, err: anyerror, d: *const gpurify.ExtractDiagnostic) std.Io.Writer.Error!void`
+//! - `pub fn writeSystem(w: *std.Io.Writer, err: anyerror, d: *const gpurify.system.Diagnostic) std.Io.Writer.Error!void`
 
 const std = @import("std");
 const Writer = std.Io.Writer;
@@ -46,6 +47,23 @@ pub fn writeRun(w: *Writer, err: anyerror, d: *const gpurify.RunDiagnostic) Writ
 pub fn writeExtract(w: *Writer, err: anyerror, d: *const gpurify.ExtractDiagnostic) Writer.Error!void {
     try w.print("error: extract: {t}\n", .{err});
     if (d.* != .none) try w.print("  {any}\n", .{d.*});
+}
+
+/// A system failure: the description itself, a die's or the netlist's load
+/// or extraction (naming which), or dies that make no one assembly.
+pub fn writeSystem(w: *Writer, err: anyerror, d: *const gpurify.system.Diagnostic) Writer.Error!void {
+    if (err == error.OutOfMemory) return w.writeAll("error: out of memory\n");
+    if (d.system.len > 0) return w.print("error: system: {t}\n  {s}\n", .{ err, d.system.text() });
+    if (inSet(gpurify.LoadError, err)) {
+        try w.print("error: system: {s}\n", .{d.what});
+        return writeLoad(w, err, &d.load);
+    }
+    if (inSet(gpurify.ExtractError, err)) {
+        try w.print("error: system: {s}\n", .{d.what});
+        return writeExtract(w, err, &d.extract);
+    }
+    try w.print("error: system: {t}\n", .{err});
+    if (d.why.len > 0) try w.print("  {s}\n", .{d.why});
 }
 
 // ---- private ----
