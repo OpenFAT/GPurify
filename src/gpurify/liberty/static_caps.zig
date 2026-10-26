@@ -49,6 +49,9 @@ const Run = struct {
 /// Measures and sets every input, clock and analog pin's capacitance.
 pub fn staticCaps(arena: Allocator, env: Env, macro: *const MacroSpec, corner: *const CornerSpec, c: *const Circuit, wire_ff: []const f64, deck_path: []const u8, pins: []Pin, diag: *Diagnostic) Error!void {
     var deck: std.ArrayList(u8) = .empty;
+    // ngspice reads a deck's first line as its title, never as a card
+    // (Rust wrote the first model line there, and lost it).
+    try deck.print(arena, "* {s} at {s}: device capacitance\n", .{ macro.cell, corner.name });
     for (corner.models) |line| try deck.print(arena, "{s}\n", .{line});
     if (macro.simulator.scale != 1.0) try deck.print(arena, ".option scale={f}\n", .{fmtSi(macro.simulator.scale)});
     try deck.print(arena, ".temp {f}\n", .{fmtSi(corner.temperature)});
@@ -174,4 +177,25 @@ fn pinned(macro: *const MacroSpec, corner: *const CornerSpec, c: *const Circuit,
         };
     }
     return null;
+}
+
+test "the device deck opens with a title, so its first model line is a card" {
+    // Oracle: the ngspice manual, "Circuit description": the first line of
+    // an input file is its title and is ignored. Rust wrote the corner's
+    // first model line there, so ngspice never read that model (found by
+    // running `analytical` against ngspice-44.2: "can't find model 'nch'").
+    var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
+    defer arena.deinit();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const corner: CornerSpec = .{ .name = "tt", .temperature = 25, .supplies = .{ .names = &.{"vss"}, .values = &.{0.0} }, .models = &.{".model nch nmos level=54"} };
+    const macro: MacroSpec = .{ .cell = "m", .pins = &.{.{ .name = "vss", .role = .ground }}, .corners = &.{corner} };
+    const c: Circuit = .{};
+    var pins = [_]Pin{.{ .spec = macro.pins[0] }};
+    var diag: Diagnostic = .{};
+    const env: Env = .{ .gpa = std.testing.allocator, .io = std.testing.io, .dir = tmp.dir };
+    try staticCaps(arena.allocator(), env, &macro, &corner, &c, &.{}, "d.cir", &pins, &diag);
+    const deck = try tmp.dir.readFileAlloc(std.testing.io, "d.cir", arena.allocator(), .unlimited);
+    try std.testing.expect(std.mem.startsWith(u8, deck, "* m at tt"));
+    try std.testing.expect(std.mem.indexOf(u8, deck, "\n.model nch nmos level=54\n") != null);
 }

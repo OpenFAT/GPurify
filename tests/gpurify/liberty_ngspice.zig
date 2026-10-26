@@ -118,7 +118,7 @@ test "ngspice differential: the inverter's spice-level delay, transition and lea
     var corner = macro.corners[0];
     corner.name = "tt";
     corner.models = &models;
-    macro.corners = &.{corner};
+    macro.corners = try a.dupe(liberty.spec.CornerSpec, &.{corner});
     const loaded = try corpus.loadInverter(a, false);
     var ediag: gpurify.ExtractDiagnostic = .none;
     const extracted = try gpurify.extract(a, &loaded, &ediag);
