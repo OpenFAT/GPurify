@@ -128,39 +128,58 @@ analyses only what the kernels reference.
    backends means the results agree bit for bit.
 
 **Where the GPU earns it**, measured by `zig build bench` (tools/bench.zig)
-on the calibration machine: an RTX 4060 Laptop (GeForce, f64 at 1/64 rate,
-PCIe 4.0 x8) against 32 CPU threads (16 cores), ReleaseFast. GPU times
-include the kernel load, the one bulk upload and the download; a BEM solve
-uploads once (setup) and then pays only the per-apply call. Everything not
+on an RTX 4060 Laptop (GeForce, f64 at 1/64 rate, PCIe 4.0 x8) against 32
+CPU threads (16 cores), ReleaseFast. A GPU call's time includes the kernel
+load and its own bulk upload and download; `setup` is what goes up once and
+is amortized: a BEM solve's columns over its applies, the run's resident
+store (below) over one call per spacing rule (30 in sky130). Everything not
 listed stays on the CPU until a profile says otherwise.
 
-| Kernel | Work unit | Largest size: CPU 1 thread / 32 threads / GPU | GPU vs 32 threads | Bottleneck on the GPU | Exactness |
+| Kernel | Work unit | Largest size: CPU 1 thread / 32 threads / GPU (setup) | GPU vs 32 threads | Bottleneck on the GPU | Exactness |
 |---|---|---|---|---|---|
-| BEM potential rows (`extract`) | P² per apply | P = 32768: ~3.4 s / 313 ms / 579 ms (setup 0.6 ms) | 0.54×, never wins (best 0.72× at P = 2048) | f64 compute: 2 sqrt + 3 div per pair at 1/64 rate, ~1.9 G pairs/s, at the f64 roofline | f64, strict ascending-j fold, no FMA: bit-identical |
-| BEM field rows (`extract`) | P² per apply | P = 32768: ~2.8 s / 268 ms / 473 ms (setup 1.1 ms) | 0.57×; ties (1.04×) at P = 1024–2048, inside noise | same | same |
-| Candidate-pair exact distance (`check/proximity`) | edge pairs (16 per rectangle pair) | 6.2M pairs: 369 ms / 33 ms / 187 ms | 0.18×, never wins past 250k edge pairs | transfer: kernel 2.9 ms, the whole store's 340 MB upload 171 ms | integer, gaps clamped to 2²⁶: bit-identical |
-| Density windows (`check/drc/density`) | windows (~100 rects each) | 249k windows: 45 ms / 8.6 ms / 243 ms | 0.04×, never wins | transfer: kernel 7.6 ms (no better than the CPU), 400 MB of binned rects up 225 ms | integer areas: exact |
-| `axpy`, `xpay` (`geom`) | n | 2²⁴: 18 ms / – / 42 ms | 0.44× against one thread | transfer: O(n) work for O(n) bytes | no FMA: exact |
+| BEM potential rows (`extract`) | P² per apply | P = 32768: ~3.4 s / 316 ms / 595 ms (0.5 ms) | 0.53×, never wins (best 0.69× at P = 512–2048) | f64 compute: 2 sqrt + 3 div per pair at 1/64 rate, ~1.8 G pairs/s, at the f64 roofline | f64, strict ascending-j fold, no FMA: bit-identical |
+| BEM field rows (`extract`) | P² per apply | P = 32768: ~2.8 s / 261 ms / 487 ms (1.0 ms) | 0.54×; ties (1.0–1.3×) at P = 512–2048, inside noise | same | same |
+| Candidate-pair exact distance (`check/proximity`), resident store | edge pairs (16 per rectangle pair) | 6.2M pairs: 369 ms / 33 ms / 13.1 ms (store 114 ms) | **1.95×**; wins at every size (4.3× at 1.5k pairs, 15× at 16k, 2.6× at 1.6M); a 30-rule run: 508 ms against 989 ms | transfer: the pair list up and the distances down, 100 MB at ~12 GB/s, ~4× the 2.9 ms kernel | integer, gaps clamped to 2²⁶: bit-identical |
+| Density windows (`check/drc/density`) | rectangle visits (`density.visits`) | 25M visits: 44 ms / 7.4 ms / 190 ms | 0.04×, never wins | transfer: the binned rectangles (400 MB) staged and uploaded per call; the kernel alone (7.6 ms) is no faster than the CPU | integer areas: exact |
+| `axpy`, `xpay` (`geom`) | n | 2²⁴: 15 ms / – / 41 ms | 0.37× against one thread | transfer: O(n) work for O(n) bytes | no FMA: exact |
 
-So `--backend auto` keeps every call on the CPU on this machine
-(`auto_min_gpu_work` is never, in src/main.zig). The GPU paths stay for
-`--backend cuda|hip` and for a card with full-rate f64 or a host with few
-cores. Not built, because the bench says they would lose here: the
-near-pair Galerkin build and Henry's Zb assembly are f64 quadrature and
-closed forms heavier per pair than the matvec, which already loses at 0.54×;
-pinned staging in `geom.bulk` would at best halve an upload that is 60× the
-pair kernel, and even at PCIe peak (13 GB/s, ~26 ms for 340 MB) the pair
-distances only tie 32 threads. The path that would win is a device-resident
-store uploaded once per run and shared by every spacing rule.
+The pair distances went from 0.18× to 1.95× at 6.2M pairs, and from losing
+past 250k edge pairs to winning everywhere, by two changes. The store goes
+up once per run, not once per call (`geom.ResidentStore`, 187 ms a call
+became 13 ms plus one 114 ms upload). And the host stopped staging what the
+driver can copy straight: the driver moves 50 MB of pageable memory in
+4.3 ms (pinned: 4.2 ms, so pinned buys nothing here), while packing it into a
+fresh staging block took 19 ms of page faults and copying, which was the
+real 2.3 GB/s ceiling. `geom.index.Pair` is an extern struct, so a pair list
+goes up as it lies. Not built, because the bench says they would lose here:
+the near-pair Galerkin build and Henry's Zb assembly are f64 quadrature
+heavier per pair than the matvec, which already loses at 0.53×. Density
+stays on the CPU everywhere: its binned input is rebuilt per rule, so there
+is nothing to keep resident, and the kernel alone does not beat 32 threads.
+
+**Resident store.** `geom.ResidentStore` is the run's device copy of the
+four store columns the pair-distance kernel reads (`poly_vert_start`,
+`poly_vert_len`, `verts_x`, `verts_y`). `gpurify.runChecks` owns it (an
+`empty` local, freed when the checks end) and passes it next to `Device`
+through `checks_drc.runDrc` → `drc.run` → the proximity `Scratch` →
+`pairDistancesInto`; every other caller passes null and gets a per-call
+upload (immediate mode). It uploads, through one `geom.bulk` upload, on the
+first call that goes to the GPU, so an all-CPU run uploads nothing. The
+invariant: the copy mirrors the store as it was at upload. The store is
+append-only, load derives every layer before the checks start, and the
+checks never append, so the store's row and vertex counts equal the copy's
+at every use; `columns` asserts it.
 
 **Bulk movement.** Data crosses to the device in one allocation and one copy
 per solve or launch batch, never one transfer per column: `geom.bulk.upload`
-packs every column into one staging block at 256-byte-aligned offsets,
+packs every column into one staging block at 256-byte-aligned offsets (a
+lone column goes up straight from the caller's memory, no staging),
 reserves device-only scratch (a solve's `x` and `y`, a kernel's output)
 after them, and hands back each region's device address for the kernel
 arguments. Per-iteration traffic is only what changes (`x` up, `y` down,
-each one copy). A new GPU path uses `geom.bulk`; a raw `Buffer.upload`
-per column is a review failure.
+each one copy; a pair-distance call's pair list up and distances down). A
+new GPU path uses `geom.bulk`; a raw `Buffer.upload` per column is a review
+failure.
 
 **Ordered reductions stay on the CPU.** `dot`/`nrm2` keep Rust's strict
 left-fold order, because the order decides CG/GMRES convergence and the golden
@@ -169,15 +188,37 @@ down per iteration. A GPU reduction would need a fixed blocked order on both
 backends; add it only when a profile shows `dot` dominating.
 
 **Selection.** `geom.Device` is a small value: `{ backend: .cpu | .cuda | .hip,
-min_gpu_work: u64, threads: u16 }`, built once by the spine from
-`--backend auto|cpu|cuda|hip` and passed down as a parameter (no global). A
-kernel call goes to the GPU when `backend != .cpu` and its work estimate is at
-least `min_gpu_work`. `--backend cuda|hip` sets it to 0 (every call goes to
-the GPU it named); `auto` sets it to the calibrated `auto_min_gpu_work`,
-never on the calibration machine above. One threshold serves every kernel
-only while it is 0 or never: the work units differ (P², edge pairs,
-windows), so a machine with a finite crossover gives `Device` one field per
-kernel.
+min_work: MinWork, threads: u16 }`, built once by the CLI from `--backend
+auto|cpu|cuda|hip` and passed down as a parameter (no global). `MinWork` has
+one threshold per class of kernel, because the ceilings are unrelated (a
+GeForce runs f64 at 1/64, an A100, H100 or MI-series part at 1/2) and the
+work units differ: `float` (BEM rows, P² pairs; f64 bound), `resident`
+(pair distances over the resident store, edge pairs; the call's own
+transfer), `streamed` (density, rectangle visits; its whole input up per
+call). Three plain fields is the cheapest rung that holds: one field cannot
+serve units that differ by kernel, and a cost model per call would add
+per-call arithmetic for no decision a threshold gets wrong. A kernel call
+goes to the GPU when `backend != .cpu` and its work estimate is at least its
+class's threshold. `--backend cuda|hip` sets every class to 0 (every call
+goes to the GPU it named). `auto` on a machine with a GPU calibrates at
+startup (`gpurify/calibrate.zig`): for each class one representative kernel
+(BEM potential rows, pair distances over a resident 65k-rectangle store,
+density windows), each side's size doubling until one call takes 8 ms, a
+cost line `fixed + per_work · W` through the last two sizes on each side
+with its per-call transfer in, and the crossover where the lines meet
+(never when the GPU's marginal cost is no lower). On the RTX 4060 Laptop it
+takes ~170 ms (~250 ms the first time in a process, the rest being the
+kernel loads the first GPU call would pay anyway) and gives float never,
+resident 0, streamed never: BEM and density stay on the CPU and every pair
+distance batch goes to the GPU. A card with fast f64 gets a finite float
+threshold and its BEM solves move without a code change. Calibration only
+moves calls between devices: every GPU kernel is bit-identical to its CPU
+body (the differentials, and `-Dgpu-tests` reruns every golden `all` job on
+the GPU and compares bytes), so the report does not depend on it.
+ponytail: the store upload is paid by the first GPU call whatever the run's
+total; a run whose GPU-eligible calls save less than one upload (~115 ms
+for a 4M-polygon store here) loses that much. The upgrade is to charge the
+upload against the run's summed eligible work before uploading.
 
 **Verification.** Every row kernel has a differential test: CPU body against
 GPU body, bit-equal, at sizes 0, 1, block−1, block, 3·block+1. It runs where a
