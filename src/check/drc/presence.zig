@@ -80,7 +80,7 @@ pub fn forbidden(c: *const Ctx, r: rows.LayerOnly) Error!Verdict {
     for (edges) |e| {
         const b = rects.segBbox(e);
         const d = geom.ops.isqrt(geom.mulWide(b.xhi - b.xlo, b.xhi - b.xlo) + geom.mulWide(b.yhi - b.ylo, b.yhi - b.ylo));
-        try c.finding(r.layer, geom.ops.centre(b), .length(d), .length(0), report.no_shape);
+        try c.finding(r.layer, rects.centre(b), .length(d), .length(0), report.no_shape);
     }
     return scratch.ran(@as(u64, drawn.len()) + edges.len);
 }
@@ -137,7 +137,7 @@ pub fn mustContain(c: *const Ctx, r: rows.MustContain) Error!Verdict {
         };
         try s.rects_a.build(gpa, c.store, r.outer, a);
         try rects.ownersOfInto(gpa, &outer_figures, &s.rects_a, &owners);
-        for (0..outer_cut.count()) |f| try at_of.append(gpa, geom.ops.centre(outer_cut.figure(@intCast(f))[0]));
+        for (0..outer_cut.count()) |f| try at_of.append(gpa, rects.centre(outer_cut.figure(@intCast(f))[0]));
     }
     for (held.items, owners.items, at_of.items) |count, owner, at| {
         const broken = if (count < r.min_count) r.min_count else if (count > r.max_count) r.max_count else continue;

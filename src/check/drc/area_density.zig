@@ -22,6 +22,7 @@ const PolyId = geom.PolyId;
 const GeometryStore = geom.GeometryStore;
 const ValidatedLayer = geom.ValidatedLayer;
 const report = @import("../report.zig");
+const rects = @import("../rects.zig");
 const Verdict = report.Verdict;
 const Measurement = report.Measurement;
 const rows = @import("rows.zig");
@@ -85,7 +86,7 @@ pub fn density(c: *const Ctx, r: rows.Density) Error!Verdict {
         const fraction = toF64(covered) / denominator;
         if (!Measurement.ratio(fraction).violates(.ratio(r.limit), r.sense)) continue;
         const window = grid.window(w);
-        try c.finding(r.layer, geom.ops.centre(window), .ratio(fraction), .ratio(r.limit), try owners.owner(gpa, window));
+        try c.finding(r.layer, rects.centre(window), .ratio(fraction), .ratio(r.limit), try owners.owner(gpa, window));
     }
     return scratch.ran(grid.count());
 }
@@ -112,7 +113,7 @@ pub fn densityBalance(c: *const Ctx, r: rows.DensityBalance) Error!Verdict {
         const hi = @max(x, y);
         if (hi == 0) continue;
         const balance = toF64(lo) / toF64(hi);
-        if (balance < r.limit) try c.finding(r.a, geom.ops.centre(grid.window(w)), .ratio(balance), .ratio(r.limit), report.no_shape);
+        if (balance < r.limit) try c.finding(r.a, rects.centre(grid.window(w)), .ratio(balance), .ratio(r.limit), report.no_shape);
     }
     return scratch.ran(grid.count());
 }
@@ -139,7 +140,7 @@ pub fn coverDensity(c: *const Ctx, r: rows.CoverDensity) Error!Verdict {
     for (covers.items, held.items, 0..) |cov, mine, w| {
         const need = bands.need(toF64(cov) / whole) orelse continue;
         const d = toF64(mine) / whole;
-        if (d < need) try c.finding(r.layer, geom.ops.centre(grid.window(w)), .ratio(d), .ratio(need), report.no_shape);
+        if (d < need) try c.finding(r.layer, rects.centre(grid.window(w)), .ratio(d), .ratio(need), report.no_shape);
     }
     return scratch.ran(grid.count());
 }

@@ -18,6 +18,7 @@ const DbuArea = geom.DbuArea;
 const Bbox = geom.Bbox;
 const ValidatedLayer = geom.ValidatedLayer;
 const report = @import("../report.zig");
+const rects = @import("../rects.zig");
 const Verdict = report.Verdict;
 const rows = @import("rows.zig");
 const scratch = @import("scratch.zig");
@@ -118,7 +119,7 @@ pub fn patternMatch(c: *const Ctx, r: rows.PatternMatch) Error!Verdict {
         .rule = c.rule,
         .layer = r.layer,
         .severity = .@"error",
-        .at = geom.ops.centre(b),
+        .at = rects.centre(b),
         .measured = .area(shape_area),
         .limit = .area(0),
         .shape_a = report.no_shape,

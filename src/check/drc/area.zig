@@ -118,7 +118,7 @@ pub fn minEnclosedArea(c: *const Ctx, r: rows.LayerArea) Error!Verdict {
             // A hole winds clockwise; its area floored, a half unit dropped.
             const area = @divTrunc(-geom.ops.area2(hole.xs, hole.ys), 2);
             if (!Measurement.area(area).violates(.area(r.limit), .minimum)) continue;
-            try c.finding(r.layer, geom.ops.centre(Bbox.ofPoints(hole.xs, hole.ys)), .area(area), .area(r.limit), owner);
+            try c.finding(r.layer, rects.centre(Bbox.ofPoints(hole.xs, hole.ys)), .area(area), .area(r.limit), owner);
         }
     }
     return scratch.ran(examined);
@@ -135,7 +135,7 @@ pub fn aspectRatio(c: *const Ctx, r: rows.AspectRatio) Error!Verdict {
         const b = s.p.layer_out.get(@intCast(idx)).bbox();
         const ratio = toF64(@max(b.width(), b.height())) / toF64(@min(b.width(), b.height()));
         if (!Measurement.ratio(ratio).violates(.ratio(r.limit), .maximum)) continue;
-        try c.finding(r.layer, geom.ops.centre(s.rects.items[s.rect_start.items[idx]]), .ratio(ratio), .ratio(r.limit), owner);
+        try c.finding(r.layer, rects.centre(s.rects.items[s.rect_start.items[idx]]), .ratio(ratio), .ratio(r.limit), owner);
     }
     return scratch.ran(s.p.layer_out.len());
 }
@@ -171,7 +171,7 @@ pub fn regionDensity(c: *const Ctx, r: rows.RegionDensity) Error!Verdict {
         }
         const fraction = toF64(covered) / toF64(geom.rects.coveredArea(mine));
         if (!Measurement.ratio(fraction).violates(.ratio(r.limit), r.sense)) continue;
-        try c.finding(r.region, geom.ops.centre(mine[0]), .ratio(fraction), .ratio(r.limit), owner);
+        try c.finding(r.region, rects.centre(mine[0]), .ratio(fraction), .ratio(r.limit), owner);
     }
     return scratch.ran(owners.len);
 }
@@ -184,7 +184,7 @@ pub fn count(c: *const Ctx, r: rows.Count) Error!Verdict {
     if (die.isEmpty()) return .{ .outcome = .{ .skipped = .empty_layer }, .examined = 0 };
     if (!try mergeLayer(c, r.layer, false)) return report.refused;
     const figures = c.s.p.layer_out.len();
-    if (Measurement.count(figures).violates(.count(r.limit), r.sense)) try c.finding(r.layer, geom.ops.centre(die), .count(figures), .count(r.limit), firstRowOrNone(c.store, r.layer));
+    if (Measurement.count(figures).violates(.count(r.limit), r.sense)) try c.finding(r.layer, rects.centre(die), .count(figures), .count(r.limit), firstRowOrNone(c.store, r.layer));
     return scratch.ran(@max(figures, 1));
 }
 
@@ -196,7 +196,7 @@ pub fn totalArea(c: *const Ctx, r: rows.LayerArea) Error!Verdict {
     if (die.isEmpty()) return .{ .outcome = .{ .skipped = .empty_layer }, .examined = 0 };
     if (!try mergeLayer(c, r.layer, false)) return report.refused;
     const area = geom.rects.coveredArea(c.s.rects.items);
-    if (Measurement.area(area).violates(.area(r.limit), .maximum)) try c.finding(r.layer, geom.ops.centre(die), .area(area), .area(r.limit), firstRowOrNone(c.store, r.layer));
+    if (Measurement.area(area).violates(.area(r.limit), .maximum)) try c.finding(r.layer, rects.centre(die), .area(area), .area(r.limit), firstRowOrNone(c.store, r.layer));
     return scratch.ran(c.s.p.layer_out.len());
 }
 
@@ -208,7 +208,7 @@ pub fn globalDensity(c: *const Ctx, r: rows.GlobalDensity) Error!Verdict {
     if (die.isEmpty()) return .{ .outcome = .{ .skipped = .empty_layer }, .examined = 0 };
     if (!try mergeWithin(c, r.layer, die)) return report.refused;
     const fraction = toF64(geom.rects.coveredArea(c.s.rects.items)) / toF64(die.area());
-    if (Measurement.ratio(fraction).violates(.ratio(r.limit), r.sense)) try c.finding(r.layer, geom.ops.centre(die), .ratio(fraction), .ratio(r.limit), firstRowOrNone(c.store, r.layer));
+    if (Measurement.ratio(fraction).violates(.ratio(r.limit), r.sense)) try c.finding(r.layer, rects.centre(die), .ratio(fraction), .ratio(r.limit), firstRowOrNone(c.store, r.layer));
     return scratch.ran(1);
 }
 
@@ -239,7 +239,7 @@ fn reportFigures(c: *const Ctx, layer: LayerId, limit: DbuArea, judge: Judge) Er
         } else {
             const mine = s.rects.items[s.rect_start.items[figure]..s.rect_start.items[figure + 1]];
             area = geom.rects.coveredArea(mine);
-            at = geom.ops.centre(mine[0]);
+            at = rects.centre(mine[0]);
         }
         const violates = switch (judge) {
             .min_area => Measurement.area(area).violates(.area(limit), .minimum),

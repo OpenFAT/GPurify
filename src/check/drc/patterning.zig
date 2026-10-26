@@ -58,7 +58,7 @@ pub fn multiPatterning(c: *const Ctx, r: rows.MultiPatterning) Error!Verdict {
         .exhausted => return refusedAfter(shapes.len()),
         .infeasible => |node| {
             const poly: PolyId = @fromBackingInt(shapes.start + node);
-            try c.finding(r.layer, geom.ops.centre(c.store.polyBbox(poly)), .count(@as(u32, r.colors) + 1), .count(r.colors), poly);
+            try c.finding(r.layer, rects.centre(c.store.polyBbox(poly)), .count(@as(u32, r.colors) + 1), .count(r.colors), poly);
         },
     }
     return scratch.ran(shapes.len());
@@ -148,7 +148,7 @@ pub fn anchoredPatterning(c: *const Ctx, r: rows.AnchoredPatterning) Error!Verdi
         };
         const pa: PolyId = @fromBackingInt(shapes.start + group[conflict.node][1]);
         const pb: PolyId = if (conflict.other) |o| @fromBackingInt(shapes.start + group[o][1]) else report.no_shape;
-        const where = if (conflict.other != null) rects.gapMidpoint(store.polyBbox(pa), store.polyBbox(pb)) else geom.ops.centre(store.polyBbox(pa));
+        const where = if (conflict.other != null) rects.gapMidpoint(store.polyBbox(pa), store.polyBbox(pb)) else rects.centre(store.polyBbox(pa));
         try c.push(.{ .rule = c.rule, .layer = r.layer, .severity = .@"error", .at = where, .measured = .count(@as(u32, r.colors) + 1), .limit = .count(r.colors), .shape_a = pa, .shape_b = pb });
     }
     return .{ .outcome = outcome, .examined = n };
@@ -230,7 +230,7 @@ pub fn sadp(c: *const Ctx, r: rows.Sadp) Error!Verdict {
     for (figures) |f| {
         const figure = s.p.layer_out.get(f[1]);
         const poly: PolyId = @fromBackingInt(shapes.start + f[0]);
-        const centre = geom.ops.centre(store.polyBbox(poly));
+        const centre = rects.centre(store.polyBbox(poly));
         if (try geom.width.narrowestFacing(gpa, figure, .notch, &s.facing)) |notch| if (notch.gap < r.different) {
             try c.finding(r.layer, centre, .count(1), .count(0), poly);
         };

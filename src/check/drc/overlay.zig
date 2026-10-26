@@ -73,7 +73,7 @@ pub fn metalWidthVia(c: *const Ctx, r: rows.MetalWidthVia) Error!Verdict {
         const w = b.xhi - b.xlo;
         const h = b.yhi - b.ylo;
         if ((w == r.width and h == r.height) or (w == r.height and h == r.width)) continue;
-        try c.finding(r.cut, geom.ops.centre(b), .count(0), .count(1), poly);
+        try c.finding(r.cut, rects.centre(b), .count(0), .count(1), poly);
     }
     return scratch.ran(examined);
 }
@@ -131,7 +131,7 @@ pub fn maxEnclosure(c: *const Ctx, r: rows.PlainEnclosure) Error!Verdict {
         var excess_cut: Cut = .{};
         defer excess_cut.deinit(gpa);
         try excess_cut.of(gpa, &excess);
-        try c.finding(r.outer, geom.ops.centre(excess_cut.figure(0)[0]), .length(hi), .length(r.limit), s.owners.items[f]);
+        try c.finding(r.outer, rects.centre(excess_cut.figure(0)[0]), .length(hi), .length(r.limit), s.owners.items[f]);
     }
     return scratch.ran(examined);
 }
@@ -330,7 +330,7 @@ fn gateExtension(gate: Polygon, line: Polygon, reference: *const SortedRects) st
     for (0..2) |axis| if (crossed[axis]) if (best[axis]) |b| {
         if (pick == null or b.d < pick.?.d or (b.d == pick.?.d and @backingInt(b.side) < @backingInt(pick.?.side))) pick = b;
     };
-    const p = pick orelse return .{ .d = 0, .at = geom.ops.centre(gate.bbox()) };
+    const p = pick orelse return .{ .d = 0, .at = rects.centre(gate.bbox()) };
     return .{ .d = p.d, .at = strips.sideMidpoint(p.edge, p.d, p.side) };
 }
 

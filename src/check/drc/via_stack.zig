@@ -147,7 +147,7 @@ pub fn minimumCut(c: *const Ctx, r: rows.MinimumCut) Error!Verdict {
             examined += 1;
             const count: u32 = @intCast(group.len);
             if (count >= r.min_count) continue;
-            for (group) |m| try c.finding(r.cut, geom.ops.centre(box(c, m[1])), .count(count), .count(r.min_count), @fromBackingInt(m[1]));
+            for (group) |m| try c.finding(r.cut, rects.centre(box(c, m[1])), .count(count), .count(r.min_count), @fromBackingInt(m[1]));
         }
     }
     return ran(examined);
@@ -232,7 +232,7 @@ pub fn viaStack(c: *const Ctx, r: rows.ViaStack) Error!Verdict {
     for (stack.items, start.items[0..stack.items.len], start.items[1..]) |layer, from, to| {
         for (from..to) |k| {
             if (down[k] != over) continue;
-            try c.finding(layer, geom.ops.centre(boxes.items[k]), .count(down[k] + up[k] - 1), .count(r.max_height), @fromBackingInt(cut_rows.items[k]));
+            try c.finding(layer, rects.centre(boxes.items[k]), .count(down[k] + up[k] - 1), .count(r.max_height), @fromBackingInt(cut_rows.items[k]));
         }
     }
     return ran(examined);
