@@ -7,7 +7,9 @@ test {
     _ = @import("extract");
     _ = @import("extract/solve.zig");
     _ = @import("extract/kernels.zig");
+    _ = @import("extract/mesh.zig");
     _ = @import("extract/capacitance.zig");
+    _ = @import("extract/henry.zig");
     if (paths.slow_tests) _ = @import("extract/capacitance_slow.zig");
     if (paths.gpu_tests) _ = @import("extract/gpu.zig");
 }
