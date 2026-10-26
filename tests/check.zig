@@ -21,4 +21,5 @@ test {
     _ = @import("check/lvs/gates.zig");
     _ = @import("check/lvs/checks.zig");
     _ = @import("check/lvs/lde.zig");
+    _ = @import("check/lvs/measures.zig");
 }
