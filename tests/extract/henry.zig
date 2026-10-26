@@ -136,6 +136,21 @@ test "a via joins the layers it connects" {
     }
 }
 
+test "a junction's resistance is in series with the cut and the metal" {
+    // Oracle: closed form (F73, tests/exhaustive/pex.rs's junction case): a
+    // net of an `m1` junction 5 x 1 um on the substrate, one cut and an
+    // `m2` bar 5 x 1 um runs its current through all three in series,
+    // `0.1 · 5 + 5 + 0.08 · 5 = 5.9` ohm, to the 5 % where a via's landing
+    // point is a modelling choice.
+    var buffer: [3]Box = undefined;
+    var out: henry.InductMatrix = .empty;
+    defer out.deinit(gpa);
+    var refusal: henry.Refusal = .{};
+    try solveL(viaPair(&.{.{ 4_100, 100, 4_300, 300 }}, &buffer), &.{}, 3, &fixture.junction, vias, &.{0}, &out, &refusal);
+    const want = 0.1 * 5.0 + 5.0 + 0.08 * 5.0;
+    try testing.expect(@abs(out.r_ohm.items[0] - want) / want < 5e-2);
+}
+
 test "a net that is not one circuit is refused" {
     // Oracle: definition (F23). Two bars meeting only at a corner are one
     // net, but no current crosses a point: refused as `Disconnected`, not

@@ -47,6 +47,10 @@ pub const NearPairs = struct {
     /// `i`, then `rule.fill(i, column, value)` writing exactly that many,
     /// ascending. `panels` sizes the work estimate (each row tests every
     /// panel). Asserts the pair count fits a `u32`.
+    // ponytail: host threads only. The passes are row bodies over device-safe
+    // integrals (`integrals.zig`), so a GPU count/fill is two raw kernels over
+    // column pointers when a profile shows the build (once per solve) next to
+    // the matvecs; on a GeForce's 1/64-rate f64 it would lose to 32 threads.
     pub fn buildInto(np: *NearPairs, gpa: Allocator, threads: u16, rows_: u32, panels: u32, rule: anytype) Allocator.Error!void {
         try np.start.resize(gpa, @as(usize, rows_) + 1);
         const Rule = @TypeOf(rule);

@@ -161,6 +161,9 @@ pub fn portImpedanceInto(gpa: Allocator, threads: u16, set: *const FilamentSet, 
 
     // Zb = R (diagonal) + jωL: the upper triangle by rows on the threads,
     // then mirrored.
+    // ponytail: host threads only. A GPU Zb wants the pairs binned by formula
+    // (brick, centreline, quadrature) first so warps don't diverge
+    // (ARCHITECTURE.md, GPU), and the O(B³) LU after it dominates anyway.
     const w = 2.0 * std.math.pi * frequency_hz;
     const zb = try gpa.alloc(Complex, nb * nb);
     defer gpa.free(zb);
