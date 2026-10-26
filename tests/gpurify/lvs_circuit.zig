@@ -16,6 +16,7 @@
 //! - `pub const Circuit`, `init`, `clone`, `internal`, `nets`, `compact`, `code`
 //! - `pub const sd`, `pub fn draw(arena, c) !Layout`
 //! - `pub fn spice(arena, c) ![]const u8`, `spiceOrdered`, `spectre`, `edited`, `spiceHier`, `flatten`
+//! - `pub fn track(net: usize) i64`, `pub fn subcktInto(arena, out, name, c, order) !void`
 //! - `Sci.format`: Rust's `{:e}`
 
 const std = @import("std");
@@ -462,11 +463,20 @@ pub fn flatten(arena: Allocator, top: *const Circuit, block: *const Circuit, on:
     return .{ .devs = devs.items, .names = names.items, .ports = ports.items };
 }
 
-// ---- private ----
-
-fn track(net: usize) i64 {
+pub fn track(net: usize) i64 {
     return track0 + track_pitch * @as(i64, @intCast(net));
 }
+
+/// Subcircuit `name`'s `.subckt` line and cards; `c`'s port nets are its
+/// ports.
+pub fn subcktInto(arena: Allocator, out: *std.ArrayList(u8), name: []const u8, c: *const Circuit, order: []const usize) !void {
+    try out.print(arena, ".subckt {s}", .{name});
+    for (c.names, c.ports) |net, p| if (p) try out.print(arena, " {s}", .{net});
+    try out.append(arena, '\n');
+    for (order) |i| try cardInto(arena, out, i, &c.devs[i], c.names, false);
+}
+
+// ---- private ----
 
 fn column(i: usize) i64 {
     return pitch * @as(i64, @intCast(i));
@@ -569,15 +579,6 @@ fn cardInto(arena: Allocator, out: *std.ArrayList(u8), index: usize, dev: *const
     if (dev.area) |a| try out.print(arena, " area={d}p", .{@as(f64, @floatFromInt(a)) / 1e6});
     for (dev.paramsOf()) |p| try out.print(arena, " {s}={f}", .{ p.name, Sci{ .v = p.value } });
     try out.append(arena, '\n');
-}
-
-/// Subcircuit `name`'s `.subckt` line and cards; `c`'s port nets are its
-/// ports.
-fn subcktInto(arena: Allocator, out: *std.ArrayList(u8), name: []const u8, c: *const Circuit, order: []const usize) !void {
-    try out.print(arena, ".subckt {s}", .{name});
-    for (c.names, c.ports) |net, p| if (p) try out.print(arena, " {s}", .{net});
-    try out.append(arena, '\n');
-    for (order) |i| try cardInto(arena, out, i, &c.devs[i], c.names, false);
 }
 
 test "a card writes Rust's exponent form" {
