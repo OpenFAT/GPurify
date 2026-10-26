@@ -19,7 +19,7 @@
 //! - `pub fn ownersByPointInto(gpa: Allocator, figures: *const ValidatedLayer, drawn: *const ValidatedLayer, out: *std.ArrayList(PolyId)) Allocator.Error!void`
 //! - `pub fn figuresHolding(gpa: Allocator, figures: *const ValidatedLayer, drawn: *const ValidatedLayer, home: []?u32) Allocator.Error!void`
 //! - `pub fn figurePoint(poly: Polygon) Point`
-//! - `pub fn mid(a: Dbu, b: Dbu) Dbu`, `pub fn gapMidpoint(a: Bbox, b: Bbox) Point`, `pub fn segBbox(s: Seg) Bbox`
+//! - `pub fn mid(a: Dbu, b: Dbu) Dbu`, `pub fn gapMidpoint(a: Bbox, b: Bbox) Point`, `pub fn centre(b: Bbox) Point`, `pub fn segBbox(s: Seg) Bbox`
 //! - `pub fn bboxGap2(a: Bbox, b: Bbox) DbuArea`
 //! - `pub fn polyDist2(store: *const GeometryStore, a: PolyId, b: PolyId) DbuArea`
 //! - `pub fn segDist2(p: Seg, q: Seg) DbuArea`
@@ -365,6 +365,12 @@ pub fn mid(a: Dbu, b: Dbu) Dbu {
 /// a pairwise violation's report point.
 pub fn gapMidpoint(a: Bbox, b: Bbox) Point {
     return .{ .x = mid(@max(a.xlo, b.xlo), @min(a.xhi, b.xhi)), .y = mid(@max(a.ylo, b.ylo), @min(a.yhi, b.yhi)) };
+}
+
+/// The centre of a box, each coordinate floored (`mid`): DRC's report
+/// point for one shape (not `geom.ops.centre`, which rounds toward zero).
+pub fn centre(b: Bbox) Point {
+    return gapMidpoint(b, b);
 }
 
 pub fn segBbox(s: Seg) Bbox {
