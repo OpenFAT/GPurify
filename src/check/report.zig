@@ -36,7 +36,8 @@
 //!   `extend(v: *Violations, gpa: Allocator, other: *const Violations) Allocator.Error!void`,
 //!   `truncate(v: *Violations, new_len: u32) void`,
 //!   `sortCanonical(v: *Violations, gpa: Allocator) Allocator.Error!void`
-//! - `pub const RuleRun = struct`, `pub const Outcome = union(enum)`, `pub const SkipReason = enum(u8)`
+//! - `pub const RuleRun = struct`, `pub const Outcome = union(enum)`, `pub const Verdict = struct`,
+//!   `pub const refused: Verdict`, `pub const SkipReason = enum(u8)`
 //! - `pub fn recordRun(gpa: Allocator, runs: *std.ArrayList(RuleRun), out: *const Violations, violations_before: u32, rule: StrId, outcome: Outcome, examined: u64) Allocator.Error!void`
 
 const std = @import("std");
@@ -417,6 +418,13 @@ pub const Outcome = union(enum) {
     /// The input was outside what the tool represents exactly: fail closed.
     refused,
 };
+
+/// How one rule row ended, and how many of its items it examined: a
+/// `RuleRun` before its violation count is known.
+pub const Verdict = struct { outcome: Outcome, examined: u64 };
+
+/// The verdict of input a rule cannot represent exactly.
+pub const refused: Verdict = .{ .outcome = .refused, .examined = 0 };
 
 /// Why a rule did not run; each fails the run.
 pub const SkipReason = enum(u8) {

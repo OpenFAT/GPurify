@@ -11,7 +11,7 @@ const Owner = struct { name: []const u8, deps: []const []const u8, kernels: bool
 const owners = [_]Owner{
     .{ .name = "geom", .deps = &.{"gompute"}, .kernels = true },
     .{ .name = "ingest", .deps = &.{"geom"} },
-    .{ .name = "check", .deps = &.{ "gompute", "geom", "ingest" } },
+    .{ .name = "check", .deps = &.{ "gompute", "geom", "ingest" }, .kernels = true },
     .{ .name = "extract", .deps = &.{ "gompute", "geom", "ingest", "check" } },
     .{ .name = "gpurify", .deps = &.{ "geom", "ingest", "check", "extract" } },
 };
@@ -22,6 +22,7 @@ pub fn build(b: *Build) void {
     const gpu = b.option(bool, "gpu", "Compile the GPU device kernels (default true)") orelse true;
     const cuda_arch = b.option([]const u8, "cuda-arch", "CUDA arch (sm_75, ...), `auto` to probe the build machine, `none` to omit") orelse "auto";
     const hip_arch = b.option([]const u8, "hip-arch", "HIP arch (gfx1100, ...), `none` to omit") orelse "gfx1100";
+    const check_gpu_test = b.option(bool, "check-gpu-test", "Run check's CPU-vs-GPU pair-distance test; fails without a driver (default false)") orelse false;
 
     const gompute_dep = b.dependency("gompute", .{});
     var roots: std.ArrayList(gompute_build.KernelRoot) = .empty;
@@ -44,6 +45,8 @@ pub fn build(b: *Build) void {
     const paths = b.addOptions();
     paths.addOption([]const u8, "root", b.pathResolve(&.{ b.root.root_dir.path orelse ".", b.root.sub_path }));
     const paths_import: Import = .{ .name = "paths", .module = paths.createModule() };
+    const check_options = b.addOptions();
+    check_options.addOption(bool, "gpu_test", check_gpu_test);
 
     var mods: std.StringArrayHashMapUnmanaged(*Build.Module) = .empty;
     mods.put(b.allocator, "gompute", kernels.gompute) catch @panic("OOM");
@@ -104,6 +107,7 @@ pub fn build(b: *Build) void {
         });
         suite.addImport(o.name, mods.get(o.name).?);
         for (o.deps) |d| suite.addImport(d, mods.get(d).?);
+        if (std.mem.eql(u8, o.name, "check")) suite.addImport("check_options", check_options.createModule());
         step.dependOn(&b.addRunArtifact(b.addTest(.{ .name = b.fmt("{s}-suite", .{o.name}), .root_module = suite })).step);
         test_all.dependOn(step);
     }

@@ -7,9 +7,21 @@
 //!
 //! Contents:
 //! - `report`: `Violations`, `Violation`, `Measurement`, `RuleRun`, `recordRun`, ...
+//! - `proximity`: `Validated`, `Scratch`, `prepare*`, `crossPairs`, `judgedPairs`, net spacing, `wholeAt`, ...
+//! - `proximity_distance`: `pairDistancesInto`, the `cappedDist2` row kernel
+//! - `proximity_inside`: `insideWhere`, `taggedFigures`, `mergedInto`
 //! - `rects`: `LayerRects`, `SortedRects`, owners, `polyDist2`, `segDist2`, `Holes`, `inMaterial`, ...
 pub const report = @import("report.zig");
 pub const rects = @import("rects.zig");
+pub const proximity = @import("proximity.zig");
+pub const proximity_distance = @import("proximity_distance.zig");
+pub const proximity_inside = @import("proximity_inside.zig");
+
+// The device compile reads only this root's comptime blocks: name every
+// kernel-owning file here.
+comptime {
+    _ = proximity_distance;
+}
 
 // ---- private ----
 
@@ -31,4 +43,7 @@ test {
     refAll(@This());
     _ = report;
     _ = rects;
+    _ = proximity;
+    _ = proximity_distance;
+    _ = proximity_inside;
 }
