@@ -8,6 +8,13 @@
 //! implementation gets wrong is drawn on purpose: a 45-degree gap of `7/√2`
 //! (`√24.5`, so 4.95), which a squared distance rounded up to 25 passes at a
 //! limit of 5; IHP SG13G2 M1.g/M1.i are the foundry rules these measure.
+//!
+//! Contents:
+//! - `pub const Ring = struct`, `pub const Found = struct`, `Found.deinit`, `Found.of`, `Found.outcome`, `Found.summary`
+//! - `pub fn len(v: i64) Measurement`, `pub fn area(v: i128) Measurement`
+//! - `pub fn runOn(rules: []const u8, rings: []const Ring) !Found`, `pub fn run(rules: []const u8, rings: []const []const [2]i64) !Found`
+//! - `pub fn holdsUnderSymmetries(rules: []const u8, rings: []const Ring) !void`, `pub fn padded(c: i64, d: i64) [3][4][2]i64`
+//! - `pub fn expectFindings(want: []const [2]Measurement, got: []const [2]Measurement) !void`
 
 const std = @import("std");
 const testing = std.testing;
@@ -20,30 +27,30 @@ const Layout = common.Layout;
 const Finding = common.Finding;
 
 /// A ring on a named layer.
-const Ring = struct { layer: []const u8, points: []const [2]i64 };
+pub const Ring = struct { layer: []const u8, points: []const [2]i64 };
 
 /// A run's rows, with lookups by rule; owns everything.
-const Found = struct {
+pub const Found = struct {
     run: common.Run,
 
-    fn deinit(f: *Found) void {
+    pub fn deinit(f: *Found) void {
         f.run.deinit();
     }
 
     /// The rule's findings as `(measured, limit)`.
-    fn of(f: *Found, rule: []const u8) ![]const [2]Measurement {
+    pub fn of(f: *Found, rule: []const u8) ![]const [2]Measurement {
         const row = f.run.row(rule);
         const out = try f.run.arena.allocator().alloc([2]Measurement, row.findings.len);
         for (out, row.findings) |*o, x| o.* = .{ x.measured, x.limit };
         return out;
     }
 
-    fn outcome(f: *const Found, rule: []const u8) Outcome {
+    pub fn outcome(f: *const Found, rule: []const u8) Outcome {
         return f.run.row(rule).outcome;
     }
 
     /// Every finding and outcome as sorted text.
-    fn summary(f: *Found) ![]const []const u8 {
+    pub fn summary(f: *Found) ![]const []const u8 {
         const al = f.run.arena.allocator();
         var all: std.ArrayList([]const u8) = .empty;
         for (f.run.rows) |row| {
@@ -63,18 +70,65 @@ const u_shape = [8][2]i64{ .{ 0, 0 }, .{ 300, 0 }, .{ 300, 200 }, .{ 200, 200 },
 /// `y - x = 70`.
 const octagon_host: Ring = .{ .layer = "met2", .points = &.{ .{ 30, 0 }, .{ 70, 0 }, .{ 100, 30 }, .{ 100, 70 }, .{ 70, 100 }, .{ 30, 100 }, .{ 0, 70 }, .{ 0, 30 } } };
 
+pub fn len(v: i64) Measurement {
+    return .length(v);
+}
+
+pub fn area(v: i128) Measurement {
+    return .area(v);
+}
+
+pub fn runOn(rules: []const u8, rings: []const Ring) !Found {
+    var layout = try layoutOf(rings);
+    defer layout.deinit();
+    return runLayout(rules, &layout);
+}
+
+/// [`runOn`] with every ring on `met1`.
+pub fn run(rules: []const u8, rings: []const []const [2]i64) !Found {
+    var layout: Layout = .{};
+    defer layout.deinit();
+    for (rings) |r| try layout.polygon("met1", r);
+    return runLayout(rules, &layout);
+}
+
+/// `rules` on `rings` find the same under all eight grid symmetries.
+pub fn holdsUnderSymmetries(rules: []const u8, rings: []const Ring) !void {
+    var layout = try layoutOf(rings);
+    defer layout.deinit();
+    var base = try runLayout(rules, &layout);
+    defer base.deinit();
+    const want = try base.summary();
+    for (common.symmetries[1..]) |s| {
+        var moved = try layout.transformed(s, 0, 0);
+        defer moved.deinit();
+        var found = try runLayout(rules, &moved);
+        defer found.deinit();
+        const got = try found.summary();
+        try testing.expectEqual(want.len, got.len);
+        for (want, got) |w, g| try testing.expectEqualStrings(w, g);
+    }
+}
+
+/// A 45-degree bar between the lines `y = x + c` and `y = x + c + d`, 1000
+/// long in x, each end inside a pad 1010 wide: its narrowest width is the
+/// bar's own.
+pub fn padded(c: i64, d: i64) [3][4][2]i64 {
+    return .{
+        .{ .{ 0, c }, .{ 1000, 1000 + c }, .{ 1000, 1000 + c + d }, .{ 0, c + d } },
+        pad(-1000, 10, c - 1000, c + d + 1010),
+        pad(990, 2000, c - 10, 2000 + c + d),
+    };
+}
+
+pub fn expectFindings(want: []const [2]Measurement, got: []const [2]Measurement) !void {
+    try testing.expectEqualSlices([2]Measurement, want, got);
+}
+
 // ---- private ----
 
 fn lessText(_: void, a: []const u8, b: []const u8) bool {
     return std.mem.lessThan(u8, a, b);
-}
-
-fn len(v: i64) Measurement {
-    return .length(v);
-}
-
-fn area(v: i128) Measurement {
-    return .area(v);
 }
 
 fn layoutOf(rings: []const Ring) !Layout {
@@ -91,24 +145,6 @@ fn runLayout(rules: []const u8, layout: *const Layout) !Found {
     return .{ .run = try common.run(try common.deck(arena.allocator(), rules), layout) };
 }
 
-fn runOn(rules: []const u8, rings: []const Ring) !Found {
-    var layout = try layoutOf(rings);
-    defer layout.deinit();
-    return runLayout(rules, &layout);
-}
-
-/// [`runOn`] with every ring on `met1`.
-fn run(rules: []const u8, rings: []const []const [2]i64) !Found {
-    var layout: Layout = .{};
-    defer layout.deinit();
-    for (rings) |r| try layout.polygon("met1", r);
-    return runLayout(rules, &layout);
-}
-
-fn expectFindings(want: []const [2]Measurement, got: []const [2]Measurement) !void {
-    try testing.expectEqualSlices([2]Measurement, want, got);
-}
-
 /// A 45-degree bar 100 long between the lines `y = x + c` and `y = x + c +
 /// d`, its ends cut by a step (one horizontal and one vertical edge), so
 /// every corner is 90 or 135 degrees and none is an acute tip. Its width is
@@ -118,37 +154,8 @@ fn bar(c: i64, d: i64) [6][2]i64 {
     return .{ .{ 0, c }, .{ 100, 100 + c }, .{ 100, 100 + c + d - s }, .{ 100 - s, 100 + c + d - s }, .{ -s, c + d - s }, .{ -s, c } };
 }
 
-/// A 45-degree bar between the lines `y = x + c` and `y = x + c + d`, 1000
-/// long in x, each end inside a pad 1010 wide: its narrowest width is the
-/// bar's own.
-fn padded(c: i64, d: i64) [3][4][2]i64 {
-    return .{
-        .{ .{ 0, c }, .{ 1000, 1000 + c }, .{ 1000, 1000 + c + d }, .{ 0, c + d } },
-        pad(-1000, 10, c - 1000, c + d + 1010),
-        pad(990, 2000, c - 10, 2000 + c + d),
-    };
-}
-
 fn pad(x0: i64, x1: i64, y0: i64, y1: i64) [4][2]i64 {
     return .{ .{ x0, y0 }, .{ x1, y0 }, .{ x1, y1 }, .{ x0, y1 } };
-}
-
-/// `rules` on `rings` find the same under all eight grid symmetries.
-fn holdsUnderSymmetries(rules: []const u8, rings: []const Ring) !void {
-    var layout = try layoutOf(rings);
-    defer layout.deinit();
-    var base = try runLayout(rules, &layout);
-    defer base.deinit();
-    const want = try base.summary();
-    for (common.symmetries[1..]) |s| {
-        var moved = try layout.transformed(s, 0, 0);
-        defer moved.deinit();
-        var found = try runLayout(rules, &moved);
-        defer found.deinit();
-        const got = try found.summary();
-        try testing.expectEqual(want.len, got.len);
-        for (want, got) |w, g| try testing.expectEqualStrings(w, g);
-    }
 }
 
 test "a 45 degree bar is as wide as its perpendicular" {
