@@ -28,7 +28,7 @@ const gpa = std.testing.allocator;
 pub const grid: geom.Grid = .{ .dbu_per_um = 1000 };
 
 /// The device every solve here runs on: the host, eight threads.
-pub const device: geom.Device = .{ .backend = .cpu, .min_gpu_work = std.math.maxInt(u64), .threads = 8 };
+pub const device: geom.Device = .{ .backend = .cpu, .min_work = .never, .threads = 8 };
 
 /// One drawn ring and the net it is on (`extract.none` for none).
 pub const Shape = struct { layer: u16, net: u32, xs: []const i64, ys: []const i64 };

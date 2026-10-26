@@ -17,9 +17,10 @@
 //! Contents:
 //! - `pub const gap_cap: i64`
 //! - `pub const Error = error{ OutOfMemory, SystemResources, ThreadQuotaExceeded, LockedMemoryLimitExceeded, Unexpected }`
-//! - `pub fn pairDistancesInto(gpa: Allocator, device: Device, store: *const GeometryStore, pairs: []const Pair, limit: Dbu, dists: *std.ArrayList(DbuArea)) Error!void`
+//! - `pub fn pairDistancesInto(gpa: Allocator, device: Device, resident: ?*ResidentStore, store: *const GeometryStore, pairs: []const Pair, limit: Dbu, dists: *std.ArrayList(DbuArea)) Error!void`
 //! - `pub fn cappedDistancesCpu(store: *const GeometryStore, pairs: []const Pair, threads: u16, out: []i64) error{ SystemResources, ThreadQuotaExceeded, LockedMemoryLimitExceeded, Unexpected }!void`
-//! - `pub fn cappedDistancesGpu(gpa: Allocator, backend: Device.Backend, store: *const GeometryStore, pairs: []const Pair, out: []i64) GpuError!void`, `pub const GpuError`
+//! - `pub fn cappedDistancesGpu(gpa: Allocator, backend: Device.Backend, resident: ?*ResidentStore, store: *const GeometryStore, pairs: []const Pair, out: []i64) GpuError!void`, `pub const GpuError`
+//! - `pub fn edgePairs(store: *const GeometryStore, pairs: []const Pair) u64`
 //! - `pub fn cappedDist2(a: u32, b: u32, vert_start: anytype, vert_len: anytype, xs: anytype, ys: anytype) i64`
 
 const std = @import("std");
@@ -31,6 +32,7 @@ const Dbu = geom.Dbu;
 const DbuArea = geom.DbuArea;
 const Device = geom.Device;
 const GeometryStore = geom.GeometryStore;
+const ResidentStore = geom.ResidentStore;
 const Pair = geom.index.Pair;
 const polyDist2 = @import("rects.zig").polyDist2;
 
@@ -54,9 +56,11 @@ const block = 256;
 /// refilled): exact below `limit²`, and never below `limit²` where the exact
 /// value is not. Rectilinear pairs under a limit below `gap_cap` take the
 /// row kernel, on the GPU when `device` says so and the work is at least
-/// `device.min_gpu_work` edge pairs, falling back to the CPU without a
-/// driver; the answer is bit-identical either way.
-pub fn pairDistancesInto(gpa: Allocator, device: Device, store: *const GeometryStore, pairs: []const Pair, limit: Dbu, dists: *std.ArrayList(DbuArea)) Error!void {
+/// `device.min_work.resident` edge pairs, falling back to the CPU without a
+/// driver; the answer is bit-identical either way. The GPU reads the store
+/// from `resident` (uploaded on first use), or from a per-call upload when
+/// it is null.
+pub fn pairDistancesInto(gpa: Allocator, device: Device, resident: ?*ResidentStore, store: *const GeometryStore, pairs: []const Pair, limit: Dbu, dists: *std.ArrayList(DbuArea)) Error!void {
     assert(limit >= 0);
     try dists.resize(gpa, pairs.len);
     if (limit >= gap_cap) {
@@ -67,9 +71,9 @@ pub fn pairDistancesInto(gpa: Allocator, device: Device, store: *const GeometryS
     defer gpa.free(capped);
     const on_gpu = switch (device.backend) {
         .cpu => false,
-        .cuda, .hip => edgePairs(store, pairs) >= device.min_gpu_work,
+        .cuda, .hip => edgePairs(store, pairs) >= device.min_work.resident,
     };
-    const done = on_gpu and if (cappedDistancesGpu(gpa, device.backend, store, pairs, capped)) true else |_| false;
+    const done = on_gpu and if (cappedDistancesGpu(gpa, device.backend, resident, store, pairs, capped)) true else |_| false;
     if (!done) try cappedDistancesCpu(store, pairs, device.threads, capped);
     for (dists.items, capped, pairs) |*d, c, p| d.* = if (c >= 0) c else polyDist2(store, p.a, p.b);
 }
@@ -95,15 +99,24 @@ pub fn cappedDistancesCpu(store: *const GeometryStore, pairs: []const Pair, thre
 }
 
 /// `cappedDist2` over every pair, into `out`, on the GPU through the raw
-/// kernel `check_capped_dist2`. Fails (never falls back) when the build or
-/// the machine has no such device: the strict path a differential test
-/// needs.
-pub fn cappedDistancesGpu(gpa: Allocator, backend: Device.Backend, store: *const GeometryStore, pairs: []const Pair, out: []i64) GpuError!void {
+/// kernel `check_capped_dist2`, the store's columns read from `resident`
+/// (uploaded on first use) or, when null, uploaded for this call alone.
+/// Fails (never falls back) when the build or the machine has no such
+/// device: the strict path a differential test needs.
+pub fn cappedDistancesGpu(gpa: Allocator, backend: Device.Backend, resident: ?*ResidentStore, store: *const GeometryStore, pairs: []const Pair, out: []i64) GpuError!void {
     assert(out.len == pairs.len);
     return switch (backend) {
         .cpu => error.NotBuilt,
-        inline .cuda, .hip => |b| if (comptime built(b)) runGpu(b, gpa, store, pairs, out) else error.NotBuilt,
+        inline .cuda, .hip => |b| if (comptime built(b)) runGpu(b, gpa, resident, store, pairs, out) else error.NotBuilt,
     };
+}
+
+/// The work estimate the GPU threshold reads: edge pairs examined.
+pub fn edgePairs(store: *const GeometryStore, pairs: []const Pair) u64 {
+    const vl = store.poly_vert_len.items;
+    var work: u64 = 0;
+    for (pairs) |p| work += @as(u64, vl[@backingInt(p.a)]) * vl[@backingInt(p.b)];
+    return work;
 }
 
 /// The squared boundary distance of store rows `a` and `b`, each gap
@@ -170,14 +183,6 @@ fn isRectilinear(start: u32, n: u32, xs: anytype, ys: anytype) bool {
     return true;
 }
 
-/// The work estimate the GPU threshold reads: edge pairs examined.
-fn edgePairs(store: *const GeometryStore, pairs: []const Pair) u64 {
-    const vl = store.poly_vert_len.items;
-    var work: u64 = 0;
-    for (pairs) |p| work += @as(u64, vl[@backingInt(p.a)]) * vl[@backingInt(p.b)];
-    return work;
-}
-
 /// Whether this build compiled the kernel roots for `backend`; any spec
 /// answers for the whole build.
 fn built(comptime backend: Device.Backend) bool {
@@ -189,33 +194,30 @@ fn built(comptime backend: Device.Backend) bool {
     };
 }
 
-fn runGpu(comptime backend: Device.Backend, gpa: Allocator, store: *const GeometryStore, pairs: []const Pair, out: []i64) GpuError!void {
+fn runGpu(comptime backend: Device.Backend, gpa: Allocator, resident: ?*ResidentStore, store: *const GeometryStore, pairs: []const Pair, out: []i64) GpuError!void {
     const tag: g.Backend = switch (backend) {
         .cpu => unreachable,
         .cuda => .cuda,
         .hip => .hip,
     };
+    if (pairs.len == 0) return;
     var k = try g.RawKernel("check_capped_dist2", tag).init(0);
     defer k.deinit();
-    const flat = try gpa.alloc(u32, 2 * pairs.len);
-    defer gpa.free(flat);
-    for (pairs, 0..) |p, i| {
-        flat[2 * i] = @backingInt(p.a);
-        flat[2 * i + 1] = @backingInt(p.b);
-    }
-    if (pairs.len == 0) return;
-    // One allocation and one copy for every column, `out` reserved after them.
-    const bytes = std.mem.sliceAsBytes;
-    const columns = [_][]const u8{ bytes(flat), bytes(store.poly_vert_start.items), bytes(store.poly_vert_len.items), bytes(store.verts_x.items), bytes(store.verts_y.items) };
-    var offsets: [6]usize = undefined;
-    var addresses: [6]usize = undefined;
-    var buffer = try geom.bulk.upload(@TypeOf(k), &k, gpa, &columns, &.{out.len * @sizeOf(i64)}, &offsets, &addresses);
+    var own: ResidentStore = .empty;
+    defer own.deinit();
+    const columns = try (resident orelse &own).columns(backend, &k, gpa, store);
+    // The call's own traffic: the pair list up as it lies (an extern
+    // `Pair` is the kernel's interleaved `(a, b)`) and `out` reserved after
+    // it, one allocation and one copy.
+    comptime assert(@sizeOf(Pair) == 8 and @offsetOf(Pair, "b") == 4);
+    var offsets: [2]usize = undefined;
+    var addresses: [2]usize = undefined;
+    var buffer = try geom.bulk.upload(@TypeOf(k), &k, gpa, &.{std.mem.sliceAsBytes(pairs)}, &.{out.len * @sizeOf(i64)}, &offsets, &addresses);
     defer buffer.free();
     var n: u64 = pairs.len;
-    var args: [7]g.interface.Arg = undefined;
-    args[0] = g.interface.arg(&n);
-    for (args[1..], &addresses) |*a, *address| a.* = g.interface.arg(address);
+    const arg = g.interface.arg;
+    const args = [_]g.interface.Arg{ arg(&n), arg(&addresses[0]), arg(&columns[0]), arg(&columns[1]), arg(&columns[2]), arg(&columns[3]), arg(&addresses[1]) };
     try k.launch(g.Dim3.linear(pairs.len, block), .{ .x = block }, 0, &args);
     try k.synchronize();
-    try buffer.downloadAt(out.ptr, offsets[5], out.len * @sizeOf(i64));
+    try buffer.downloadAt(out.ptr, offsets[1], out.len * @sizeOf(i64));
 }

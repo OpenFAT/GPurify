@@ -95,7 +95,7 @@ const Mapping = struct {
 /// Every DRC rule of `deck` on `store`, as `drc.run` runs it with no nets.
 pub fn check(arena: Allocator, deck: *const CompiledDeck, store: GeometryStore) Error!DrcState {
     var out: DrcState = .{ .store = store, .violations = .{}, .runs = .empty };
-    try drc.run(arena, .cpu, &deck.drc, &out.store, null, &out.violations, &out.runs);
+    try drc.run(arena, .cpu, null, &deck.drc, &out.store, null, &out.violations, &out.runs);
     return out;
 }
 
@@ -208,7 +208,7 @@ pub fn recheck(scratch: Allocator, arena: Allocator, deck: *const CompiledDeck, 
     const rs = &deck.drc;
     var part_out: Violations = .{};
     var part_runs: std.ArrayList(RuleRun) = .empty;
-    if (any_dirty) try drc.run(scratch, .cpu, &try subset(scratch, rs, local.local), &part, null, &part_out, &part_runs);
+    if (any_dirty) try drc.run(scratch, .cpu, null, &try subset(scratch, rs, local.local), &part, null, &part_out, &part_runs);
     const again = try scratch.alloc(bool, rs.len());
     for (again, local.local, rs.id.items) |*a, l, id| {
         const was = findRun(previous.runs.items, id);
@@ -217,7 +217,7 @@ pub fn recheck(scratch: Allocator, arena: Allocator, deck: *const CompiledDeck, 
     }
     var whole_out: Violations = .{};
     var whole_runs: std.ArrayList(RuleRun) = .empty;
-    try drc.run(scratch, .cpu, &try subset(scratch, rs, again), store, null, &whole_out, &whole_runs);
+    try drc.run(scratch, .cpu, null, &try subset(scratch, rs, again), store, null, &whole_out, &whole_runs);
 
     for (rs.id.items, again) |id, whole| {
         const before = out.violations.len();

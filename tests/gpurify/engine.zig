@@ -118,7 +118,7 @@ const Consumer = struct {
         try ingest.layout.deriveLayersInto(a, &store, &c.deck.deck.layers, &.{}, &c.strings, &.{});
         var out: check.report.Violations = .{};
         var runs: std.ArrayList(check.report.RuleRun) = .empty;
-        try check.drc.run(a, .cpu, &c.deck.drc, &store, null, &out, &runs);
+        try check.drc.run(a, .cpu, null, &c.deck.drc, &store, null, &out, &runs);
         var text: std.ArrayList([]const u8) = .empty;
         for (runs.items) |r| try text.append(a, try std.fmt.allocPrint(a, "{s} {t} {d}", .{ c.strings.resolve(r.rule), std.meta.activeTag(r.outcome), r.examined }));
         const rules = try a.alloc([]const u8, out.len());
@@ -150,7 +150,7 @@ fn countKinds(quasistatic: bool) ![2]usize {
     var root = try std.Io.Dir.cwd().openDir(io, paths.root, .{});
     defer root.close(io);
     var diag: gpurify.RunDiagnostic = .{};
-    const device: geom.Device = .{ .backend = .cpu, .min_gpu_work = std.math.maxInt(u64), .threads = 8 };
+    const device: geom.Device = .{ .backend = .cpu, .min_work = .never, .threads = 8 };
     const options: gpurify.RunOptions = .{ .checks = .{ .pex = true }, .quasistatic_nets = if (quasistatic) &.{ "PEX_CC_n0", "PEX_CC_n1" } else &.{}, .device = device };
     const r = try gpurify.run(gpa, arena.allocator(), io, root, .{ .layout = fixtures ++ "/pex/PEX_COUPLING_C.gds", .deck = fixtures ++ "/params.deck" }, options, &.{}, &diag);
     try testing.expect(r.summary.pex == .ran);

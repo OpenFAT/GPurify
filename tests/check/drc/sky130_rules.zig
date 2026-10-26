@@ -74,7 +74,7 @@ fn run(deck: []const u8, id: []const u8, rects: []const R) !Ran {
     defer rs.deinit(gpa);
     var sink: common.Sink = .{};
     defer sink.deinit();
-    try check.drc.run(gpa, .cpu, &rs, &store, null, &sink.out, &sink.runs);
+    try check.drc.run(gpa, .cpu, null, &rs, &store, null, &sink.out, &sink.runs);
     var out: Ran = .{ .count = 0, .all_ran = true, .examined = 0 };
     var found = false;
     for (sink.runs.items) |r| {

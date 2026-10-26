@@ -318,7 +318,7 @@ fn measuredPairs(c: *const Ctx, layer: LayerId, radius: Dbu) Error!void {
     const p = &c.s.p;
     try p.index_a.build(c.gpa, c.store, layer);
     try geom.index.candidatePairsInto(c.gpa, c.store, &p.index_a, radius, &p.pairs);
-    try distance.pairDistancesInto(c.gpa, p.device, c.store, p.pairs.items, radius, &p.dists);
+    try distance.pairDistancesInto(c.gpa, p.device, p.resident, c.store, p.pairs.items, radius, &p.dists);
 }
 
 /// `n` zeroed counters in `s.rect_start`.

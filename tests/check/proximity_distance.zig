@@ -115,8 +115,8 @@ test "capped distances agree with polyDist2" {
         var store: GeometryStore = .empty;
         defer store.deinit(gpa);
         try testStore(gpa, &rings, &store);
-        try pairDistancesInto(gpa, .cpu, &store, pairs[0..n_pairs], gap_cap, &exact);
-        try pairDistancesInto(gpa, .cpu, &store, pairs[0..n_pairs], gap_cap - 1, &capped);
+        try pairDistancesInto(gpa, .cpu, null, &store, pairs[0..n_pairs], gap_cap, &exact);
+        try pairDistancesInto(gpa, .cpu, null, &store, pairs[0..n_pairs], gap_cap - 1, &capped);
         for (exact.items, capped.items) |e, c| {
             if (e < cap2) try std.testing.expectEqual(e, c) else try std.testing.expect(c >= cap2);
         }
@@ -181,5 +181,27 @@ test "threaded blocks give the bits one thread gives" {
         try cappedDistancesCpu(&store, pairs[0..n], 1, one[0..n]);
         try cappedDistancesCpu(&store, pairs[0..n], 8, many[0..n]);
         try std.testing.expectEqualSlices(i64, one[0..n], many[0..n]);
+    }
+}
+
+test "a resident store uploads nothing while every call stays on the cpu" {
+    // Oracle: the laziness rule (geom/resident.zig): only a call that goes
+    // to the GPU uploads, so the CPU backend, and a GPU backend whose
+    // threshold the call is under, leave the copy empty; the answers are the
+    // per-call path's.
+    const gpa = std.testing.allocator;
+    var store: GeometryStore = .empty;
+    defer store.deinit(gpa);
+    try testStore(gpa, &.{ .{ &.{ 0, 10, 10, 0 }, &.{ 0, 0, 10, 10 } }, .{ &.{ 20, 30, 30, 20 }, &.{ 0, 0, 10, 10 } } }, &store);
+    const pairs = [_]Pair{.{ .a = @fromBackingInt(0), .b = @fromBackingInt(1) }};
+    var resident: geom.ResidentStore = .empty;
+    defer resident.deinit();
+    var got: std.ArrayList(DbuArea) = .empty;
+    defer got.deinit(gpa);
+    const under: geom.Device = .{ .backend = .cuda, .min_work = .never, .threads = 2 };
+    for ([_]geom.Device{ .cpu, under }) |device| {
+        try pairDistancesInto(gpa, device, &resident, &store, &pairs, 100, &got);
+        try std.testing.expectEqualSlices(DbuArea, &.{100}, got.items);
+        try std.testing.expect(resident.buffer == .cpu);
     }
 }

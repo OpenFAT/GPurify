@@ -46,7 +46,7 @@ pub const Totals = struct { resistance_ohm: f64 = 0, ground_cap_af: f64 = 0, cou
 const af_per_ff = 1000.0;
 
 /// The field solves here run on the host, eight threads.
-const device: geom.Device = .{ .backend = .cpu, .min_gpu_work = std.math.maxInt(u64), .threads = 8 };
+const device: geom.Device = .{ .backend = .cpu, .min_work = .never, .threads = 8 };
 
 /// One case's own GDS against params.deck, optionally with a reference
 /// (under tests/fixtures) and an intent file's text. The run lives in `arena`.

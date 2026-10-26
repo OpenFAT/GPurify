@@ -8,13 +8,14 @@
 //! crates/check/src/drc/ruleset.rs (`RuleSet::run_with_nets`, `dfm_scored`).
 //!
 //! Contents:
-//! - `pub fn run(gpa: Allocator, device: Device, rs: *const RuleSet, store: *const GeometryStore, poly_net: ?[]const u32, out: *Violations, runs: *std.ArrayList(RuleRun)) Error!void`
+//! - `pub fn run(gpa: Allocator, device: Device, resident: ?*ResidentStore, rs: *const RuleSet, store: *const GeometryStore, poly_net: ?[]const u32, out: *Violations, runs: *std.ArrayList(RuleRun)) Error!void`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
 const geom = @import("geom");
 const Device = geom.Device;
+const ResidentStore = geom.ResidentStore;
 const LayerId = geom.LayerId;
 const GeometryStore = geom.GeometryStore;
 const report = @import("../report.zig");
@@ -61,12 +62,13 @@ const patterning = @import("patterning.zig");
 /// Runs every rule of `rs` over `store`. `out` and `runs` are cleared
 /// first. `poly_net` is the extraction's net column (`NetTable.netColumn`)
 /// or null, which a net rule records as refused. Each layer is validated at
-/// most once per call.
-pub fn run(gpa: Allocator, device: Device, rs: *const RuleSet, store: *const GeometryStore, poly_net: ?[]const u32, out: *Violations, runs: *std.ArrayList(RuleRun)) Error!void {
+/// most once per call. `resident` is the run's device copy of `store` for
+/// the pair-distance kernel (null: per-call uploads).
+pub fn run(gpa: Allocator, device: Device, resident: ?*ResidentStore, rs: *const RuleSet, store: *const GeometryStore, poly_net: ?[]const u32, out: *Violations, runs: *std.ArrayList(RuleRun)) Error!void {
     out.truncate(0);
     runs.clearRetainingCapacity();
     if (poly_net) |nets| assert(nets.len == store.polyCount());
-    var s: Scratch = .{ .p = .{ .device = device } };
+    var s: Scratch = .{ .p = .{ .device = device, .resident = resident } };
     defer s.deinit(gpa);
     // Layers `0..drawn` are drawn; the rest are the deck's derived ones.
     const drawn: u32 = if (rs.first_derived) |l| @min(@backingInt(l), store.layerCount()) else store.layerCount();

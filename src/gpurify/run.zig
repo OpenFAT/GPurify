@@ -132,7 +132,12 @@ pub fn run(gpa: Allocator, run_arena: Allocator, io: std.Io, dir: std.Io.Dir, in
 /// from `load` and `extracted` from `extract` over it.
 pub fn runChecks(gpa: Allocator, run_arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, options: RunOptions, out: *Outputs) Error!Summary {
     const staged = loaded.deck.deck.stages.name.len != 0;
-    const drc: StageStatus = if (options.checks.drc) try domain(gpa, checks_drc.runDrc, .{ run_arena, options.device, loaded, extracted, out }) else .not_selected;
+    // The store's device copy for every DRC kernel call; uploaded by the
+    // first call that goes to the GPU, so an all-CPU run uploads nothing.
+    // Load derived every layer already, so the copy covers what DRC reads.
+    var resident: geom.ResidentStore = .empty;
+    defer resident.deinit();
+    const drc: StageStatus = if (options.checks.drc) try domain(gpa, checks_drc.runDrc, .{ run_arena, options.device, &resident, loaded, extracted, out }) else .not_selected;
     const erc: StageStatus = if (options.checks.erc) try domain(gpa, checks_erc.runErc, .{ run_arena, loaded, extracted, out }) else .not_selected;
     if (staged) try checks_after.holdBackLaterStages(run_arena, loaded, out);
     const lvs_status: StageStatus = if (options.checks.lvs) try domain(gpa, checks_lvs.runLvs, .{ run_arena, loaded, extracted, options.lvs, out }) else .not_selected;

@@ -20,7 +20,7 @@ const sizes = [_]usize{ 0, 1, 63, 64, 127, 128, 3 * 128 + 1, 600 };
 
 fn gpuDevice() !geom.Device {
     const backend = extract.gpu.compiled orelse return error.BuiltWithoutGpuKernels;
-    return .{ .backend = backend, .min_gpu_work = 0, .threads = 4 };
+    return .{ .backend = backend, .min_work = .always, .threads = 4 };
 }
 
 fn compare(n: usize, rng: *Rng, gpu: *extract.gpu.Gpu, m: *const extract.matvec.Potential, f: ?*const extract.dielectric.Field) !void {

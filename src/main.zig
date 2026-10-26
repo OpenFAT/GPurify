@@ -27,18 +27,6 @@ const errors = @import("cli/errors.zig");
 /// goldens carry.
 const tool_version = "0.1.0";
 
-/// `--backend auto`'s work threshold: never. `zig build bench` on an RTX
-/// 4060 Laptop (GeForce, f64 at 1/64 rate) against 32 CPU threads found no
-/// size where a GPU kernel call wins: BEM rows 0.54x at P = 32768 (f64
-/// bound, 579 ms against 313 ms an apply, upload 0.6 ms), pair distances
-/// 0.18x at 6.2M pairs (kernel 2.9 ms; the store's 340 MB upload 171 ms),
-/// density windows 0.04x at 249k windows (kernel 7.6 ms against the CPU's
-/// 8.6 ms, then a 225 ms upload), axpy 0.44x at 2^24.
-// ponytail: one threshold for every kernel, which only holds while it is 0 or
-// never: the work units differ (P², edge pairs, windows), so a machine with a
-// finite crossover gets one field per kernel on `Device`.
-const auto_min_gpu_work: u64 = std.math.maxInt(u64);
-
 /// What the CLI runs against: everything a run reads besides argv.
 const Env = struct { gpa: Allocator, io: std.Io, dir: std.Io.Dir, environ: *const std.process.Environ.Map };
 
@@ -95,7 +83,9 @@ fn dispatch(env: Env, arena: Allocator, argv: []const []const u8, out: *Writer, 
         error.Usage => return fail(err, "{s}", .{message}),
         error.OutOfMemory => return error.OutOfMemory,
     };
-    parsed.options.device = .{ .backend = try backendOf(parsed.backend, err), .min_gpu_work = minGpuWork(parsed.backend), .threads = parsed.threads orelse cpuThreads() };
+    const backend = try backendOf(parsed.backend, err);
+    const threads = parsed.threads orelse cpuThreads();
+    parsed.options.device = .{ .backend = backend, .min_work = minWork(env.gpa, env.io, parsed.backend, backend, threads), .threads = threads };
     switch (parsed.command) {
         .lib => |lib| return liberty(env, arena, parsed.inputs, lib, out, err),
         .system => |path| return system(env, arena, &parsed, path, out, err),
@@ -129,11 +119,17 @@ fn backendOf(choice: args.Backend, err: *Writer) Failure!gpurify.Device.Backend 
 }
 
 /// A named GPU backend runs every kernel call there (it was asked for);
-/// `auto` sends only the calls the bench measured faster on the GPU.
-fn minGpuWork(choice: args.Backend) u64 {
+/// `auto` on a GPU sends a call there only from its class's crossover,
+/// measured here and now (gpurify/calibrate.zig), and keeps everything on
+/// the CPU when the calibration itself fails. Where a call runs never
+/// changes its result.
+fn minWork(gpa: Allocator, io: std.Io, choice: args.Backend, backend: gpurify.Device.Backend, threads: u16) gpurify.Device.MinWork {
     return switch (choice) {
-        .auto => auto_min_gpu_work,
-        .cpu, .cuda, .hip => 0,
+        .cpu, .cuda, .hip => .always,
+        .auto => if (backend == .cpu) .always else blk: {
+            const fits = gpurify.calibrate.measure(gpa, io, backend, threads) catch break :blk .never;
+            break :blk gpurify.calibrate.minWork(fits);
+        },
     };
 }
 
@@ -459,14 +455,16 @@ test {
     _ = errors;
 }
 
-test "auto keeps every kernel call on the cpu; a named gpu takes every call" {
-    // Oracle: the calibration table (tools/bench.zig on the RTX 4060 Laptop,
-    // ARCHITECTURE.md GPU): no kernel's GPU call beat 32 CPU threads at any
-    // size, so `auto` never crosses; `--backend cuda` is the user's order.
-    const biggest: u64 = 1 << 62;
-    try std.testing.expect(biggest < minGpuWork(.auto));
-    try std.testing.expectEqual(@as(u64, 0), minGpuWork(.cuda));
-    try std.testing.expectEqual(@as(u64, 0), minGpuWork(.hip));
+test "a named gpu takes every call; auto on the cpu calibrates nothing" {
+    // Oracle: the selection rule (ARCHITECTURE.md GPU, Selection): `--backend
+    // cuda|hip` is the user's order, every class at 0; `auto` that resolved
+    // to the CPU has no GPU to measure, and its backend sends nothing there.
+    const gpa = std.testing.allocator;
+    const io = std.testing.io;
+    const always: gpurify.Device.MinWork = .always;
+    try std.testing.expectEqual(always, minWork(gpa, io, .cuda, .cuda, 4));
+    try std.testing.expectEqual(always, minWork(gpa, io, .hip, .hip, 4));
+    try std.testing.expectEqual(always, minWork(gpa, io, .auto, .cpu, 4));
 }
 
 test "drc on the shipped sky130 deck passes a 1 um met1 square and fails a 100 nm strip on m1.1" {

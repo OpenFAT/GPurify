@@ -77,7 +77,7 @@ fn runOn(store: *const geom.GeometryStore, rules: []const Rule, class_tables: []
     for (rules) |r| try set.push(gpa, RULE, r, .@"error");
     var sink: Sink = .{};
     errdefer sink.deinit();
-    try drc.run(gpa, .cpu, &set, store, null, &sink.out, &sink.runs);
+    try drc.run(gpa, .cpu, null, &set, store, null, &sink.out, &sink.runs);
     return sink;
 }
 

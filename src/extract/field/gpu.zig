@@ -74,9 +74,9 @@ pub const Gpu = struct {
 pub const compiled: ?Device.Backend = if (artifacts.has_cuda) .cuda else if (artifacts.has_hip) .hip else null;
 
 /// Whether a solve of `panels` panels should try the GPU: a GPU backend
-/// asked for, and a dense product of at least `min_gpu_work` pairs.
+/// asked for, and a dense product of at least `min_work.float` pairs.
 pub fn wanted(device: Device, panels: usize) bool {
-    return device.backend != .cpu and @as(u64, panels) * panels >= device.min_gpu_work;
+    return device.backend != .cpu and @as(u64, panels) * panels >= device.min_work.float;
 }
 
 // ---- private ----

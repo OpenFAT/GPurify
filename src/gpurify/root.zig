@@ -9,6 +9,7 @@
 //! - `Checks`, `RunOptions`, `Outputs`, `Corner`, `Summary`, `StageStatus`, `CheckError`, `RunError`,
 //!   `RunDiagnostic`, `Run`, `run`, `runChecks`, `summarize`, `appendStage` (run.zig);
 //!   `designExtent` (checks_erc.zig), `paramNames` (checks_lvs.zig)
+//! - `calibrate`: `--backend auto`'s per-class thresholds, `measure`, `minWork`, `crossover` (calibrate.zig)
 //! - `pdks`: the four shipped decks, `pdks.decks` by name (pdks.zig)
 //! - `integration`: the DEF integration checks (integration.zig)
 //! - `triage`: `Clusters`, `clusterInto` (triage.zig); `p2p`: `resistanceInto`, `coupling` (p2p.zig);
@@ -38,6 +39,7 @@ const load_ = @import("load.zig");
 const extracted = @import("extracted.zig");
 pub const reference = @import("reference.zig");
 pub const pdks = @import("pdks.zig");
+pub const calibrate = @import("calibrate.zig");
 pub const integration = @import("integration.zig");
 pub const triage = @import("triage.zig");
 pub const p2p = @import("p2p.zig");

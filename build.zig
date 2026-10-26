@@ -115,6 +115,7 @@ pub fn build(b: *Build) void {
             .{ .name = "geom", .module = mods.get("geom").? },
             .{ .name = "check", .module = mods.get("check").? },
             .{ .name = "extract", .module = mods.get("extract").? },
+            .{ .name = "gpurify", .module = mods.get("gpurify").? },
             .{ .name = "testgen", .module = testgen },
         },
     }) });

@@ -60,7 +60,7 @@ fn run1(sink: *Sink, store: *const geom.GeometryStore, rule: Rule) !void {
 }
 
 fn runSet(sink: *Sink, store: *const geom.GeometryStore, set: *const RuleSet) !void {
-    try check.drc.run(gpa, .cpu, set, store, null, &sink.out, &sink.runs);
+    try check.drc.run(gpa, .cpu, null, set, store, null, &sink.out, &sink.runs);
 }
 
 fn redundant(min_count: u16, within: i64) Rule {

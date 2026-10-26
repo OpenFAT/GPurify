@@ -17,7 +17,7 @@
 //! - `StrTable`, `StrId` (intern.zig)
 //! - `LayerId`, `PolyId` (ids.zig)
 //! - `Bbox` (bbox.zig)
-//! - `Device` (device.zig)
+//! - `Device` (device.zig), `ResidentStore` (resident.zig)
 //! - `float`: Rust's `{}`, `{:?}` and `{:.6}` of an `f64` (`display`, `debug`, `fixed6`)
 //! - `bulk`: one-allocation, one-copy device uploads (bulk.zig)
 //! - `linalg`: `dot`, `nrm2`, `spmv`, and the `axpy` / `xpay` Gompute specs
@@ -41,6 +41,7 @@ const intern = @import("intern.zig");
 const ids = @import("ids.zig");
 const bbox = @import("bbox.zig");
 const device = @import("device.zig");
+const resident = @import("resident.zig");
 pub const bulk = @import("bulk.zig");
 pub const float = @import("float.zig");
 pub const linalg = @import("linalg.zig");
@@ -81,6 +82,7 @@ pub const PolyId = ids.PolyId;
 
 pub const Bbox = bbox.Bbox;
 pub const Device = device.Device;
+pub const ResidentStore = resident.ResidentStore;
 
 pub const Point = ops.Point;
 pub const Seg = ops.Seg;
@@ -98,6 +100,7 @@ comptime {
 
 test {
     _ = bulk;
+    _ = resident;
     _ = float;
     _ = dbu;
     _ = qty;

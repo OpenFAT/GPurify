@@ -21,6 +21,7 @@
 //! - `pub const Bins = struct`, `Bins.deinit`, `Bins.fill(b, gpa: Allocator, g: Grid, rects: []const Bbox) Allocator.Error!void`
 //! - `pub const Error`, `pub const GpuError`
 //! - `pub fn windowAreasInto(gpa: Allocator, device: Device, g: Grid, rects: []const Bbox, out: *std.ArrayList(i64)) Error!void`
+//! - `pub fn visits(g: Grid, bins: *const Bins) u64`
 //! - `pub fn windowAreasCpu(g: Grid, bins: *const Bins, threads: u16, out: []i64) std.Thread.SpawnError!void`
 //! - `pub fn windowAreasGpu(gpa: Allocator, backend: Device.Backend, g: Grid, bins: *const Bins, out: []i64) GpuError!void`
 //! - `pub fn windowArea(w: u64, cols: u64, x0: i64, y0: i64, side: i64, stride: i64, row_start: anytype, reach: anytype, xlo: anytype, ylo: anytype, xhi: anytype, yhi: anytype) i64`
@@ -140,8 +141,9 @@ const block = 256;
 
 /// The exact covered area of every window of `g` for disjoint `rects`, into
 /// `out` (cleared and refilled), row order. On the GPU when `device` says so
-/// and the work is at least `device.min_gpu_work` rectangle visits, falling
-/// back to the CPU without a driver; the answer is bit-identical either way.
+/// and the work is at least `device.min_work.streamed` rectangle visits
+/// (`visits`), falling back to the CPU without a driver; the answer is
+/// bit-identical either way.
 pub fn windowAreasInto(gpa: Allocator, device: Device, g: Grid, rects: []const Bbox, out: *std.ArrayList(i64)) Error!void {
     var bins: Bins = .{};
     defer bins.deinit(gpa);
@@ -149,10 +151,24 @@ pub fn windowAreasInto(gpa: Allocator, device: Device, g: Grid, rects: []const B
     try out.resize(gpa, g.count());
     const on_gpu = switch (device.backend) {
         .cpu => false,
-        .cuda, .hip => @as(u64, bins.xlo.items.len) * g.cols >= device.min_gpu_work,
+        .cuda, .hip => visits(g, &bins) >= device.min_work.streamed,
     };
     const done = on_gpu and if (windowAreasGpu(gpa, device.backend, g, &bins, out.items)) true else |_| false;
     if (!done) try windowAreasCpu(g, &bins, device.threads, out.items);
+}
+
+/// The work estimate the GPU threshold reads: the window-rectangle pairs
+/// the kernel clips, each binned rectangle once per window of its row it
+/// overlaps along x, plus one row search per window. (Binned rectangles
+/// times columns, the old estimate, counted every window of the row for
+/// every rectangle.)
+pub fn visits(g: Grid, bins: *const Bins) u64 {
+    var work: u64 = g.count();
+    for (bins.xlo.items, bins.xhi.items) |lo, hi| {
+        const cols = hit(g, lo, hi, g.x0, g.cols);
+        work += cols[1] - cols[0];
+    }
+    return work;
 }
 
 /// `windowArea` over every window, into `out`, on `threads` CPU threads over
@@ -327,5 +343,37 @@ test "window areas match clipping every rectangle" {
         const g: Grid = .{ .x0 = rand(&seed, 40) - 60, .y0 = rand(&seed, 40) - 60, .side = 1 + rand(&seed, 120), .stride = 1 + rand(&seed, 90), .cols = @intCast(1 + rand(&seed, 8)), .ways = @intCast(1 + rand(&seed, 8)) };
         try windowAreasInto(gpa, .cpu, g, rects.items, &out);
         for (out.items, 0..) |got, w| try std.testing.expectEqual(@as(i128, got), geom.rects.clippedArea(rects.items, g.window(w)));
+    }
+}
+
+test "visits counts each binned rectangle once per window it overlaps along x" {
+    // Oracle: brute force over every window of every grid: one row search,
+    // plus each rectangle binned to its row whose x-span meets the window's
+    // with positive length; 500 random grids and rectangle sets.
+    const gpa = std.testing.allocator;
+    var seed: u64 = 0x2545_f491_4f6c_dd1d;
+    var rects: std.ArrayList(Bbox) = .empty;
+    defer rects.deinit(gpa);
+    var bins: Bins = .{};
+    defer bins.deinit(gpa);
+    for (0..500) |_| {
+        rects.clearRetainingCapacity();
+        for (0..@intCast(rand(&seed, 12))) |k| {
+            const x = rand(&seed, 200) - 50;
+            const y = @as(i64, @intCast(k)) * 40 - 30 + rand(&seed, 10);
+            try rects.append(gpa, .{ .xlo = x, .ylo = y, .xhi = x + 1 + rand(&seed, 150), .yhi = y + 1 + rand(&seed, 29) });
+        }
+        const g: Grid = .{ .x0 = rand(&seed, 40) - 60, .y0 = rand(&seed, 40) - 60, .side = 1 + rand(&seed, 120), .stride = 1 + rand(&seed, 90), .cols = @intCast(1 + rand(&seed, 8)), .ways = @intCast(1 + rand(&seed, 8)) };
+        try bins.fill(gpa, g, rects.items);
+        var want: u64 = 0;
+        for (0..g.count()) |w| {
+            const win = g.window(w);
+            const iy = w / g.cols;
+            want += 1;
+            for (bins.row_start.items[iy]..bins.row_start.items[iy + 1]) |k| {
+                want += @intFromBool(@min(bins.xhi.items[k], win.xhi) > @max(bins.xlo.items[k], win.xlo));
+            }
+        }
+        try std.testing.expectEqual(want, visits(g, &bins));
     }
 }

@@ -38,7 +38,7 @@ fn twoRules(set: *RuleSet, warn: bool) !void {
 }
 
 fn runOnce(set: *const RuleSet, store: *const geom.GeometryStore, sink: *Sink) !void {
-    try check.drc.run(gpa, .cpu, set, store, null, &sink.out, &sink.runs);
+    try check.drc.run(gpa, .cpu, null, set, store, null, &sink.out, &sink.runs);
     try sink.out.sortCanonical(gpa);
 }
 

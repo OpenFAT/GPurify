@@ -248,10 +248,48 @@ test "the GPU pair-distance kernel gives the CPU's bits (-Dgpu-tests)" {
     const dist = check.proximity_distance;
     for ([_]usize{ 0, 1, 255, 256, 3 * 256 + 1 }) |n| {
         try dist.cappedDistancesCpu(&store, pairs[0..n], 1, cpu[0..n]);
-        dist.cappedDistancesGpu(gpa, .cuda, &store, pairs[0..n], gpu[0..n]) catch |err| switch (err) {
-            error.NotBuilt => try dist.cappedDistancesGpu(gpa, .hip, &store, pairs[0..n], gpu[0..n]),
+        dist.cappedDistancesGpu(gpa, .cuda, null, &store, pairs[0..n], gpu[0..n]) catch |err| switch (err) {
+            error.NotBuilt => try dist.cappedDistancesGpu(gpa, .hip, null, &store, pairs[0..n], gpu[0..n]),
             else => return err,
         };
         try testing.expectEqualSlices(i64, cpu[0..n], gpu[0..n]);
+    }
+}
+
+test "the resident store serves every call with the CPU's bits (-Dgpu-tests)" {
+    // Oracle: differential, CPU body against GPU body over one resident copy
+    // shared by calls of 0, 1, block - 1, block and 3 * block + 1 pairs, bit
+    // equal; and the residency law: the empty call uploads nothing, the
+    // first real call uploads once, and every later call reads the same
+    // device columns, the store's row count recorded.
+    if (!paths.gpu_tests) return;
+    var lb = LayoutBuilder.init(1);
+    defer lb.deinit(gpa);
+    var rng = testgen.Rng.init(11);
+    for (0..40) |_| _ = try lb.shape(gpa, 0, testgen.shapes.lShape(rng.range(-5000, 5000), rng.range(-5000, 5000), 300, 80));
+    var store: GeometryStore = .empty;
+    defer store.deinit(gpa);
+    var ids: Ids = .{};
+    defer ids.deinit(gpa);
+    try lb.finish(gpa, &store, &ids);
+    var pairs: [3 * 256 + 1]geom.index.Pair = undefined;
+    for (&pairs, 0..) |*q, i| q.* = .{ .a = @fromBackingInt(@intCast(i % 40)), .b = @fromBackingInt(@intCast((i * 17 + 3) % 40)) };
+    var cpu: [pairs.len]i64 = undefined;
+    var gpu: [pairs.len]i64 = undefined;
+    const dist = check.proximity_distance;
+    // CUDA where it runs, else HIP; neither fails the calls below.
+    const backend: geom.Device.Backend = if (geom.Device.available(.cuda)) .cuda else .hip;
+    var resident: geom.ResidentStore = .empty;
+    defer resident.deinit();
+    var columns: ?[4]usize = null;
+    for ([_]usize{ 0, 1, 255, 256, 3 * 256 + 1 }) |n| {
+        try dist.cappedDistancesCpu(&store, pairs[0..n], 1, cpu[0..n]);
+        try dist.cappedDistancesGpu(gpa, backend, &resident, &store, pairs[0..n], gpu[0..n]);
+        try testing.expectEqualSlices(i64, cpu[0..n], gpu[0..n]);
+        if (n == 0) try testing.expect(resident.buffer == .cpu);
+        if (n == 0) continue;
+        try testing.expect(resident.buffer == backend);
+        try testing.expectEqual(store.polyCount(), resident.polys);
+        if (columns) |c| try testing.expectEqualSlices(usize, &c, &resident.address) else columns = resident.address;
     }
 }
