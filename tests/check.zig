@@ -69,4 +69,6 @@ test {
     _ = @import("check/erc/power_grid_laws.zig");
     _ = @import("check/erc/effective_resistance_laws.zig");
     _ = @import("check/erc/dispatch_deck.zig");
+    _ = @import("check/erc/reference_solve.zig");
+    _ = @import("check/erc/reference_voltage.zig");
 }
