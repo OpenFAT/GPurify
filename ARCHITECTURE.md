@@ -193,9 +193,15 @@ correct and the port needs a net from the first file.
 - **Unsupported fails, never skips.** A known gap carries `KNOWN GAP: <cause>`
   and an issue.
 - **Tiers.** Merge: `zig build test -Doptimize=ReleaseSafe` on Linux and macOS,
-  plus the GPU compile. Nightly, later: `--fuzz` over the ten readers, live
-  differentials in a `.#oracles` shell (KLayout, Netgen, Magic, FastCap,
-  FastHenry, OpenROAD, ngspice), CPU vs GPU on a GPU runner, scaling.
+  plus the GPU compile; it replays every fuzz seed and committed crasher
+  through its target's oracle (`tests/gpurify/fuzz.zig`). Nightly
+  (`.github/workflows/nightly.yml`): `-Dslow-tests`, the ten
+  `std.testing.fuzz` targets under `zig build test-gpurify --fuzz=<N>
+  -Dtest-filter=fuzz` (a crash lands in `.zig-cache/f/crash`; minimise it
+  into `tests/fuzz/regressions/<target>/`), and the CLI at 1 and 8 threads
+  byte-compared. Later: live differentials in a `.#oracles` shell (KLayout,
+  Netgen, Magic, FastCap, FastHenry, OpenROAD, ngspice), CPU vs GPU on a GPU
+  runner, scaling.
 
 ## Porting rules
 
