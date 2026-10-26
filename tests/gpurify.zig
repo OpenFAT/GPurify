@@ -16,4 +16,5 @@ test {
     _ = @import("gpurify/sky130_rules.zig");
     _ = @import("gpurify/flow.zig");
     _ = @import("gpurify/metamorphic.zig");
+    _ = @import("gpurify/bitmap.zig");
 }
