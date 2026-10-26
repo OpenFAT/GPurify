@@ -1,6 +1,6 @@
 //! The decks in `pdks/` are inputs this repository ships: every one parses,
 //! types its DRC rows, and files every rule under a kind one domain spells.
-//! Ported from the root tests/pdk_decks.rs, its DRC and deck parts.
+//! Ported from the root tests/pdk_decks.rs, its DRC, ERC and deck parts.
 //!
 //! The oracle: construct-from-answer, with the answer stated as a property
 //! rather than a number: whatever a deck says, if DRC cannot build a rule
@@ -9,9 +9,6 @@
 //! decks are discovered by reading the directory: an empty `pdks/` would
 //! make every loop below pass vacuously.
 //!
-//! Deferred (ERC rule set, wave 4): the ERC half of
-//! `every_deck_in_pdks_parses_and_builds_both_rule_sets` (here every ERC row
-//! is filed by kind name, and `deck.compile` is shown refusing it by name).
 //! Deferred (the `gpurify::pdks` constants, a front-end crate's):
 //! `every_deck_file_is_a_shipped_constant_byte_for_byte`,
 //! `every_shipped_constant_compiles`.
@@ -82,9 +79,9 @@ fn load(name: []const u8) !Loaded {
     return l;
 }
 
-test "every deck in pdks parses and builds its drc rule set" {
+test "every deck in pdks parses and builds both rule sets" {
     // Oracle: construct-from-answer. Every shipped deck is a deck: it parses,
-    // and DRC builds a rule set from it.
+    // and DRC and ERC each build a rule set from it.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     for (try deckFiles(arena.allocator())) |name| {
@@ -96,6 +93,11 @@ test "every deck in pdks parses and builds its drc rule set" {
             return e;
         };
         rs.deinit(gpa);
+        var erc = check.erc.compile.fromDeck(gpa, &l.deck, &l.strings, &diag) catch |e| {
+            std.debug.print("{s}: the ERC rule set does not build: {t} {s} {s}\n", .{ name, e, l.strings.resolve(diag.rule), diag.param });
+            return e;
+        };
+        erc.deinit(gpa);
     }
 }
 
@@ -124,10 +126,10 @@ test "every deck configures rules and every rule belongs to a domain" {
     }
 }
 
-test "every shipped deck's erc rows are refused by name until wave 4" {
-    // Oracle: the wave-3 contract: deck compile refuses an ERC row with a
-    // named error carrying its id, never drops it. Every shipped deck states
-    // ERC rows, so each is refused, naming a row whose kind is ERC.
+test "every shipped deck compiles in full" {
+    // Oracle: construct-from-answer. A shipped deck compiles with both
+    // domains typed, and files every row it states: the DRC rows in deck
+    // order and the ERC rows table by table.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     for (try deckFiles(arena.allocator())) |name| {
@@ -138,13 +140,13 @@ test "every shipped deck's erc rows are refused by name until wave 4" {
         var diag: check.deck.compile.Diag = .{};
         var scratch: std.heap.ArenaAllocator = .init(gpa);
         defer scratch.deinit();
-        const got = check.deck.compile.compile(gpa, scratch.allocator(), l.text, try geom.Grid.init(1000), &strings, &diag);
-        if (got) |cd| {
-            var owned = cd;
-            owned.deinit(gpa);
-            return error.ErcRowsAccepted;
-        } else |e| try testing.expectEqual(error.ErcRulesNotPorted, e);
-        try testing.expect(check.erc.kinds.isKind(strings.resolve(diag.rule.kind)));
+        var cd = check.deck.compile.compile(gpa, scratch.allocator(), l.text, try geom.Grid.init(1000), &strings, &diag) catch |e| {
+            std.debug.print("{s}: {t} {s} {s}\n", .{ name, e, strings.resolve(diag.rule.rule), diag.rule.param });
+            return e;
+        };
+        defer cd.deinit(gpa);
+        try testing.expect(!cd.erc.isEmpty());
+        try testing.expectEqual(cd.ruleCount(), cd.drc.len() + cd.erc.len());
     }
 }
 
