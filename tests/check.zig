@@ -19,4 +19,5 @@ test {
     _ = @import("check/lvs/reduce.zig");
     _ = @import("check/lvs/controls.zig");
     _ = @import("check/lvs/gates.zig");
+    _ = @import("check/lvs/checks.zig");
 }

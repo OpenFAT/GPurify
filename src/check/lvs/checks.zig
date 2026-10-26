@@ -77,7 +77,7 @@ pub fn checkNetSeedConflicts(gpa: Allocator, design: Design, ports: *const PortT
     const polys = ports.poly.items;
     var shorts: std.ArrayList([2]PolyId) = .empty;
     defer shorts.deinit(gpa);
-    for (1..nets.len) |at| {
+    for (1..@max(nets.len, 1)) |at| {
         if (nets[at] != nets[at - 1]) continue;
         try out.push(gpa, onFirstShape(design.store, graphViolation(rule, polys[at - 1], polys[at], 2, 1)));
         try shorts.append(gpa, .{ polys[at - 1], polys[at] });
@@ -132,7 +132,7 @@ fn checkLabelConflicts(gpa: Allocator, design: Design, ports: *const PortTable, 
     // Every binding, so a name a short hides behind another is still seen.
     const names = ports.by_name.items;
     const named = ports.by_name_net.items;
-    for (1..names.len) |at| {
+    for (1..@max(names.len, 1)) |at| {
         if (names[at] != names[at - 1]) continue;
         var row = graphViolation(rule, labelled(ports, named[at - 1], names[at]), labelled(ports, named[at], names[at]), 2, 1);
         if (mustConnect(names[at], strings, controls)) row.severity = .warning;
