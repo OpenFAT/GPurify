@@ -20,7 +20,7 @@
 //! - `tables`: `SpacingTable`, `CutClassTable`, `ClassTable`, `SpanTable`, `CoverBands`, `CutAreaBands`, `DefectSizes`
 //! - `rule_set`: `RuleSet`, `Slot`, `Csr`
 //! - `params`: `Error`, `Diagnostic`, `Reader`; `compile`: `fromDeck`; `validate`: `validate`
-//! - `rule_layers`: `layersOf`; `scratch`: `Scratch`, `Ctx`; `run_` (run.zig): `run`, `ported`
+//! - `rule_layers`: `layersOf`; `scratch`: `Scratch`, `Ctx`; `run_` (run.zig): `run`
 //! - family files: `patterning`, `patterning_color`, `via_cuts`, `via_stack`, `via_connectors`, `dfm`, `overlay`, `overlay_octilinear`, `overlay_enclosure`, `overlay_strips`, `presence`, `edge`, `grid`, `area_critical`, `area_density`, `area`, `density`, `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
 //!   `spacing_ends`, `spacing_net`, `spacing_table`
 //! - aliases: `Kind`, `Rule`, `RuleSet`, `Error`, `Diagnostic`, `fromDeck`, `run`
