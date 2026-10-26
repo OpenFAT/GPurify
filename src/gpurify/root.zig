@@ -64,6 +64,9 @@ pub const liberty = struct {
     pub const circuit = @import("liberty/circuit.zig");
     pub const spice = @import("liberty/spice.zig");
     pub const session = @import("liberty/session.zig");
+    pub const measure = @import("liberty/measure.zig");
+    pub const measure_static = @import("liberty/measure_static.zig");
+    pub const measure_constraint = @import("liberty/measure_constraint.zig");
 };
 
 test {
