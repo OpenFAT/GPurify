@@ -10,6 +10,8 @@
 //! every other `*` or `.` line. The driver is a net's first `*|P` of
 //! direction `I`, else its first `*|I` of direction `O`. A card belongs to
 //! the net of its first node's declaration, else the section it stands in.
+//! Names are unescaped once, after splitting, so a `\(` or `\)` is part of
+//! the name; Rust split on every parenthesis first.
 //!
 //! Contents:
 //! - `pub fn readInto(gpa: Allocator, text: []const u8, out: *Read, diag: *Diagnostic) Error!void`
@@ -24,6 +26,7 @@ const Diagnostic = foreign.Diagnostic;
 const Collect = foreign.Collect;
 
 const max_tokens = 8;
+const separators = " \t\r()";
 
 /// Reads `text` into `out` (cleared). Errors: what foreign.zig's `Error`
 /// lists, with the line and token in `diag`.
@@ -52,11 +55,23 @@ pub fn readInto(gpa: Allocator, text: []const u8, out: *Read, diag: *Diagnostic)
     }
     for (cards.items, card_line.items) |card, line| {
         diag.* = .{ .line = line };
+        // Split on blanks and parentheses; a `\`-escaped byte stays in its
+        // token, for `foreign.unescape` to undo once.
         var tokens_buf: [max_tokens][]const u8 = undefined;
-        var it = std.mem.tokenizeAny(u8, card, " \t\r()");
         var count: usize = 0;
-        while (it.next()) |t| : (count += 1) {
-            if (count < max_tokens) tokens_buf[count] = t;
+        var i: usize = 0;
+        while (i < card.len) {
+            if (std.mem.findScalar(u8, separators, card[i]) != null) {
+                i += 1;
+                continue;
+            }
+            const start = i;
+            while (i < card.len and std.mem.findScalar(u8, separators, card[i]) == null) {
+                i += if (card[i] == '\\') 2 else 1;
+            }
+            i = @min(i, card.len);
+            if (count < max_tokens) tokens_buf[count] = card[start..i];
+            count += 1;
         }
         if (count == 0) continue;
         const tokens = tokens_buf[0..@min(count, max_tokens)];

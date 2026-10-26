@@ -3,7 +3,7 @@
 //!
 //! Every writer appends to a caller's `*std.Io.Writer`, iterates the
 //! canonical order its table guarantees (never sorts), and formats floats
-//! through float.zig, so the bytes are a function of the inputs and the
+//! through geom.float, so the bytes are a function of the inputs and the
 //! `Header` alone. A refusal of the input is found before the first byte
 //! unless its writer says otherwise; a writer that fails may have written
 //! part of its output, so the caller discards it.

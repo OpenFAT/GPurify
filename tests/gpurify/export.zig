@@ -263,6 +263,29 @@ test "a label with special characters is escaped once and reads back as itself" 
     try testing.expectEqualStrings("a net name holding whitespace or a control character", w.diag.what);
 }
 
+test "a dspf label with parentheses reads back as itself" {
+    // Oracle: round trip. The DSPF writer escapes `(` and `)` (IEEE
+    // 1481-1998 §B.2), so `*|S (n\(1\):0 L0)` declares node `n(1):0` of net
+    // `n(1)`: an escaped parenthesis is part of the name, an unescaped one
+    // brackets the declaration. Rust's reader split on both before
+    // unescaping.
+    var w: World = undefined;
+    try w.init("n(1)");
+    defer w.deinit();
+    const text = try w.dspf();
+    try testing.expect(std.mem.indexOf(u8, text, "*|NET n\\(1\\) 0.125000f\n*|S (n\\(1\\):0 L0)\n") != null);
+    var read: extract.foreign.Read = .empty;
+    defer read.deinit(gpa);
+    var diag: extract.foreign.Diagnostic = .{};
+    try extract.dspf.readInto(gpa, text, &read, &diag);
+    try testing.expectEqual(2, read.nameCount());
+    try testing.expectEqualStrings("n(1)", read.name(1));
+    var totals: std.ArrayList(f64) = .empty;
+    defer totals.deinit(gpa);
+    try read.network.capacitancePerNetInto(gpa, &totals);
+    try testing.expectEqualSlices(f64, &.{ 0.375, 0.125 }, totals.items);
+}
+
 test "the spice netlist is exactly these bytes" {
     // Oracle: golden, written by hand: the SPICE `M` card's drain, gate, source,
     // bulk order, and the shared source's area as the exact quotient `70000/2`
@@ -505,7 +528,7 @@ test "format_f64 writes six decimal places and no exponent" {
     var buf: [64]u8 = undefined;
     for (cases) |c| {
         var w: std.Io.Writer = .fixed(&buf);
-        try ex.float.fixed6(&w, c[0]);
+        try geom.float.fixed6(&w, c[0]);
         try testing.expectEqualStrings(c[1], w.buffered());
     }
 }

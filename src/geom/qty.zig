@@ -20,6 +20,7 @@
 //! - `pub fn powi(base: f64, exponent: i32) f64`
 
 const std = @import("std");
+const float = @import("float.zig");
 
 /// A physical dimension. `symbol` is the SI symbol of the base unit, ASCII.
 pub const Dimension = enum {
@@ -144,11 +145,12 @@ pub fn Qty(comptime dim: Dimension, comptime prefix: Prefix) type {
             return .{ .raw = q.raw * factor };
         }
 
-        /// Writes `<value> <prefix><symbol>`: `1.8 V`, `3 aF`, `200 mohm`.
-        /// The value is the shortest round-tripping decimal (`{d}`), so a
-        /// report diff is about the number. Use with `{f}`.
+        /// Writes `<value> <prefix><symbol>`: `1.8 V`, `3 aF`, `200 mohm`,
+        /// `NaN V`. The value is Rust's `{}` (`float.display`), so a report
+        /// diffs against the Rust tool's. Use with `{f}`.
         pub fn format(q: Self, w: *std.Io.Writer) std.Io.Writer.Error!void {
-            try w.print("{d} {s}{s}", .{ q.raw, prefix.letter(), dim.symbol() });
+            try float.display(w, q.raw);
+            try w.print(" {s}{s}", .{ prefix.letter(), dim.symbol() });
         }
     };
 }
@@ -212,4 +214,21 @@ test "powi matches exact powers of ten" {
     try std.testing.expectEqual(@as(f64, 1e22), powi(10.0, 22));
     try std.testing.expectEqual(@as(f64, 1.0), powi(10.0, 0));
     try std.testing.expectEqual(1.0 / 1e9, powi(10.0, -9));
+}
+
+test "format prints the value as Rust's Display did, where Zig's {d} differs" {
+    // Oracle: rustc 1.95 `format!("{}", Qty::<Voltage, 0>::new(v))`, which is
+    // `format!("{} V", v)` by crates/geom/src/qty.rs; the f64 texts are
+    // float.zig's rustc vectors. Zig's `{d}` prints `nan` and rounds the
+    // exact tie to even (`169700940171274.12`).
+    const cases = [_]struct { u64, []const u8 }{
+        .{ 0x7ff8000000000000, "NaN V" },
+        .{ 0x42e34af288390144, "169700940171274.13 V" },
+        .{ 0x0000000000000000, "0 V" },
+    };
+    var buf: [64]u8 = undefined;
+    for (cases) |c| {
+        const q: Qty(.voltage, .base) = .{ .raw = @bitCast(c[0]) };
+        try std.testing.expectEqualStrings(c[1], try std.fmt.bufPrint(&buf, "{f}", .{q}));
+    }
 }
