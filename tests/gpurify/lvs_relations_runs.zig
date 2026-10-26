@@ -21,10 +21,6 @@ const relations = @import("lvs_relations.zig");
 const report = relations.report;
 const gpa = testing.allocator;
 
-/// Columns are this far apart; each device sits in its own (the drawer's
-/// pitch, lvs_circuit.zig's private `column`).
-const pitch: i64 = 3000;
-
 // ---- private ----
 
 fn sameLines(a: []const []const u8, b: []const []const u8) bool {
@@ -147,7 +143,7 @@ test "an implant marker on a gate flips its flavour" {
     for (try relations.sample(a)) |*c| for (c.devs, 0..) |dev, i| {
         if (dev.model != .n) continue;
         // The drawer's channel, and its source diffusion short of it.
-        const x0 = pitch * @as(i64, @intCast(i));
+        const x0 = circuit.column(i);
         const gate = [4]i64{ x0 + circuit.sd, 0, x0 + circuit.sd + dev.l, dev.w };
         const beside = [4]i64{ x0, 0, x0 + circuit.sd - 100, dev.w };
         var run_arena: std.heap.ArenaAllocator = .init(gpa);

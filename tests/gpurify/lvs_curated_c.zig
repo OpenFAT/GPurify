@@ -52,11 +52,11 @@ fn fingersInto(arena: Allocator, layout: *Layout) !void {
     try layout.rect(arena, "nsdm", -200, -300, 2000, 1200);
     for ([_][2]i64{ .{ 100, 1 }, .{ 750, 2 }, .{ 1400, 1 } }) |xn| {
         try layout.rect(arena, "cont", xn[0], 100, xn[0] + 300, 400);
-        try stub(arena, layout, xn[0], xn[0] + 300, 100, @intCast(xn[1]));
+        try circuit.stub(arena, layout, xn[0], xn[0] + 300, 100, @intCast(xn[1]));
     }
     for ([_]i64{ 500, 1150 }) |x| {
         try layout.rect(arena, "cont", x, 1250, x + 150, 1400);
-        try stub(arena, layout, x, x + 150, 1250, 0);
+        try circuit.stub(arena, layout, x, x + 150, 1250, 0);
     }
 }
 
@@ -88,7 +88,7 @@ fn sharedDiffusionInto(arena: Allocator, out: *std.ArrayList(Fixture)) !void {
     for ([_]struct { []const u8, [4]f64, bool }{ .{ "as_labelled", .{ 1e-12, 5e-13, 6e-6, 3e-6 }, true }, .{ "against_the_labels", .{ 5e-13, 1e-12, 3e-6, 6e-6 }, true } }) |case| {
         var fingers: Layout = .{};
         try fingersInto(arena, &fingers);
-        try tracksInto(arena, &fingers, column(1));
+        try tracksInto(arena, &fingers, circuit.column(1));
         try out.append(arena, try texted(arena, try std.fmt.allocPrint(arena, "names/shared_diffusion_{s}", .{case[0]}), &.{ "LVS-032", "LVS-060" }, fingers, try circuit.spice(arena, &try Circuit.init(arena, 3, &.{card(case[1])})), case[2]));
     }
     const sensor = Dev.mos(.n, 1, 0, 0);
@@ -96,13 +96,13 @@ fn sharedDiffusionInto(arena: Allocator, out: *std.ArrayList(Fixture)) !void {
         // With the sensor.
         var sensed: Layout = .{};
         try fingersInto(arena, &sensed);
-        try drawMos(arena, &sensed, column(1), &sensor);
-        try tracksInto(arena, &sensed, column(2));
+        try circuit.drawMos(arena, &sensed, circuit.column(1), &sensor);
+        try tracksInto(arena, &sensed, circuit.column(2));
         try out.append(arena, try texted(arena, try std.fmt.allocPrint(arena, "parallel/shared_diffusion_{s}", .{case[0]}), &.{ "LVS-060", "LVS-040" }, sensed, try circuit.spice(arena, &try Circuit.init(arena, 3, &.{ card(case[1]), sensor })), case[2]));
         // Without it.
         var symmetric: Layout = .{};
         try fingersInto(arena, &symmetric);
-        try tracksInto(arena, &symmetric, column(2));
+        try tracksInto(arena, &symmetric, circuit.column(2));
         try out.append(arena, try texted(arena, try std.fmt.allocPrint(arena, "parallel/shared_diffusion_symmetric_{s}", .{case[0]}), &.{ "LVS-060", "LVS-040" }, symmetric, try circuit.spice(arena, &try Circuit.init(arena, 3, &.{card(case[1])})), true));
     }
 }
@@ -184,37 +184,6 @@ fn symmetryPortsVerdictInto(arena: Allocator, out: *std.ArrayList(Fixture)) !voi
     var f = try texted(arena, "verdict/ambiguous_top", &.{"LVS-019"}, try circuit.draw(arena, &inv), two_tops, false);
     try f.claim(arena, .{ .passes = false });
     try out.append(arena, f);
-}
-
-/// Device column `i`'s x (lvs_circuit.zig's pitch, private there).
-fn column(i: usize) i64 {
-    return 3000 * @as(i64, @intCast(i));
-}
-
-/// A met1 stub from `y0` up to `net`'s track over `x0..x1`, with the via
-/// there (lvs_circuit.zig's, private there).
-fn stub(arena: Allocator, layout: *Layout, x0: i64, x1: i64, y0: i64, net: usize) !void {
-    const t = circuit.track(net);
-    try layout.rect(arena, "met1", x0, y0, x1, t + 200);
-    try layout.rect(arena, "via1", x0, t, x1, t + 200);
-}
-
-/// lvs_circuit.zig's MOS drawer, for an `nmos` in its own column (private
-/// there): poly across diffusion, source left, drain right, gate contacted
-/// above the diffusion.
-fn drawMos(arena: Allocator, layout: *Layout, x0: i64, dev: *const Dev) !void {
-    std.debug.assert(dev.model == .n);
-    const w = dev.w;
-    const xd = x0 + circuit.sd + dev.l;
-    try layout.rect(arena, "diff", x0, 0, xd + circuit.sd, w);
-    try layout.rect(arena, "poly", x0 + circuit.sd, -200, xd, w + 500);
-    try layout.rect(arena, "nsdm", x0 - 200, -300, xd + circuit.sd + 200, w + 200);
-    try layout.rect(arena, "cont", x0 + 100, 100, x0 + 400, 400);
-    try layout.rect(arena, "cont", xd + 100, 100, xd + 400, 400);
-    try layout.rect(arena, "cont", x0 + circuit.sd, w + 250, xd, w + 400);
-    try stub(arena, layout, x0 + 100, x0 + 400, 100, dev.pins[1]);
-    try stub(arena, layout, xd + 100, xd + 400, 100, dev.pins[2]);
-    try stub(arena, layout, x0 + circuit.sd, xd, w + 250, dev.pins[0]);
 }
 
 test "every curated LVS fixture of the third part holds" {

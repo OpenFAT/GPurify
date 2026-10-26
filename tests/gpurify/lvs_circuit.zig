@@ -16,7 +16,7 @@
 //! - `pub const Circuit`, `init`, `clone`, `internal`, `nets`, `compact`, `code`
 //! - `pub const sd`, `pub fn draw(arena, c) !Layout`
 //! - `pub fn spice(arena, c) ![]const u8`, `spiceOrdered`, `spectre`, `edited`, `spiceHier`, `flatten`
-//! - `pub fn track(net: usize) i64`, `pub fn subcktInto(arena, out, name, c, order) !void`
+//! - `pub fn track(net: usize) i64`, `pub fn column(i: usize) i64`, `pub fn stub(arena, layout, x0, x1, y0, net) !void`, `pub fn drawMos(arena, layout, x0, dev) !void`, `pub fn subcktInto(arena, out, name, c, order) !void`
 //! - `Sci.format`: Rust's `{:e}`
 
 const std = @import("std");
@@ -476,15 +476,13 @@ pub fn subcktInto(arena: Allocator, out: *std.ArrayList(u8), name: []const u8, c
     for (order) |i| try cardInto(arena, out, i, &c.devs[i], c.names, false);
 }
 
-// ---- private ----
-
-fn column(i: usize) i64 {
+pub fn column(i: usize) i64 {
     return pitch * @as(i64, @intCast(i));
 }
 
 /// A met1 stub from `y0` up to `net`'s track over `x0..x1`, with the via
 /// there.
-fn stub(arena: Allocator, layout: *Layout, x0: i64, x1: i64, y0: i64, net: usize) !void {
+pub fn stub(arena: Allocator, layout: *Layout, x0: i64, x1: i64, y0: i64, net: usize) !void {
     const t = track(net);
     try layout.rect(arena, "met1", x0, y0, x1, t + 200);
     try layout.rect(arena, "via1", x0, t, x1, t + 200);
@@ -494,7 +492,7 @@ fn stub(arena: Allocator, layout: *Layout, x0: i64, x1: i64, y0: i64, net: usize
 /// the recogniser measures exactly `w` and `l`. Source left, drain right,
 /// each contacted near the bottom; the gate is contacted on the poly above
 /// the diffusion.
-fn drawMos(arena: Allocator, layout: *Layout, x0: i64, dev: *const Dev) !void {
+pub fn drawMos(arena: Allocator, layout: *Layout, x0: i64, dev: *const Dev) !void {
     const w = dev.w;
     const l = dev.l;
     std.debug.assert(w >= 500 and w <= track0 - 1000); // a width the drawer fits
@@ -521,6 +519,8 @@ fn drawMos(arena: Allocator, layout: *Layout, x0: i64, dev: *const Dev) !void {
     try stub(arena, layout, xd + 100, xd + 400, 100, dev.pins[2]);
     try stub(arena, layout, x0 + sd, xd, w + 250, dev.pins[0]);
 }
+
+// ---- private ----
 
 /// A marker over one 400 nm pad per pin, 800 nm apart; pad `k` is on
 /// `pina`, `pinb`, `pinc` by position, except a resistor's or inductor's,

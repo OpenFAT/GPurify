@@ -31,7 +31,6 @@ const ingest = @import("ingest");
 const check = @import("check");
 const report = check.report;
 const Measurement = report.Measurement;
-const testgen = @import("testgen");
 const gpurify = @import("gpurify");
 const harness = @import("harness.zig");
 const Layout = harness.Layout;
@@ -244,7 +243,7 @@ pub fn checkDies(arena: Allocator, dies: []const DieSpec, system: []const u8, re
     const intents = try arena.alloc(?ingest.intent.DesignIntent, dies.len);
     for (dies, read, intents) |d, *r, *intent| {
         var load_diag: gpurify.LoadDiagnostic = .{};
-        r.* = try gpurify.readDie(arena, try written(arena, &d.layout), deck, "system.deck", &strings, &load_diag);
+        r.* = try gpurify.readDie(arena, try harness.written(arena, deck, &d.layout), deck, "system.deck", &strings, &load_diag);
         intent.* = null;
         if (d.intent) |text| {
             var intent_diag: ingest.intent.Diagnostic = .{};
@@ -286,32 +285,6 @@ pub fn expectRows(got: []const Row, want: []const Row) !void {
 
 fn lessAt(_: void, a: Row, b: Row) bool {
     return a.at[0] < b.at[0] or (a.at[0] == b.at[0] and a.at[1] < b.at[1]);
-}
-
-/// A flat die layout as GDSII on `deck`'s layers (parsed on 1 nm).
-fn written(arena: Allocator, layout: *const Layout) ![]const u8 {
-    var strings: geom.StrTable = .empty;
-    var diag: ingest.deck.Diag = .{};
-    const d = try ingest.deck.parseDeck(arena, arena, deck, try .init(1000), &strings, &diag);
-    std.debug.assert(layout.cells.items.len == 0 and layout.instances.items.len == 0); // a flat die
-    var lb: testgen.shapes.LayoutBuilder = .init(@intCast(d.layers.len()));
-    for (layout.shapes.items) |sh| {
-        const xs = try arena.alloc(i64, sh.points.len);
-        const ys = try arena.alloc(i64, sh.points.len);
-        for (sh.points, xs, ys) |p, *x, *y| {
-            x.* = p[0];
-            y.* = p[1];
-        }
-        _ = try lb.push(arena, @backingInt(d.layers.id(&strings, sh.layer).?), xs, ys);
-    }
-    var store: geom.GeometryStore = .empty;
-    var ids: testgen.shapes.Ids = .{};
-    try lb.finish(arena, &store, &ids);
-    const labels = try arena.alloc(testgen.gds.Label, layout.labels.items.len);
-    for (layout.labels.items, labels) |t, *o| o.* = .{ .layer = d.layers.id(&strings, t.layer).?, .x = t.x, .y = t.y, .text = t.text };
-    var bytes: std.ArrayList(u8) = .empty;
-    try testgen.gds.writeStoreLabelled(arena, &store, &d.layers, labels, "TOP", &bytes);
-    return bytes.items;
 }
 
 /// `layout` drawn so that `place` puts it back where it was: every point

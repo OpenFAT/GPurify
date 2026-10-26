@@ -27,6 +27,7 @@
 //! - `pub fn check(arena: Allocator, f: *const Fixture) !?[]const u8`
 //! - `pub fn checkAll(fixtures: []const Fixture) !void`
 //! - `pub fn same(a: Measurement, b: Measurement) bool`
+//! - `pub fn written(arena: Allocator, deck: []const u8, layout: *const Layout) ![]const u8`
 //! - `Listed.format`, `Wanted.format`: failure messages
 
 const std = @import("std");
@@ -343,7 +344,7 @@ pub fn run(arena: Allocator, f: *const Fixture) !gpurify.Run {
     defer tmp.cleanup();
     const dir = tmp.dir;
     try dir.writeFile(io, .{ .sub_path = "fixture.deck", .data = f.deck });
-    try dir.writeFile(io, .{ .sub_path = "fixture.gds", .data = try written(arena, f) });
+    try dir.writeFile(io, .{ .sub_path = "fixture.gds", .data = try written(arena, f.deck, &f.layout) });
     var refs: std.ArrayList([]const u8) = .empty;
     if (f.reference) |text| {
         try dir.writeFile(io, .{ .sub_path = "ref.spice", .data = text });
@@ -471,22 +472,21 @@ pub fn same(a: Measurement, b: Measurement) bool {
     return @abs(x - y) <= 1e-9 * @max(@abs(x), @abs(y), 1e-30);
 }
 
-// ---- private ----
-
-/// The fixture's layout as GDSII on its deck's layers (parsed on 1 nm).
-fn written(arena: Allocator, f: *const Fixture) ![]const u8 {
+/// `layout` as GDSII on `deck`'s layers (parsed on 1 nm): one flat cell
+/// `TOP`, or a hierarchy when it places cells.
+pub fn written(arena: Allocator, deck: []const u8, layout: *const Layout) ![]const u8 {
     var strings: geom.StrTable = .empty;
     var diag: ingest.deck.Diag = .{};
-    const d = try ingest.deck.parseDeck(arena, arena, f.deck, try .init(1000), &strings, &diag);
+    const d = try ingest.deck.parseDeck(arena, arena, deck, try .init(1000), &strings, &diag);
     var bytes: std.ArrayList(u8) = .empty;
-    if (f.layout.instances.items.len != 0 or f.layout.cells.items.len != 0) {
+    if (layout.instances.items.len != 0 or layout.cells.items.len != 0) {
         var cells: std.ArrayList(testgen.gds.Structure) = .empty;
-        try structuresInto(arena, "TOP", &f.layout, &d, &strings, &cells);
+        try structuresInto(arena, "TOP", layout, &d, &strings, &cells);
         try testgen.gds.writeLibrary(arena, cells.items, &bytes);
         return bytes.items;
     }
     var lb: testgen.shapes.LayoutBuilder = .init(@intCast(d.layers.len()));
-    for (f.layout.shapes.items) |sh| {
+    for (layout.shapes.items) |sh| {
         const xs = try arena.alloc(i64, sh.points.len);
         const ys = try arena.alloc(i64, sh.points.len);
         for (sh.points, xs, ys) |p, *x, *y| {
@@ -498,11 +498,13 @@ fn written(arena: Allocator, f: *const Fixture) ![]const u8 {
     var store: geom.GeometryStore = .empty;
     var ids: testgen.shapes.Ids = .{};
     try lb.finish(arena, &store, &ids);
-    const labels = try arena.alloc(testgen.gds.Label, f.layout.labels.items.len);
-    for (f.layout.labels.items, labels) |t, *o| o.* = .{ .layer = try layerOf(&d, &strings, t.layer), .x = t.x, .y = t.y, .text = t.text };
+    const labels = try arena.alloc(testgen.gds.Label, layout.labels.items.len);
+    for (layout.labels.items, labels) |t, *o| o.* = .{ .layer = try layerOf(&d, &strings, t.layer), .x = t.x, .y = t.y, .text = t.text };
     try testgen.gds.writeStoreLabelled(arena, &store, &d.layers, labels, "TOP", &bytes);
     return bytes.items;
 }
+
+// ---- private ----
 
 fn layerOf(d: *const ingest.deck.Deck, strings: *const geom.StrTable, name: []const u8) !geom.LayerId {
     return d.layers.id(strings, name) orelse {

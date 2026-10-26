@@ -149,8 +149,8 @@ fn aliasesAndRingInto(arena: Allocator, out: *std.ArrayList(Fixture)) !void {
     try ring.rect(arena, "cont", 50, 950, 150, 1050);
     try ring.rect(arena, "pinb", 1800, 900, 2000, 1100);
     try ring.rect(arena, "cont", 1850, 950, 1950, 1050);
-    try stub(arena, &ring, 50, 150, 950, 0);
-    try stub(arena, &ring, 1850, 1950, 950, 1);
+    try circuit.stub(arena, &ring, 50, 150, 950, 0);
+    try circuit.stub(arena, &ring, 1850, 1950, 950, 1);
     for ([_][]const u8{ "n0", "n1" }, 0..) |name, net| {
         const t = circuit.track(net);
         try ring.rect(arena, "met2", -1000, t, 3000, t + 200);
@@ -193,14 +193,6 @@ fn diffusionsInto(arena: Allocator, out: *std.ArrayList(Fixture)) !void {
         const written = try Circuit.init(arena, 3, &.{Dev.onPins(.q, &.{ 0, 1, 2 }).param("ae", case[1]).param("pe", 1.6e-6)});
         try out.append(arena, try fx.compared(arena, try std.fmt.allocPrint(arena, "params/Q_ae_pe_{s}", .{case[0]}), &.{"LVS-064"}, &bjt_alone, &written));
     }
-}
-
-/// A met1 stub from `y0` up to `net`'s track over `x0..x1`, with the via
-/// there (lvs_circuit.zig's, private there).
-fn stub(arena: Allocator, layout: *Layout, x0: i64, x1: i64, y0: i64, net: usize) !void {
-    const t = circuit.track(net);
-    try layout.rect(arena, "met1", x0, y0, x1, t + 200);
-    try layout.rect(arena, "via1", x0, t, x1, t + 200);
 }
 
 test "every curated LVS fixture of the second part holds" {

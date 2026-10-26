@@ -44,10 +44,10 @@ fn boxedLayout(arena: Allocator, top: *const Circuit, name: []const u8, inner: *
     var layout = try circuit.draw(arena, top);
     // An unplaced cell would be a second root, flattened as drawn.
     if (count > 0) try layout.cell(arena, name, try circuit.draw(arena, inner));
-    const first = column(top.devs.len) + 2000;
+    const first = circuit.column(top.devs.len) + 2000;
     // The cell's tracks run over x in -1000..column(devices) of its frame; a
-    // mirror in y maps them to -column(devices)..1000, so it moves right.
-    const width = column(inner.devs.len) + 1000;
+    // mirror in y maps them to -circuit.column(devices)..1000, so it moves right.
+    const width = circuit.column(inner.devs.len) + 1000;
     var reach = first;
     for (0..count) |k| {
         const at = first + 6000 * @as(i64, @intCast(k));
@@ -60,10 +60,6 @@ fn boxedLayout(arena: Allocator, top: *const Circuit, name: []const u8, inner: *
         try layout.rect(arena, "met2", -1000, t, reach, t + 200);
     }
     return layout;
-}
-
-fn column(i: usize) i64 {
-    return 3000 * @as(i64, @intCast(i));
 }
 
 /// `TOP` placing `cell` once per row of `on` (each row the `TOP` nets of
