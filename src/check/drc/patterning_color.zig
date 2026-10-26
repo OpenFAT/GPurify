@@ -45,6 +45,107 @@ pub const Anchoring = union(enum) {
     exhausted,
 };
 
+/// The uncoloured nodes bucketed by saturation. Within a bucket the order
+/// is static (highest degree, then lowest index), so a bucket is a bitset
+/// over ranks, with one summary bit per non-zero word.
+const SatQueue = struct {
+    /// `by_rank[r]` is the node at rank `r`; `rank` is the inverse.
+    by_rank: []u32,
+    rank: []u32,
+    bits: []u64,
+    summary: []u64,
+    /// Live nodes per bucket.
+    count: []u32,
+    words: usize,
+    summary_words: usize,
+
+    /// Every node uncoloured at saturation zero.
+    fn init(gpa: Allocator, n: usize, k: usize, adj_start: []const u32) Allocator.Error!SatQueue {
+        const words = std.math.divCeil(usize, n, 64) catch unreachable;
+        const summary_words = std.math.divCeil(usize, words, 64) catch unreachable;
+        const by_rank = try gpa.alloc(u32, n);
+        errdefer gpa.free(by_rank);
+        for (by_rank, 0..) |*r, i| r.* = @intCast(i);
+        std.mem.sortUnstable(u32, by_rank, adj_start, struct {
+            fn less(a: []const u32, p: u32, q: u32) bool {
+                const dp = a[p + 1] - a[p];
+                const dq = a[q + 1] - a[q];
+                return dp > dq or (dp == dq and p < q);
+            }
+        }.less);
+        const rank = try gpa.alloc(u32, n);
+        errdefer gpa.free(rank);
+        for (by_rank, 0..) |node, r| rank[node] = @intCast(r);
+        const bits = try gpa.alloc(u64, (k + 1) * words);
+        errdefer gpa.free(bits);
+        @memset(bits, 0);
+        const summary = try gpa.alloc(u64, (k + 1) * summary_words);
+        errdefer gpa.free(summary);
+        @memset(summary, 0);
+        const count = try gpa.alloc(u32, k + 1);
+        @memset(count, 0);
+        // Bucket zero starts full; tail words are masked so no bit past node
+        // `n - 1` is live.
+        @memset(bits[0..words], ~@as(u64, 0));
+        bits[words - 1] >>= @intCast((64 - n % 64) % 64);
+        @memset(summary[0..summary_words], ~@as(u64, 0));
+        summary[summary_words - 1] >>= @intCast((64 - words % 64) % 64);
+        count[0] = @intCast(n);
+        return .{ .by_rank = by_rank, .rank = rank, .bits = bits, .summary = summary, .count = count, .words = words, .summary_words = summary_words };
+    }
+
+    fn deinit(q: *SatQueue, gpa: Allocator) void {
+        gpa.free(q.by_rank);
+        gpa.free(q.rank);
+        gpa.free(q.bits);
+        gpa.free(q.summary);
+        gpa.free(q.count);
+    }
+
+    fn insert(q: *SatQueue, node: u32, sat: u32) void {
+        const s = q.slots(node, sat);
+        q.bits[s.word] |= @as(u64, 1) << s.bit;
+        q.summary[s.sword] |= @as(u64, 1) << s.sbit;
+        q.count[sat] += 1;
+    }
+
+    fn remove(q: *SatQueue, node: u32, sat: u32) void {
+        const s = q.slots(node, sat);
+        q.bits[s.word] &= ~(@as(u64, 1) << s.bit);
+        if (q.bits[s.word] == 0) q.summary[s.sword] &= ~(@as(u64, 1) << s.sbit);
+        q.count[sat] -= 1;
+    }
+
+    fn shift(q: *SatQueue, node: u32, from: u32, to: u32) void {
+        q.remove(node, from);
+        q.insert(node, to);
+    }
+
+    const Slots = struct { word: usize, bit: u6, sword: usize, sbit: u6 };
+
+    fn slots(q: *const SatQueue, node: u32, sat: u32) Slots {
+        const r: usize = q.rank[node];
+        return .{ .word = sat * q.words + r / 64, .bit = @intCast(r % 64), .sword = sat * q.summary_words + r / 64 / 64, .sbit = @intCast(r / 64 % 64) };
+    }
+
+    /// The next DSATUR node: highest saturation, then highest degree, then
+    /// lowest index.
+    fn pick(q: *const SatQueue) u32 {
+        var sat = q.count.len;
+        while (sat > 0) {
+            sat -= 1;
+            if (q.count[sat] != 0) break;
+        } else unreachable;
+        const sbase = sat * q.summary_words;
+        const sword = for (q.summary[sbase .. sbase + q.summary_words], 0..) |w, i| {
+            if (w != 0) break i;
+        } else unreachable;
+        const word = sword * 64 + @ctz(q.summary[sbase + sword]);
+        const live = q.bits[sat * q.words + word];
+        return q.by_rank[word * 64 + @ctz(live)];
+    }
+};
+
 /// Search-step floor; a call gets `max(this, nodes × steps_per_node)`.
 const search_budget: u32 = 1 << 20;
 const steps_per_node: u32 = 64;
@@ -256,104 +357,3 @@ fn twoColor(gpa: Allocator, adj_start: []const u32, adj: []const u32, out: *std.
     }
     return .complete;
 }
-
-/// The uncoloured nodes bucketed by saturation. Within a bucket the order
-/// is static (highest degree, then lowest index), so a bucket is a bitset
-/// over ranks, with one summary bit per non-zero word.
-const SatQueue = struct {
-    /// `by_rank[r]` is the node at rank `r`; `rank` is the inverse.
-    by_rank: []u32,
-    rank: []u32,
-    bits: []u64,
-    summary: []u64,
-    /// Live nodes per bucket.
-    count: []u32,
-    words: usize,
-    summary_words: usize,
-
-    /// Every node uncoloured at saturation zero.
-    fn init(gpa: Allocator, n: usize, k: usize, adj_start: []const u32) Allocator.Error!SatQueue {
-        const words = std.math.divCeil(usize, n, 64) catch unreachable;
-        const summary_words = std.math.divCeil(usize, words, 64) catch unreachable;
-        const by_rank = try gpa.alloc(u32, n);
-        errdefer gpa.free(by_rank);
-        for (by_rank, 0..) |*r, i| r.* = @intCast(i);
-        std.mem.sortUnstable(u32, by_rank, adj_start, struct {
-            fn less(a: []const u32, p: u32, q: u32) bool {
-                const dp = a[p + 1] - a[p];
-                const dq = a[q + 1] - a[q];
-                return dp > dq or (dp == dq and p < q);
-            }
-        }.less);
-        const rank = try gpa.alloc(u32, n);
-        errdefer gpa.free(rank);
-        for (by_rank, 0..) |node, r| rank[node] = @intCast(r);
-        const bits = try gpa.alloc(u64, (k + 1) * words);
-        errdefer gpa.free(bits);
-        @memset(bits, 0);
-        const summary = try gpa.alloc(u64, (k + 1) * summary_words);
-        errdefer gpa.free(summary);
-        @memset(summary, 0);
-        const count = try gpa.alloc(u32, k + 1);
-        @memset(count, 0);
-        // Bucket zero starts full; tail words are masked so no bit past node
-        // `n - 1` is live.
-        @memset(bits[0..words], ~@as(u64, 0));
-        bits[words - 1] >>= @intCast((64 - n % 64) % 64);
-        @memset(summary[0..summary_words], ~@as(u64, 0));
-        summary[summary_words - 1] >>= @intCast((64 - words % 64) % 64);
-        count[0] = @intCast(n);
-        return .{ .by_rank = by_rank, .rank = rank, .bits = bits, .summary = summary, .count = count, .words = words, .summary_words = summary_words };
-    }
-
-    fn deinit(q: *SatQueue, gpa: Allocator) void {
-        gpa.free(q.by_rank);
-        gpa.free(q.rank);
-        gpa.free(q.bits);
-        gpa.free(q.summary);
-        gpa.free(q.count);
-    }
-
-    fn insert(q: *SatQueue, node: u32, sat: u32) void {
-        const s = q.slots(node, sat);
-        q.bits[s.word] |= @as(u64, 1) << s.bit;
-        q.summary[s.sword] |= @as(u64, 1) << s.sbit;
-        q.count[sat] += 1;
-    }
-
-    fn remove(q: *SatQueue, node: u32, sat: u32) void {
-        const s = q.slots(node, sat);
-        q.bits[s.word] &= ~(@as(u64, 1) << s.bit);
-        if (q.bits[s.word] == 0) q.summary[s.sword] &= ~(@as(u64, 1) << s.sbit);
-        q.count[sat] -= 1;
-    }
-
-    fn shift(q: *SatQueue, node: u32, from: u32, to: u32) void {
-        q.remove(node, from);
-        q.insert(node, to);
-    }
-
-    const Slots = struct { word: usize, bit: u6, sword: usize, sbit: u6 };
-
-    fn slots(q: *const SatQueue, node: u32, sat: u32) Slots {
-        const r: usize = q.rank[node];
-        return .{ .word = sat * q.words + r / 64, .bit = @intCast(r % 64), .sword = sat * q.summary_words + r / 64 / 64, .sbit = @intCast(r / 64 % 64) };
-    }
-
-    /// The next DSATUR node: highest saturation, then highest degree, then
-    /// lowest index.
-    fn pick(q: *const SatQueue) u32 {
-        var sat = q.count.len;
-        while (sat > 0) {
-            sat -= 1;
-            if (q.count[sat] != 0) break;
-        } else unreachable;
-        const sbase = sat * q.summary_words;
-        const sword = for (q.summary[sbase .. sbase + q.summary_words], 0..) |w, i| {
-            if (w != 0) break i;
-        } else unreachable;
-        const word = sword * 64 + @ctz(q.summary[sbase + sword]);
-        const live = q.bits[sat * q.words + word];
-        return q.by_rank[word * 64 + @ctz(live)];
-    }
-};
