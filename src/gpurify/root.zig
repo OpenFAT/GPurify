@@ -16,6 +16,7 @@
 //!   - `dspf`: `writeDspf`
 //!   - `netlist`: `writeSpice`
 //!   - `network`: the checks and node naming the three share
+//! - `liberty`: Liberty generation (liberty/*.zig): `generate`, `Request`, `Generated`, `spec`
 
 const load_ = @import("load.zig");
 const extracted = @import("extracted.zig");
@@ -55,6 +56,11 @@ pub const @"export" = struct {
     pub const Diagnostic = header.Diagnostic;
 };
 
+/// Liberty generation: a `.lib` per corner and a Verilog blackbox.
+pub const liberty = struct {
+    pub const spec = @import("liberty/spec.zig");
+};
+
 test {
     const std = @import("std");
     std.testing.refAllDecls(@This());
@@ -66,4 +72,5 @@ test {
     _ = extracted;
     _ = reference;
     _ = pdks;
+    std.testing.refAllDecls(liberty);
 }
