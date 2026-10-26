@@ -12,7 +12,7 @@
 //!
 //! Contents:
 //! - `pub const StageStatus = union(enum) { ran, not_selected, skipped: []const u8, refused: []const u8 }`
-//! - `pub const Summary = struct`
+//! - `pub const Summary = struct`, `Summary.passed(s: Summary) bool`
 //! - `pub fn writeRuns(w: *std.Io.Writer, strings: *const StrTable, runs: []const RuleRun) std.Io.Writer.Error!void`
 //! - `pub fn writeViolations(w: *std.Io.Writer, strings: *const StrTable, grid: Grid, violations: *const Violations, waived: *const Violations) std.Io.Writer.Error!void`
 //! - `pub fn writeMerges(w: *std.Io.Writer, strings: *const StrTable, placements: []const Placement, unpaired: []const UnpairedInstance, layout_merges: *const Merges, reference_merges: *const Merges) std.Io.Writer.Error!void`
@@ -60,6 +60,17 @@ pub const Summary = struct {
     warnings: u32,
     rules_clean: u32,
     rules_skipped: u32,
+
+    /// The pass criterion: no errors, no skipped rule, and no selected stage
+    /// skipped or refused; warnings and stages not selected do not fail it.
+    /// The CLI exits 0 only when this holds.
+    pub fn passed(s: Summary) bool {
+        for ([_]StageStatus{ s.drc, s.erc, s.lvs, s.pex }) |st| switch (st) {
+            .ran, .not_selected => {},
+            .skipped, .refused => return false,
+        };
+        return s.errors == 0 and s.rules_skipped == 0;
+    }
 };
 
 /// The rule records, even when clean: they tell "ran, found nothing" from

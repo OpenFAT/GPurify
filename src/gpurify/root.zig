@@ -6,6 +6,9 @@
 //!   `isDef`, `internReportIds` (load.zig)
 //! - `reference`: `readReferences`, `readReferenceText` (reference.zig)
 //! - `Extracted`, `ExtractError`, `ExtractDiagnostic`, `extract`, `extractLayout` (extracted.zig)
+//! - `Checks`, `RunOptions`, `Outputs`, `Corner`, `Summary`, `StageStatus`, `CheckError`, `RunError`,
+//!   `RunDiagnostic`, `Run`, `run`, `runChecks`, `summarize`, `appendStage` (run.zig);
+//!   `designExtent` (checks_erc.zig), `paramNames` (checks_lvs.zig)
 //! - `pdks`: the four shipped decks, `pdks.decks` by name (pdks.zig)
 //! - `integration`: the DEF integration checks (integration.zig)
 //! - `export`: the report writers (export/*.zig)
@@ -22,6 +25,9 @@ const extracted = @import("extracted.zig");
 pub const reference = @import("reference.zig");
 pub const pdks = @import("pdks.zig");
 pub const integration = @import("integration.zig");
+const run_ = @import("run.zig");
+pub const designExtent = @import("checks_erc.zig").designExtent;
+pub const paramNames = @import("checks_lvs.zig").paramNames;
 
 pub const Inputs = load_.Inputs;
 pub const Loaded = load_.Loaded;
@@ -39,6 +45,21 @@ pub const ExtractError = extracted.Error;
 pub const ExtractDiagnostic = extracted.Diagnostic;
 pub const extract = extracted.extract;
 pub const extractLayout = extracted.extractLayout;
+
+pub const Checks = run_.Checks;
+pub const RunOptions = run_.RunOptions;
+pub const Outputs = run_.Outputs;
+pub const Corner = run_.Corner;
+pub const Summary = run_.Summary;
+pub const StageStatus = run_.StageStatus;
+pub const CheckError = run_.Error;
+pub const RunError = run_.RunError;
+pub const RunDiagnostic = run_.Diagnostic;
+pub const Run = run_.Run;
+pub const run = run_.run;
+pub const runChecks = run_.runChecks;
+pub const summarize = run_.summarize;
+pub const appendStage = run_.appendStage;
 
 /// The report writers: text, JSON, SPEF, DSPF, SPICE.
 pub const @"export" = struct {
@@ -66,4 +87,11 @@ test {
     _ = extracted;
     _ = reference;
     _ = pdks;
+    _ = run_;
+    _ = integration;
+    _ = @import("checks_drc.zig");
+    _ = @import("checks_erc.zig");
+    _ = @import("checks_lvs.zig");
+    _ = @import("checks_pex.zig");
+    _ = @import("checks_after.zig");
 }
