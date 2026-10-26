@@ -104,6 +104,7 @@ test {
     _ = @import("check/erc/ported_board.zig");
     _ = @import("check/erc/reference_domain.zig");
     _ = @import("check/erc/reference_coupling.zig");
+    _ = @import("check/erc/reference_esd.zig");
     _ = @import("check/erc/voltage_rules_other.zig");
     _ = @import("check/erc/esd_geometry_latchup.zig");
 }

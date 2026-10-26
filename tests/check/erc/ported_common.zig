@@ -160,20 +160,20 @@ pub fn sweep(value: f64) [3]f64 {
     return .{ value * 0.999, value, value * 1.001 };
 }
 
-pub fn ohms(x: f64) Finding {
+pub inline fn ohms(x: f64) Finding {
     return .{ .measured = Measurement.resistance(.{ .raw = x }) };
 }
 
-pub fn microamps(x: f64) Finding {
+pub inline fn microamps(x: f64) Finding {
     return .{ .measured = Measurement.current(.{ .raw = x }) };
 }
 
-pub fn area(nm2: i128) Finding {
+pub inline fn area(nm2: i128) Finding {
     return .{ .measured = Measurement.area(nm2) };
 }
 
 /// `f` with its marker pinned at `(x, y)`.
-pub fn at(f: Finding, x: i64, y: i64) Finding {
+pub inline fn at(f: Finding, x: i64, y: i64) Finding {
     var out = f;
     out.at = .{ x, y };
     return out;
