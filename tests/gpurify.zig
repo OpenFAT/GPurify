@@ -1,6 +1,10 @@
-//! gpurify suite: the report writers (tests/export/main.rs); the spines'
-//! suites land with wave 5.
+//! gpurify suite: the report writers (tests/export/main.rs) and the
+//! engine's spines (tests/engine, tests/golden.rs, tests/test_all.rs).
 test {
     _ = @import("gpurify");
     _ = @import("gpurify/export.zig");
+    _ = @import("gpurify/engine.zig");
+    _ = @import("gpurify/liberty.zig");
+    _ = @import("gpurify/liberty_diffusions.zig");
+    if (@import("paths").ngspice_tests) _ = @import("gpurify/liberty_ngspice.zig");
 }
