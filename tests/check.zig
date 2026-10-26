@@ -21,4 +21,5 @@ test {
     _ = @import("check/drc/density_rules.zig");
     _ = @import("check/drc/grid_rules.zig");
     _ = @import("check/drc/edge_rules.zig");
+    _ = @import("check/drc/overlay_rules.zig");
 }

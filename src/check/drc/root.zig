@@ -21,7 +21,7 @@
 //! - `rule_set`: `RuleSet`, `Slot`, `Csr`
 //! - `params`: `Error`, `Diagnostic`, `Reader`; `compile`: `fromDeck`; `validate`: `validate`
 //! - `rule_layers`: `layersOf`; `scratch`: `Scratch`, `Ctx`; `run_` (run.zig): `run`, `ported`
-//! - family files: `edge`, `grid`, `area_critical`, `area_density`, `area`, `density`, `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
+//! - family files: `dfm`, `overlay`, `overlay_octilinear`, `overlay_enclosure`, `overlay_strips`, `presence`, `edge`, `grid`, `area_critical`, `area_density`, `area`, `density`, `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
 //!   `spacing_ends`, `spacing_net`, `spacing_table`
 //! - aliases: `Kind`, `Rule`, `RuleSet`, `Error`, `Diagnostic`, `fromDeck`, `run`
 
@@ -55,6 +55,12 @@ pub const area_density = @import("area_density.zig");
 pub const area_critical = @import("area_critical.zig");
 pub const grid = @import("grid.zig");
 pub const edge = @import("edge.zig");
+pub const presence = @import("presence.zig");
+pub const overlay_strips = @import("overlay_strips.zig");
+pub const overlay_enclosure = @import("overlay_enclosure.zig");
+pub const overlay_octilinear = @import("overlay_octilinear.zig");
+pub const overlay = @import("overlay.zig");
+pub const dfm = @import("dfm.zig");
 
 pub const Kind = kinds.Kind;
 pub const Rule = rows.Rule;
@@ -93,4 +99,10 @@ test {
     _ = area_critical;
     _ = grid;
     _ = edge;
+    _ = presence;
+    _ = overlay_strips;
+    _ = overlay_enclosure;
+    _ = overlay_octilinear;
+    _ = overlay;
+    _ = dfm;
 }

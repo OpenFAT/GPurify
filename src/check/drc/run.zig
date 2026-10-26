@@ -48,6 +48,12 @@ const area_density = @import("area_density.zig");
 const area_critical = @import("area_critical.zig");
 const grid = @import("grid.zig");
 const edge = @import("edge.zig");
+const presence = @import("presence.zig");
+const overlay_strips = @import("overlay_strips.zig");
+const overlay_enclosure = @import("overlay_enclosure.zig");
+const overlay_octilinear = @import("overlay_octilinear.zig");
+const overlay = @import("overlay.zig");
+const dfm = @import("dfm.zig");
 
 /// Runs every rule of `rs` over `store`. `out` and `runs` are cleared
 /// first. `poly_net` is the extraction's net column (`NetTable.netColumn`)
@@ -101,22 +107,10 @@ pub fn run(gpa: Allocator, device: Device, rs: *const RuleSet, store: *const Geo
 pub fn ported(kind: Kind) bool {
     return switch (kind) {
         .via_redundancy,
-        .dfm_score,
         .cut_area_change,
-        .min_enclosure,
-        .noncoincident_enclosure,
-        .full_width,
-        .asymmetric_enclosure,
-        .max_enclosure,
-        .adjacent_enclosure,
-        .min_extension,
-        .gate_corner,
-        .overlap,
-        .max_distance_to_tap,
         .redundant_via,
         .minimum_cut,
         .via_stack,
-        .metal_width_via,
         .max_cut_spacing,
         .via_array_spacing,
         .cut_spacing,
@@ -125,9 +119,6 @@ pub fn ported(kind: Kind) bool {
         .anchored_patterning,
         .sadp,
         .sadp_line_end,
-        .forbidden,
-        .must_contain,
-        .must_be_inside,
         .keep_out_zone,
         => false,
         else => true,
@@ -170,6 +161,21 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .span_length => |r| facing_span.spanLength(c, r),
         .convex_corner_spacing => |r| facing_span.convexCornerSpacing(c, r),
         .exact_pitch => |r| facing_span.exactPitch(c, r),
+        .min_enclosure => |r| overlay_enclosure.enclosure(c, r.outer, r.inner, r.limit, r.wire, .every_side),
+        .noncoincident_enclosure => |r| overlay_enclosure.enclosure(c, r.outer, r.inner, r.limit, .any, .non_coincident),
+        .full_width => |r| overlay_enclosure.enclosure(c, r.outer, r.inner, 0, .any, .full_width),
+        .asymmetric_enclosure => |r| overlay_enclosure.enclosure(c, r.outer, r.inner, r.limit, r.wire, .opposite),
+        .adjacent_enclosure => |r| overlay_enclosure.enclosure(c, r.outer, r.inner, r.limit, .any, .adjacent),
+        .max_enclosure => |r| overlay.maxEnclosure(c, r),
+        .min_extension => |r| overlay.minExtension(c, r),
+        .gate_corner => |r| overlay.gateCorner(c, r),
+        .overlap => |r| overlay.overlap(c, r),
+        .max_distance_to_tap => |r| overlay.maxDistanceToTap(c, r),
+        .metal_width_via => |r| overlay.metalWidthVia(c, r),
+        .forbidden => |r| presence.forbidden(c, r),
+        .must_contain => |r| presence.mustContain(c, r),
+        .must_be_inside => |r| presence.mustBeInside(c, r),
+        .dfm_score => |r| dfm.dfmScore(c, r),
         .off_grid => |r| grid.offGrid(c, r),
         .angle => |r| grid.angle(c, r),
         .min_interior_angle => |r| grid.minInteriorAngle(c, r),
@@ -196,22 +202,10 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         // ponytail: families still to port refuse (never pass) until their
         // file lands; the deck compiler refuses these kinds by name.
         .via_redundancy,
-        .dfm_score,
         .cut_area_change,
-        .min_enclosure,
-        .noncoincident_enclosure,
-        .full_width,
-        .asymmetric_enclosure,
-        .max_enclosure,
-        .adjacent_enclosure,
-        .min_extension,
-        .gate_corner,
-        .overlap,
-        .max_distance_to_tap,
         .redundant_via,
         .minimum_cut,
         .via_stack,
-        .metal_width_via,
         .max_cut_spacing,
         .via_array_spacing,
         .cut_spacing,
@@ -220,9 +214,6 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .anchored_patterning,
         .sadp,
         .sadp_line_end,
-        .forbidden,
-        .must_contain,
-        .must_be_inside,
         .keep_out_zone,
         => report.refused,
     };
