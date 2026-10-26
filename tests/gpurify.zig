@@ -4,4 +4,5 @@ test {
     _ = @import("gpurify");
     _ = @import("gpurify/export.zig");
     _ = @import("gpurify/engine.zig");
+    _ = @import("gpurify/liberty.zig");
 }
