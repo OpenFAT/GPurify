@@ -139,6 +139,15 @@ not listed stays on the CPU until a profile says otherwise.
 | Density windows (`check/drc/area`, antenna) | windows × rects binned by row | row kernel per window | integer areas: exact |
 | `axpy`, `xpay` (`geom`) | O(n) per CG/GMRES step | `zip` spec | no FMA: exact |
 
+**Bulk movement.** Data crosses to the device in one allocation and one copy
+per solve or launch batch, never one transfer per column: `geom.bulk.upload`
+packs every column into one staging block at 256-byte-aligned offsets,
+reserves device-only scratch (a solve's `x` and `y`, a kernel's output)
+after them, and hands back each region's device address for the kernel
+arguments. Per-iteration traffic is only what changes (`x` up, `y` down,
+each one copy). A new GPU path uses `geom.bulk`; a raw `Buffer.upload`
+per column is a review failure.
+
 **Ordered reductions stay on the CPU.** `dot`/`nrm2` keep Rust's strict
 left-fold order, because the order decides CG/GMRES convergence and the golden
 bytes. They are O(n) next to an O(n²) matvec, so only `x` goes up and `y` comes

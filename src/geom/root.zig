@@ -18,6 +18,7 @@
 //! - `LayerId`, `PolyId` (ids.zig)
 //! - `Bbox` (bbox.zig)
 //! - `Device` (device.zig)
+//! - `bulk`: one-allocation, one-copy device uploads (bulk.zig)
 //! - `linalg`: `dot`, `nrm2`, `spmv`, and the `axpy` / `xpay` Gompute specs
 //! - `connectivity`: `componentsInto`
 //! - `ops`: `Point`, `Seg`, `Ring`, predicates and exact distances
@@ -77,6 +78,7 @@ pub const PolyId = ids.PolyId;
 
 pub const Bbox = bbox.Bbox;
 pub const Device = device.Device;
+pub const bulk = @import("bulk.zig");
 
 pub const Point = ops.Point;
 pub const Seg = ops.Seg;
@@ -93,6 +95,7 @@ comptime {
 }
 
 test {
+    _ = bulk;
     _ = dbu;
     _ = qty;
     _ = intern;

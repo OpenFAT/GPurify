@@ -17,6 +17,7 @@
 //! - `drc` (drc/root.zig): `Kind`, `Rule`, `RuleSet`, `fromDeck`, `run`, the kind tables and families
 //! - `erc`: `kinds` (the ERC kind names, until wave 4)
 //! - `deck`: `compile` (`CompiledDeck`, `compile`, `fromDeck`), alias `CompiledDeck`
+//! - `lvs`: layout versus schematic (lvs/root.zig: `Graph`, `compareTraced`, `checkLayout`, ...)
 //! - `rects`: `LayerRects`, `SortedRects`, owners, `polyDist2`, `segDist2`, `Holes`, `inMaterial`, ...
 pub const report = @import("report.zig");
 pub const rects = @import("rects.zig");
@@ -51,6 +52,9 @@ pub const topology = struct {
     pub const PortTable = port.PortTable;
     pub const bindPortsInto = port.bindPortsInto;
 };
+
+/// Layout versus schematic: graphs, reduction, refinement, verdicts.
+pub const lvs = @import("lvs/root.zig");
 
 // The device compile reads only this root's comptime blocks: name every
 // kernel-owning file here.
@@ -90,4 +94,5 @@ test {
     _ = drc;
     _ = erc.kinds;
     _ = deck.compile;
+    _ = lvs;
 }

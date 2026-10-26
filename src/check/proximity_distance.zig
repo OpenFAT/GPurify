@@ -203,23 +203,19 @@ fn runGpu(comptime backend: Device.Backend, gpa: Allocator, store: *const Geomet
         flat[2 * i] = @backingInt(p.a);
         flat[2 * i + 1] = @backingInt(p.b);
     }
-    const columns = .{ flat, store.poly_vert_start.items, store.poly_vert_len.items, store.verts_x.items, store.verts_y.items };
-    var bufs: [6]@TypeOf(k).Buffer = undefined;
-    var made: usize = 0;
-    defer for (bufs[0..made]) |*buf| buf.free();
-    inline for (columns, 0..) |col, c| {
-        bufs[c] = try k.alloc(@max(1, std.mem.sliceAsBytes(col).len));
-        made += 1;
-        if (col.len > 0) try bufs[c].upload(col.ptr, std.mem.sliceAsBytes(col).len);
-    }
-    bufs[5] = try k.alloc(@max(1, out.len * @sizeOf(i64)));
-    made += 1;
     if (pairs.len == 0) return;
+    // One allocation and one copy for every column, `out` reserved after them.
+    const bytes = std.mem.sliceAsBytes;
+    const columns = [_][]const u8{ bytes(flat), bytes(store.poly_vert_start.items), bytes(store.poly_vert_len.items), bytes(store.verts_x.items), bytes(store.verts_y.items) };
+    var offsets: [6]usize = undefined;
+    var addresses: [6]usize = undefined;
+    var buffer = try geom.bulk.upload(@TypeOf(k), &k, gpa, &columns, &.{out.len * @sizeOf(i64)}, &offsets, &addresses);
+    defer buffer.free();
     var n: u64 = pairs.len;
     var args: [7]g.interface.Arg = undefined;
     args[0] = g.interface.arg(&n);
-    for (args[1..], &bufs) |*a, *buf| a.* = buf.argPtr();
+    for (args[1..], &addresses) |*a, *address| a.* = g.interface.arg(address);
     try k.launch(g.Dim3.linear(pairs.len, block), .{ .x = block }, 0, &args);
     try k.synchronize();
-    try bufs[5].download(out.ptr, out.len * @sizeOf(i64));
+    try buffer.downloadAt(out.ptr, offsets[5], out.len * @sizeOf(i64));
 }

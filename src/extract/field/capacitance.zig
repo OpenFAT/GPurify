@@ -293,7 +293,7 @@ fn columnsMeshedInto(gpa: Allocator, device: Device, problem: Problem, order: []
     defer potential.deinit(gpa);
     var field: ?Field = if (stratified) try Field.init(gpa, device.threads, panels, first, m.interface.items) else null;
     defer if (field) |*f| f.deinit(gpa);
-    var gpu: ?Gpu = if (gpu_mod.wanted(device, panels.len)) Gpu.init(device, &potential, if (field) |*f| f else null) else null;
+    var gpu: ?Gpu = if (gpu_mod.wanted(device, panels.len)) Gpu.init(gpa, device, &potential, if (field) |*f| f else null) else null;
     defer if (gpu) |*e| e.deinit();
     var op: Operator = .{ .potential = &potential, .field = if (field) |*f| f else null, .gpu = if (gpu) |*e| e else null };
 
@@ -402,6 +402,12 @@ fn junctionsFarad(gpa: Allocator, problem: Problem, order: []const u32, out: []f
         }
         var femtofarads: f64 = 0.0;
         for (first..regions.len()) |region| {
+            // A junction layer no row describes has unknown parasitics, not
+            // none: an unstated row reads height 0, so lands here (F30).
+            if (!@import("../stack.zig").described(problem.stack, regions.layer.items[region])) {
+                refused.* = regions.layer.items[region];
+                return error.MissingThickness;
+            }
             const row = @backingInt(regions.layer.items[region]);
             const area_af_um2 = if (row < problem.stack.area_cap_af_um2.len) problem.stack.area_cap_af_um2[row] else 0.0;
             const fringe_af_um = if (row < problem.stack.fringe_cap_af_um.len) problem.stack.fringe_cap_af_um[row] else 0.0;

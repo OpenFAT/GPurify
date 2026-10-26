@@ -406,8 +406,7 @@ test "a ring on a derived layer keeps its hole" {
     // ring become one derived polygon with a hole; the two islands drawn
     // inside the hole touch nothing, so the layer is three polygons, the
     // ring's hole a clockwise row, and no island on the ring's material.
-    // The net half of Rust's test (`extract_nets_into`, three nets) is
-    // check's: KNOWN GAP until check/topology lands.
+    // The net half of Rust's test (three nets) is tests/check/derived_layers.zig.
     var d: Deck = try .init(
         \\grid 1nm
         \\layer diff = gds(2, 0)
@@ -448,8 +447,8 @@ test "a sky130 diode's layers derive as the shipped deck states" {
     // (joining the substrate), and the p-tap inside deep n-well is `ptap`
     // and `pwell_iso_tie` but not `psub_tie`: an isolated p-well. The device
     // half of Rust's `a_sky130_pw2nd_diode_has_its_anode_on_the_substrate`
-    // (`recognise_into`, the diode's terminals, area and perimeter) is
-    // check's: KNOWN GAP until check/topology lands.
+    // (the diode's terminals, area and perimeter) is
+    // tests/check/derived_layers.zig.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     const path = try std.fmt.allocPrint(arena.allocator(), "{s}/pdks/sky130.deck", .{paths.root});
