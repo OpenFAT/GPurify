@@ -17,4 +17,6 @@ test {
     _ = @import("gpurify/flow.zig");
     _ = @import("gpurify/metamorphic.zig");
     _ = @import("gpurify/bitmap.zig");
+    _ = @import("gpurify/drc_common.zig");
+    _ = @import("gpurify/dim_width.zig");
 }
