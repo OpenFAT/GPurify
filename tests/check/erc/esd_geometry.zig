@@ -1,7 +1,12 @@
 //! The ESD kinds that measure geometry, each on a cell drawn by hand with a
 //! closed-form or by-construction answer: `esd_path`'s forced current and
 //! `esd_parasitic`. Ported from crates/check/tests/erc/esd_geometry.rs (the
-//! tie_area, guard_ring and latchup_victim tests are the latchup suite's).
+//! tie_area, guard_ring and latchup_victim tests wait, unwired, in
+//! esd_geometry_latchup.zig).
+//!
+//! Contents:
+//! - the layer ids `pad_layer`, `met1`, `padv`, `mkd`, `diff`, `dcut`, `ring`, `well`, `cont`, `gate`, `layers`
+//! - `pub const Cell = struct`, `init(c, lb) !void`, `deinit(c) void`, `design(c) erc.Design`, `net(c, h) NetId`
 
 const std = @import("std");
 const testing = std.testing;
@@ -22,22 +27,22 @@ const Handle = testgen.shapes.Handle;
 const LayoutBuilder = testgen.shapes.LayoutBuilder;
 const gpa = common.gpa;
 
-const pad_layer: u16 = 0;
-const met1: u16 = 1;
-const padv: u16 = 2;
-const mkd: u16 = 3;
-const diff: u16 = 4;
-const dcut: u16 = 5;
-const layers: u16 = 10;
+pub const pad_layer: u16 = 0;
+pub const met1: u16 = 1;
+pub const padv: u16 = 2;
+pub const mkd: u16 = 3;
+pub const diff: u16 = 4;
+pub const dcut: u16 = 5;
+pub const ring: u16 = 6;
+pub const well: u16 = 7;
+pub const cont: u16 = 8;
+pub const gate: u16 = 9;
+pub const layers: u16 = 10;
 
-/// The diode clamp model, recognised under `mkd` with its anode on met1
-/// and its cathode on the pad.
-const dio: StrId = @fromBackingInt(500);
-
-/// A drawn cell, extracted: `pad`, `met1` and `diff` conduct and join
+/// A drawn cell, extracted: `pad`, `met1`, `diff` and `ring` conduct and join
 /// within a layer by touching; `padv` joins met1 to the pad and `dcut`
 /// diffusion to the pad.
-const Cell = struct {
+pub const Cell = struct {
     store: geom.GeometryStore = .empty,
     ids: testgen.shapes.Ids = .{},
     nets: check.topology.NetTable = .{},
@@ -46,13 +51,13 @@ const Cell = struct {
     height: [layers]f64 = @splat(0.0),
     stack: ingest.deck.ProcessStack = .{},
     connectivity: ingest.deck.Connectivity = .{
-        .conductors = &.{ l(pad_layer), l(met1), l(diff), l(6) },
+        .conductors = &.{ l(pad_layer), l(met1), l(diff), l(ring) },
         .via_cut = &.{ l(padv), l(dcut) },
         .via_connects = &.{ .{ l(met1), l(pad_layer) }, .{ l(diff), l(pad_layer) } },
         .intra_layer_touch = true,
     },
 
-    fn init(c: *Cell, lb: *LayoutBuilder) !void {
+    pub fn init(c: *Cell, lb: *LayoutBuilder) !void {
         try lb.finish(gpa, &c.store, &c.ids);
         try check.topology.extractNetsInto(gpa, &c.store, &c.connectivity, &c.nets);
         const recognition: ingest.deck.DeviceRecognition = .{ .kind = &.{.diode}, .marker = &.{l(mkd)}, .terminal_start = &.{ 0, 2 }, .terminal = &.{ l(met1), l(pad_layer) }, .model = &.{dio}, .value = &.{.{}} };
@@ -63,14 +68,14 @@ const Cell = struct {
         c.stack = .{ .sheet_res_ohm_sq = &c.sheet, .height_nm = &c.height };
     }
 
-    fn deinit(c: *Cell) void {
+    pub fn deinit(c: *Cell) void {
         c.store.deinit(gpa);
         c.ids.deinit(gpa);
         c.nets.deinit(gpa);
         c.devices.deinit(gpa);
     }
 
-    fn design(c: *const Cell) erc.Design {
+    pub fn design(c: *const Cell) erc.Design {
         return .{ .store = &c.store, .nets = &c.nets, .devices = &c.devices };
     }
 
@@ -78,7 +83,7 @@ const Cell = struct {
         return .{ .grid = common.manufacturingGrid(), .stack = &c.stack, .connectivity = &c.connectivity };
     }
 
-    fn net(c: *const Cell, h: Handle) NetId {
+    pub fn net(c: *const Cell, h: Handle) NetId {
         return c.nets.netOf(c.ids.of(h));
     }
 
@@ -92,6 +97,10 @@ const Cell = struct {
         return m;
     }
 };
+
+/// The diode clamp model, recognised under `mkd` with its anode on met1
+/// and its cathode on the pad.
+const dio: StrId = @fromBackingInt(500);
 
 // ---- private ----
 
