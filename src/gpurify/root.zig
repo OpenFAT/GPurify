@@ -11,6 +11,8 @@
 //!   `designExtent` (checks_erc.zig), `paramNames` (checks_lvs.zig)
 //! - `pdks`: the four shipped decks, `pdks.decks` by name (pdks.zig)
 //! - `integration`: the DEF integration checks (integration.zig)
+//! - `triage`: `Clusters`, `clusterInto` (triage.zig); `p2p`: `resistanceInto`, `coupling` (p2p.zig);
+//!   `xor`: `Xor`, `run` (xor.zig)
 //! - `export`: the report writers (export/*.zig)
 //!   - `header`: `Header`, `Error`, `Diagnostic`
 //!   - `json`: `writeReport`, `writeString`
@@ -25,6 +27,9 @@ const extracted = @import("extracted.zig");
 pub const reference = @import("reference.zig");
 pub const pdks = @import("pdks.zig");
 pub const integration = @import("integration.zig");
+pub const triage = @import("triage.zig");
+pub const p2p = @import("p2p.zig");
+pub const xor = @import("xor.zig");
 const run_ = @import("run.zig");
 pub const designExtent = @import("checks_erc.zig").designExtent;
 pub const paramNames = @import("checks_lvs.zig").paramNames;
@@ -89,6 +94,9 @@ test {
     _ = pdks;
     _ = run_;
     _ = integration;
+    _ = triage;
+    _ = p2p;
+    _ = xor;
     _ = @import("checks_drc.zig");
     _ = @import("checks_erc.zig");
     _ = @import("checks_lvs.zig");

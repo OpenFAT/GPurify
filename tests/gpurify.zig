@@ -6,4 +6,6 @@ test {
     _ = @import("gpurify/engine.zig");
     _ = @import("gpurify/fixtures.zig");
     _ = @import("gpurify/golden.zig");
+    _ = @import("gpurify/test_all.zig");
+    _ = @import("gpurify/triage.zig");
 }
