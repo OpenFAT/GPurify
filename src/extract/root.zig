@@ -1,9 +1,28 @@
-//! extract: parasitic extraction's field solver and its network readout
-//! (ARCHITECTURE.md). Only re-exports; extract's Gompute kernel root.
+//! extract: parasitic extraction, the resistance, capacitance and
+//! inductance a layout adds to the circuit it draws (ARCHITECTURE.md). Only
+//! re-exports; extract's Gompute kernel root. Ported from
+//! crates/extract/src/lib.rs.
 //!
-//! The solver reads nets as check's per-polygon net column (`poly_net`, to
-//! `NetPolys`) and the process as plain columns (`Stack`, `Vias`), so it
-//! needs neither check's nor ingest's types.
+//! Nets come as check's per-polygon net column (`poly_net`, to `NetPolys`),
+//! devices as plain columns (`device_region.Mos`), the process as plain
+//! columns (`Stack`, `Vias`), so nothing here imports check. Two methods
+//! write one `ParasiticNetwork` (Ω, fF, pH): `analytical`, closed forms
+//! over every net (Weste & Harris ch. 6: `Rs·L/W` per region, `Rcut/n` per
+//! via array, `Ca·A + Cf·P` to ground, lateral `ε₀εr·t·L/S`, interlayer
+//! `ε₀εr·A/d`); and `quasistatic`, a field solve of named nets laid over it.
+//! The pex spine then adds device-region, TSV, substrate and fill effects
+//! and `reduce`s to the deck's extraction type; `compare` qualifies one
+//! extraction against another, `spef`/`dspf` read another tool's.
+//!
+//! Known gaps, so a number reads for what it is: analytical R chains a
+//! net's regions in layer order, not along the current path, and a region
+//! reads as the rectangle of its area and perimeter; analytical coupling is
+//! parallel-plate between rectangles, no fringe and no shielding (a lower
+//! bound); dielectric interfaces in the field solve are windowed and
+//! horizontal only; a junction (height 0) is closed form; only selected
+//! nets are in the field; inductance resolves crowding to a four-cell grid
+//! and one frequency (1 MHz, no skin effect). An undescribed layer is
+//! refused by both methods, never read as a perfect wire.
 //!
 //! Contents:
 //! - `Stack`, `Vias`, `none`, `isGlobal` (stack.zig)
