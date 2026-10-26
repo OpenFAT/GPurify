@@ -13,7 +13,7 @@
 //! - `pub const Graph = struct`, `deinit`, `clone(g: *const Graph, gpa: Allocator) Allocator.Error!Graph`,
 //!   `deviceCount(g: *const Graph) u32`, `netCount(g: *const Graph) u32`,
 //!   `terminalsOf(g: *const Graph, device: u32) Terminals`, `terminalsOn(g: *const Graph, net: u32) NetTerminals`,
-//!   `paramsOf(g: *const Graph, device: u32) []const Param`
+//!   `paramsOf(g: *const Graph, device: u32) []const Param`, `assertValid(g: *const Graph) void`
 //! - `pub fn transposeInto(gpa: Allocator, g: *Graph, net_count: u32) Allocator.Error!void`
 //! - `pub fn rewriteParams(gpa: Allocator, g: *Graph, ctx: anytype) Allocator.Error!void`
 //! - `pub fn roleEql(a: TerminalRole, b: TerminalRole) bool`, `pub fn roleCode(role: TerminalRole) u64`,
@@ -112,6 +112,35 @@ pub const Graph = struct {
         const from = g.device_param_start.items[device];
         const to = g.device_param_start.items[device + 1];
         return g.param.items[from..to];
+    }
+
+    /// Asserts the invariants in the type's doc comment (safe builds only):
+    /// column lengths, CSR offsets, nets in range, the net side the device
+    /// side's transpose.
+    pub fn assertValid(g: *const Graph) void {
+        if (!std.debug.runtime_safety) return;
+        const devices = g.deviceCount();
+        const nets = g.netCount();
+        assert(g.device_model.items.len == devices and g.terminal_role.items.len == g.terminal_net.items.len);
+        assertCsr(g.device_terminal_start.items, devices, g.terminal_net.items.len);
+        assertCsr(g.device_param_start.items, devices, g.param.items.len);
+        assertCsr(g.net_terminal_start.items, nets, g.net_terminal_device.items.len);
+        var on_nets: usize = 0;
+        for (g.terminal_net.items) |n| {
+            assert(n == no_net or n < nets);
+            on_nets += @intFromBool(n != no_net);
+        }
+        for (g.port_net.items) |n| assert(n < nets);
+        assert(g.net_terminal_device.items.len == on_nets);
+        for (0..nets) |n| {
+            const on = g.terminalsOn(@intCast(n));
+            for (on.devices, on.roles, 0..) |d, role, i| {
+                assert(d < devices and (i == 0 or on.devices[i - 1] <= d));
+                const t = g.terminalsOf(d);
+                const found = for (t.nets, t.roles) |tn, tr| (if (tn == n and roleEql(tr, role)) break true) else false;
+                assert(found);
+            }
+        }
     }
 };
 
@@ -274,6 +303,14 @@ pub fn groupsByRootInto(gpa: Allocator, root: []u32, rows: []const u32, start: *
 }
 
 // ---- private ----
+
+/// A CSR offset column over `rows` rows and `len` payload: empty with an
+/// empty table, else ascending from zero to `len`.
+fn assertCsr(start: []const u32, rows: u32, len: usize) void {
+    if (start.len == 0) return assert(rows == 0 and len == 0);
+    assert(start.len == @as(usize, rows) + 1 and start[0] == 0 and start[rows] == len);
+    for (start[0 .. start.len - 1], start[1..]) |a, b| assert(a <= b);
+}
 
 test "the transpose lists each net's terminals ascending by device" {
     // Oracle: construct-from-answer. Two devices share net 1; a terminal on

@@ -108,6 +108,8 @@ pub const GraphBuilder = struct {
         return out;
     }
 
+    // ---- private ----
+
     fn ensureStarted(b: *GraphBuilder) !void {
         if (b.g.device_terminal_start.items.len != 0) return;
         try b.g.device_terminal_start.append(gpa, 0);

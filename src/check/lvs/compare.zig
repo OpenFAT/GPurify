@@ -96,6 +96,8 @@ const Work = struct {
 /// Compares the extracted `layout` against one `reference` subcircuit, as
 /// the lvs module header describes, into `out` (cleared and refilled).
 pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Graph, options_in: CompareOptions, controls: *const LvsControls, out: *Traced) Allocator.Error!void {
+    layout.assertValid();
+    reference.assertValid();
     var options = options_in;
     options.params.relaxed = options.params.relaxed or controls.relaxed;
     options.params.gates = options.params.gates or controls.recognize_gates;
@@ -131,6 +133,9 @@ pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Gra
     if (ref_dropped) retain.restoreRows(out.reference_merges.device.items, w.ref_kept.items);
     try originInto(gpa, reference.deviceCount(), if (ref_dropped) w.ref_kept.items else null, &out.reference_merges, out);
     assert(out.reference_row_start.items.len == @as(usize, w.reference.deviceCount()) + 1);
+    // Reduction returns graphs that keep the invariants refinement reads.
+    w.layout.assertValid();
+    w.reference.assertValid();
     if (names.multiplier) |m| {
         try prepare.stateCount(gpa, &w.layout, m);
         try prepare.stateCount(gpa, &w.reference, m);

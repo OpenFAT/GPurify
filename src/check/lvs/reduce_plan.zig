@@ -76,6 +76,8 @@ pub const Plan = struct {
         return p.key.items[p.key_start.items[device]..p.key_start.items[device + 1]];
     }
 
+    // ---- private ----
+
     fn parallelSig(p: *const Plan, device: u32) []const Sig {
         return p.parallel_sig.items[p.parallel_sig_start.items[device]..p.parallel_sig_start.items[device + 1]];
     }

@@ -76,6 +76,8 @@ pub const Merges = struct {
         return m.device.items[m.device_start.items[merge]..m.device_start.items[merge + 1]];
     }
 
+    // ---- private ----
+
     fn clear(m: *Merges) void {
         inline for (@typeInfo(Merges).@"struct".field_names) |f| @field(m, f).clearRetainingCapacity();
     }
