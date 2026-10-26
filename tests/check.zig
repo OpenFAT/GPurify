@@ -68,4 +68,6 @@ test {
     _ = @import("check/erc/p2p_resistance_rule.zig");
     _ = @import("check/erc/electrical_limits.zig");
     _ = @import("check/erc/dynamic_and_thermal.zig");
+    _ = @import("check/erc/intent_gate.zig");
+    _ = @import("check/erc/antenna_and_density.zig");
 }
