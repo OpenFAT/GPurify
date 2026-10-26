@@ -5,5 +5,6 @@ test {
     _ = @import("gpurify/export.zig");
     _ = @import("gpurify/engine.zig");
     _ = @import("gpurify/liberty.zig");
+    _ = @import("gpurify/liberty_diffusions.zig");
     if (@import("paths").ngspice_tests) _ = @import("gpurify/liberty_ngspice.zig");
 }
