@@ -91,4 +91,8 @@ test {
     _ = @import("check/erc/ported_density.zig");
     _ = @import("check/erc/sky130_antenna.zig");
     _ = @import("check/erc/closed_form_others.zig");
+    _ = @import("check/erc/exhaustive_rails.zig");
+    _ = @import("check/erc/exhaustive_ir.zig");
+    _ = @import("check/erc/exhaustive_em.zig");
+    _ = @import("check/erc/exhaustive_reliability.zig");
 }
