@@ -3,7 +3,7 @@
 //! and two-pin devices wired by met1 risers to one met2 track per net, the
 //! intent JSON, the three placements and the finding constructors. Ported
 //! from crates/check/tests/erc/ported.rs (`TOPO_PROCESS`, `diode_process`,
-//! `circuit`, `circuit_pins`, `riser`, `intent`, `domain_intent`,
+//! `circuit`, `circuit_pins`, `bulk`, `riser`, `intent`, `domain_intent`,
 //! `every_placement`, `count`, `length`, `ratio`, `millivolts`, `side`,
 //! `sweep`).
 //!
@@ -12,7 +12,7 @@
 //! Contents:
 //! - `pub const Rect`, `pub const Model = enum`, `marker(m) []const u8`, `pub const Dev = struct`, `pub const Pin = struct`
 //! - `pub const pitch`, `pub const track_h`, `pub const nets`, `pub const topo_process`, `pub const diode_process`, `pub const domain_nets`
-//! - `pub fn dev(model: Model, g: usize, s: usize, d: usize) Dev`, `pub fn trackY(net: usize) i64`
+//! - `pub fn dev(model: Model, g: usize, s: usize, d: usize) Dev`, `pub fn bulk(model: Model, g: usize, s: usize, d: usize, b: usize) Dev`, `pub fn trackY(net: usize) i64`
 //! - `pub fn rect(l: *Layout, arena, layer, r: Rect) !void`, `pub fn riser(l: *Layout, arena, x: i64, base: i64, net: usize) !void`
 //! - `pub fn circuit(arena, labels, devs, diodes: []const [2]usize) !Layout`, `pub fn circuitPins(arena, labels, devs, pins: []const Pin) !Layout`
 //! - `pub fn intentText(arena, domains: []const Domain, supplies: []const [3][]const u8) ![]const u8`, `pub const Domain`, `pub fn domainIntent(arena) ![]const u8`
@@ -35,19 +35,23 @@ pub const Model = enum {
     nfet,
     pfet,
     clamp,
+    nfet_b,
+    pfet_b,
 
     pub fn marker(m: Model) []const u8 {
         return switch (m) {
             .nfet => "mkn",
             .pfet => "mkp",
             .clamp => "mkc",
+            .nfet_b => "mknb",
+            .pfet_b => "mkpb",
         };
     }
 };
 
 /// One transistor: the nets of its gate, its source (the diffusion drawn
-/// first) and its drain.
-pub const Dev = struct { model: Model, g: usize, s: usize, d: usize };
+/// first), its drain, and its well bulk for the `_b` models.
+pub const Dev = struct { model: Model, g: usize, s: usize, d: usize, b: ?usize = null };
 
 /// A two-pin device: its recogniser's marker layer, the first pin's net
 /// (its diffusion drawn first) and the second's.
@@ -144,6 +148,11 @@ pub fn dev(model: Model, g: usize, s: usize, d: usize) Dev {
     return .{ .model = model, .g = g, .s = s, .d = d };
 }
 
+/// A bulk transistor: `dev` with its bulk on net `b`.
+pub fn bulk(model: Model, g: usize, s: usize, d: usize, b: usize) Dev {
+    return .{ .model = model, .g = g, .s = s, .d = d, .b = b };
+}
+
 pub fn trackY(net: usize) i64 {
     return track_y0 + @as(i64, @intCast(net)) * track_pitch;
 }
@@ -182,6 +191,10 @@ pub fn circuitPins(arena: Allocator, labels: []const []const u8, devs: []const D
         try riser(&l, arena, x0 + 400, 400, dv.s);
         try riser(&l, arena, x0 + 1600, 400, dv.d);
         try riser(&l, arena, x0 + 1000, 1400, dv.g);
+        if (dv.b) |b| {
+            try rect(&l, arena, "well", .{ x0 + 1000, -600, x0 + 2700, 0 });
+            try riser(&l, arena, x0 + 2400, -500, b);
+        }
     }
     for (pins, 0..) |p, j| {
         const x0 = @as(i64, @intCast(devs.len + j)) * pitch;
