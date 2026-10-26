@@ -65,4 +65,6 @@ test {
     _ = @import("check/drc/pdk_decks.zig");
     _ = @import("check/erc/fixture.zig");
     _ = @import("check/erc/common.zig");
+    _ = @import("check/erc/topological_rules.zig");
+    _ = @import("check/erc/supply_rules.zig");
 }
