@@ -19,9 +19,10 @@
 //! Deferred (device recognition, topology's, not DRC):
 //! `a_plain_nfet_extracts_as_nfet_01v8_with_four_nets`,
 //! `a_poly_resistor_has_two_distinct_heads`.
-//! Deferred (ERC antenna rows, wave 4): `the_sky130_antenna_rows_are_table_ig`,
+//! The ERC antenna rows (`the_sky130_antenna_rows_are_table_ig`,
 //! `the_ihp_antenna_rows_switch_on_a_protection_diode`,
-//! `the_gf180_antenna_rows_credit_comp_by_oxide`.
+//! `the_gf180_antenna_rows_credit_comp_by_oxide`) are in
+//! tests/check/erc/sky130_antenna.zig.
 
 const std = @import("std");
 const testing = std.testing;
