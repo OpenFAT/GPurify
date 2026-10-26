@@ -263,7 +263,6 @@ fn built(comptime backend: Device.Backend) bool {
 }
 
 fn runGpu(comptime backend: Device.Backend, gpa: Allocator, g: Grid, bins: *const Bins, out: []i64) GpuError!void {
-    _ = gpa;
     const tag: g_.Backend = switch (backend) {
         .cpu => unreachable,
         .cuda => .cuda,
@@ -271,18 +270,14 @@ fn runGpu(comptime backend: Device.Backend, gpa: Allocator, g: Grid, bins: *cons
     };
     var k = try g_.RawKernel("check_window_area", tag).init(0);
     defer k.deinit();
-    const columns = .{ bins.row_start.items, bins.reach.items, bins.xlo.items, bins.ylo.items, bins.xhi.items, bins.yhi.items };
-    var bufs: [7]@TypeOf(k).Buffer = undefined;
-    var made: usize = 0;
-    defer for (bufs[0..made]) |*buf| buf.free();
-    inline for (columns, 0..) |col, c| {
-        bufs[c] = try k.alloc(@max(1, std.mem.sliceAsBytes(col).len));
-        made += 1;
-        if (col.len > 0) try bufs[c].upload(col.ptr, std.mem.sliceAsBytes(col).len);
-    }
-    bufs[6] = try k.alloc(@max(1, out.len * @sizeOf(i64)));
-    made += 1;
     if (out.len == 0) return;
+    // One allocation and one copy for every column, `out` reserved after them.
+    const bytes = std.mem.sliceAsBytes;
+    const columns = [_][]const u8{ bytes(bins.row_start.items), bytes(bins.reach.items), bytes(bins.xlo.items), bytes(bins.ylo.items), bytes(bins.xhi.items), bytes(bins.yhi.items) };
+    var offsets: [7]usize = undefined;
+    var addresses: [7]usize = undefined;
+    var buffer = try geom.bulk.upload(@TypeOf(k), &k, gpa, &columns, &.{out.len * @sizeOf(i64)}, &offsets, &addresses);
+    defer buffer.free();
     var n: u64 = out.len;
     var cols: u64 = g.cols;
     var x0 = g.x0;
@@ -296,10 +291,10 @@ fn runGpu(comptime backend: Device.Backend, gpa: Allocator, g: Grid, bins: *cons
     args[3] = g_.interface.arg(&y0);
     args[4] = g_.interface.arg(&side);
     args[5] = g_.interface.arg(&stride);
-    for (args[6..], &bufs) |*a, *buf| a.* = buf.argPtr();
+    for (args[6..], &addresses) |*a, *address| a.* = g_.interface.arg(address);
     try k.launch(g_.Dim3.linear(out.len, block), .{ .x = block }, 0, &args);
     try k.synchronize();
-    try bufs[6].download(out.ptr, out.len * @sizeOf(i64));
+    try buffer.downloadAt(out.ptr, offsets[6], out.len * @sizeOf(i64));
 }
 
 /// Rust's in-file xorshift.
