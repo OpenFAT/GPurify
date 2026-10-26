@@ -29,7 +29,6 @@ const Error = params.Error;
 const Diagnostic = params.Diagnostic;
 const Reader = params.Reader;
 const validate = @import("validate.zig").validate;
-const ported = @import("run.zig").ported;
 const shapes = @import("build_shapes.zig");
 const spacing = @import("build_spacing.zig");
 const layers_ = @import("build_layers.zig");
@@ -73,10 +72,6 @@ pub fn fromDeck(gpa: Allocator, d: *const Deck, strings: *const StrTable, diag: 
     defer scratch.deinit();
     for (specs) |spec| {
         const kind = kinds.byName(strings.resolve(spec.kind)) orelse continue;
-        if (!ported(kind)) {
-            diag.* = .{ .rule = spec.id, .kind = spec.kind };
-            return error.KindNotPorted;
-        }
         _ = scratch.reset(.retain_capacity);
         const c: Ctx = .{
             .gpa = gpa,

@@ -57,9 +57,6 @@ pub const Error = error{
     /// The row is an ERC kind, which this build does not type yet (wave 4):
     /// refused by name, never dropped.
     ErcRulesNotPorted,
-    /// The row is a DRC kind whose family this build does not run yet:
-    /// refused by name, never dropped (interim, wave 3).
-    KindNotPorted,
 } || Allocator.Error;
 
 /// What the error names: the row always, the rest as the error says.

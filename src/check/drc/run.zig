@@ -8,7 +8,6 @@
 //! crates/check/src/drc/ruleset.rs (`RuleSet::run_with_nets`, `dfm_scored`).
 //!
 //! Contents:
-//! - `pub fn ported(kind: Kind) bool` (interim, until every family lands)
 //! - `pub fn run(gpa: Allocator, device: Device, rs: *const RuleSet, store: *const GeometryStore, poly_net: ?[]const u32, out: *Violations, runs: *std.ArrayList(RuleRun)) Error!void`
 
 const std = @import("std");
@@ -57,6 +56,7 @@ const dfm = @import("dfm.zig");
 const via_cuts = @import("via_cuts.zig");
 const via_stack = @import("via_stack.zig");
 const via_connectors = @import("via_connectors.zig");
+const patterning = @import("patterning.zig");
 
 /// Runs every rule of `rs` over `store`. `out` and `runs` are cleared
 /// first. `poly_net` is the extraction's net column (`NetTable.netColumn`)
@@ -103,19 +103,6 @@ pub fn run(gpa: Allocator, device: Device, rs: *const RuleSet, store: *const Geo
             if (last_use.items[@backingInt(l)] == at) s.p.validated.forget(gpa, l);
         };
     }
-}
-
-/// Whether this build runs `kind`: the deck compiler refuses a kind it does
-/// not (`error.KindNotPorted`) until its family lands.
-pub fn ported(kind: Kind) bool {
-    return switch (kind) {
-        .multi_patterning,
-        .anchored_patterning,
-        .sadp,
-        .sadp_line_end,
-        => false,
-        else => true,
-    };
 }
 
 // ---- private ----
@@ -202,12 +189,9 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .via_stack => |r| via_stack.viaStack(c, r),
         .cut_area_change => |r| via_connectors.cutAreaChange(c, r),
         .via_redundancy => |r| via_connectors.viaRedundancy(c, r),
-        // ponytail: families still to port refuse (never pass) until their
-        // file lands; the deck compiler refuses these kinds by name.
-        .multi_patterning,
-        .anchored_patterning,
-        .sadp,
-        .sadp_line_end,
-        => report.refused,
+        .multi_patterning => |r| patterning.multiPatterning(c, r),
+        .anchored_patterning => |r| patterning.anchoredPatterning(c, r),
+        .sadp => |r| patterning.sadp(c, r),
+        .sadp_line_end => |r| patterning.sadpLineEnd(c, r),
     };
 }
