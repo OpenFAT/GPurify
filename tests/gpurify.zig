@@ -19,4 +19,25 @@ test {
     _ = @import("gpurify/bitmap.zig");
     _ = @import("gpurify/drc_common.zig");
     _ = @import("gpurify/dim_width.zig");
+    _ = @import("gpurify/dim_max_width.zig");
+    _ = @import("gpurify/dim_cut.zig");
+    _ = @import("gpurify/dim_step.zig");
+    _ = @import("gpurify/dim_edge.zig");
+    _ = @import("gpurify/dim_notch.zig");
+    _ = @import("gpurify/dim_spacing.zig");
+    _ = @import("gpurify/dim_eol.zig");
+    _ = @import("gpurify/dim_eol_within.zig");
+    _ = @import("gpurify/dim_eol58.zig");
+    _ = @import("gpurify/dim_keep_out.zig");
+    _ = @import("gpurify/dim_prl.zig");
+    _ = @import("gpurify/dim_corner.zig");
+    _ = @import("gpurify/dim_wide.zig");
+    _ = @import("gpurify/dim_net.zig");
+    _ = @import("gpurify/dim_tables.zig");
+    _ = @import("gpurify/dim_pitch.zig");
+    _ = @import("gpurify/dim_area.zig");
+    _ = @import("gpurify/dim_grid_angle.zig");
+    _ = @import("gpurify/dim_forbidden.zig");
+    _ = @import("gpurify/dim_directional.zig");
+    _ = @import("gpurify/dim_integrity.zig");
 }
