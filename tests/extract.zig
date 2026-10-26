@@ -11,6 +11,7 @@ test {
     _ = @import("extract/capacitance.zig");
     _ = @import("extract/henry.zig");
     _ = @import("extract/quasistatic.zig");
+    _ = @import("extract/network.zig");
     if (paths.slow_tests) _ = @import("extract/capacitance_slow.zig");
     if (paths.gpu_tests) _ = @import("extract/gpu.zig");
 }
