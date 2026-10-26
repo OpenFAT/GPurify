@@ -1,0 +1,79 @@
+name: nightly
+
+# The slow tier (ARCHITECTURE.md, Tests: tiers): evidence the merge gate
+# cannot afford.
+#
+#   slow         every suite in ReleaseSafe with the slow field solves on
+#   fuzz         the ten std.testing.fuzz targets (tests/gpurify/fuzz.zig),
+#                bounded by iterations; a crash is saved under .zig-cache/f
+#                and uploaded, to be minimised into tests/fuzz/regressions
+#   determinism  every corpus case through the CLI at 1 thread and 8,
+#                byte-compared (the golden suite already runs each twice
+#                and re-runs every field solve on one thread)
+#
+# One job, so the steps share one compile. Every step runs even when an
+# earlier one fails, so one red check does not hide the others.
+# GitHub disables a schedule after 60 days without repository activity:
+# run it by hand before then, or accept that it stops.
+on:
+  schedule:
+    - cron: "37 5 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      FLAGS: -Doptimize=ReleaseSafe -Dgpu=false -Dcuda-arch=none -Dhip-arch=none --summary failures
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@ad2ddac53f961de1989924296a1f236fcfbaa4fc # v15
+        with:
+          name: omarsiwy
+          skipPush: true
+
+      - name: Every suite, slow tests on
+        run: nix develop -c zig build test -Dslow-tests=true $FLAGS
+
+      # Coverage-guided fuzzing, bounded by iterations. `--fuzz=N` runs the
+      # suite first, then fuzzes (20K took 11 min locally in ReleaseSafe);
+      # the build's exit code does not carry a fuzz crash, so the saved
+      # input decides.
+      - name: Fuzz
+        if: ${{ !cancelled() }}
+        run: |
+          nix develop -c zig build test-gpurify --fuzz=100K -Dtest-filter=fuzz $FLAGS 2>&1 | tee fuzz.txt
+          status="${PIPESTATUS[0]}"
+          if [ -e .zig-cache/f/crash ]; then echo "fuzz crash: .zig-cache/f/crash"; exit 1; fi
+          exit "$status"
+
+      - name: Determinism, 1 thread against 8
+        if: ${{ !cancelled() }}
+        run: |
+          nix develop -c zig build $FLAGS --prefix out
+          status=0
+          for gds in tests/fixtures/{drc,erc,pex}/*.gds; do
+            for t in 1 8; do
+              out/bin/gpurify all "$gds" --deck tests/fixtures/params.deck --format json --threads $t > "t$t.txt" 2>&1; echo "exit $?" >> "t$t.txt"
+            done
+            cmp -s t1.txt t8.txt || { echo "differs at 1 and 8 threads: $gds"; status=1; }
+          done
+          exit "$status"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: ${{ !cancelled() }}
+        with:
+          name: nightly-fuzz
+          path: |
+            fuzz.txt
+            .zig-cache/f/crash
+          if-no-files-found: ignore

@@ -87,4 +87,6 @@ test {
     _ = @import("gpurify/lay_sadp.zig");
     _ = @import("gpurify/lay_selections.zig");
     _ = @import("gpurify/lay_stacks.zig");
+    _ = @import("gpurify/fuzz.zig");
+    _ = @import("gpurify/xor.zig");
 }
