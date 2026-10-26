@@ -2,10 +2,8 @@
 //! each `isValid` against the conditions its struct states, one condition
 //! broken at a time from a valid table and each boundary value on both
 //! sides, and the band lookups (`CutAreaBands.limit`, `CoverBands.need`,
-//! the pattern anchor). Ported from crates/check/tests/drc/tables.rs.
-//!
-//! Deferred (deck query, ported with crates/check/src/deck/query.rs):
-//! `required_spacing_answers_for_its_own_layer_at_its_thresholds`.
+//! the pattern anchor), and `deck.query.requiredSpacing` rule by rule.
+//! Ported from crates/check/tests/drc/tables.rs.
 
 const std = @import("std");
 const testing = std.testing;
@@ -342,4 +340,63 @@ test "validate holds each value to its stated range" {
         .{ .{ 10, 80 }, .{ 50, -4 }, -4 },
     };
     for (bad) |cs| try testing.expectEqual(@as(?i64, cs[2]), try validated(zone(.{ 100, 300 }, null, cs[0], cs[1])));
+}
+
+test "required spacing answers for its own layer at its thresholds" {
+    // Oracle: `Rule::required_spacing`'s doc: a rule answers only for its
+    // own layer, a wide rule only for a pair whose wider width reaches the
+    // threshold (`isWide`: at it counts), a run rule only for a run reaching
+    // its threshold, an end-of-line rule only for a facing edge strictly
+    // shorter than its width, a table its largest applicable row. Each case
+    // is read at the threshold and one unit short of it, and on the other
+    // layer.
+    const a = common.a;
+    const b = common.b;
+    const Q = check.deck.query;
+    const rules = [_]Rule{
+        .{ .wide_dependent_spacing = .{ .layer = a, .width_threshold = 3000, .limit = 400 } },
+        .{ .attached_wide_spacing = .{ .layer = a, .width_threshold = 3000, .attached = 500, .limit = 450 } },
+        .{ .prl_spacing = .{ .layer = a, .prl_threshold = 1000, .limit = 300 } },
+        .{ .eol_spacing = .{ .layer = a, .eol_width = 200, .limit = 250 } },
+        .{ .min_spacing = .{ .layer = a, .limit = 140 } },
+        .{ .spacing_table = .{ .layer = a, .table = 0 } },
+    };
+    const q = struct {
+        fn f(width: i64, run: i64, eol: ?i64) Q.SpacingQuery {
+            return .{ .width_a = 100, .width_b = width, .run_length = run, .end_of_line = eol };
+        }
+    }.f;
+    const at = struct {
+        fn f(rule: Rule, layer: geom.LayerId, query: Q.SpacingQuery) !?i64 {
+            var cd: check.deck.CompiledDeck = .{ .grid = try geom.Grid.init(1000), .deck = .{}, .drc = .{} };
+            defer cd.deinit(gpa);
+            _ = try cd.drc.addSpacingTable(gpa, .{ .prl = &.{ 0, 1000 }, .width = &.{ 0, 2999 }, .space = &.{ 140, 200, 300, 500 } });
+            try cd.drc.push(gpa, common.rule_id, rule, .@"error");
+            return Q.requiredSpacing(&cd, layer, query);
+        }
+    }.f;
+    for (rules) |r| try testing.expectEqual(@as(?i64, null), try at(r, b, q(3000, 1000, 10)));
+    const min = rules[4];
+    const wide = rules[0];
+    const attached = rules[1];
+    const prl = rules[2];
+    const eol = rules[3];
+    const table = rules[5];
+    try testing.expectEqual(@as(?i64, 140), try at(min, a, q(100, 0, null)));
+    try testing.expectEqual(@as(?i64, 400), try at(wide, a, q(3000, 0, null)));
+    try testing.expectEqual(@as(?i64, null), try at(wide, a, q(2999, 0, null)));
+    try testing.expectEqual(@as(?i64, 450), try at(attached, a, q(3000, 0, null)));
+    try testing.expectEqual(@as(?i64, null), try at(attached, a, q(2999, 0, null)));
+    try testing.expectEqual(@as(?i64, 300), try at(prl, a, q(100, 1000, null)));
+    try testing.expectEqual(@as(?i64, null), try at(prl, a, q(100, 999, null)));
+    try testing.expectEqual(@as(?i64, 250), try at(eol, a, q(100, 0, 199)));
+    try testing.expectEqual(@as(?i64, null), try at(eol, a, q(100, 0, 200)));
+    try testing.expectEqual(@as(?i64, null), try at(eol, a, q(100, 0, null)));
+    // Row 1 holds widths past 2999 (a 3000 square fits), column 1 runs past
+    // 1000.
+    try testing.expectEqual(@as(?i64, 140), try at(table, a, q(100, 1000, null)));
+    try testing.expectEqual(@as(?i64, 200), try at(table, a, q(100, 1001, null)));
+    try testing.expectEqual(@as(?i64, 300), try at(table, a, q(3000, 1000, null)));
+    try testing.expectEqual(@as(?i64, 500), try at(table, a, q(3000, 1001, null)));
+    try testing.expectEqual(@as(?i64, 200), try at(table, a, q(2999, 1001, null)));
 }
