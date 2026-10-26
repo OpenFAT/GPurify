@@ -73,4 +73,6 @@ test {
     _ = @import("check/erc/dispatch_deck.zig");
     _ = @import("check/erc/reference_solve.zig");
     _ = @import("check/erc/reference_voltage.zig");
+    _ = @import("check/erc/ported_common.zig");
+    _ = @import("check/erc/ported_esd.zig");
 }
