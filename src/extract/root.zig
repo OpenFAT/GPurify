@@ -20,6 +20,7 @@
 //! - `henry`: `InductMatrix`, `extractInductanceInto` (field/henry.zig)
 //! - `network`: `ParasiticNetwork`, `NodeId`, `Kind` (network.zig)
 //! - `quasistatic`: `extractInto`, `extractInductanceInto`, `overlay` (quasistatic.zig)
+//! - `analytical`: `Problem`, `Error`, `Refusal`, `extractInto`, `nodeRectsInto` (analytical.zig)
 
 const stack = @import("stack.zig");
 pub const conductor = @import("conductor.zig");
@@ -35,6 +36,7 @@ pub const filament = @import("field/filament.zig");
 pub const henry = @import("field/henry.zig");
 pub const network = @import("network.zig");
 pub const quasistatic = @import("quasistatic.zig");
+pub const analytical = @import("analytical.zig");
 pub const NetPolys = @import("net_polys.zig").NetPolys;
 pub const NearPairs = @import("field/near.zig").NearPairs;
 
@@ -64,6 +66,9 @@ test {
     _ = henry;
     _ = network;
     _ = quasistatic;
+    _ = analytical;
+    _ = @import("closed_form.zig");
+    _ = @import("joins.zig");
     _ = @import("net_polys.zig");
     _ = @import("field/morton.zig");
     _ = @import("field/faces.zig");

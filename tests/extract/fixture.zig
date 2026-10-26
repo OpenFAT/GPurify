@@ -13,6 +13,7 @@
 //! - `pub const coarse: Rows`, `pub const junction: Rows`, `pub fn uniformRows(n, area, fringe) Rows`
 //! - `pub const device: geom.Device`
 //! - `pub fn solveFf(c: *const Case, rows: *const Rows, selected: []const u32, out: []f64) !capacitance.Accuracy`
+//! - `pub fn scaleComb(nets: u32, polygons: u32) !Case`, `pub const comb_conductors`, `pub const comb_vias`
 
 const std = @import("std");
 const geom = @import("geom");
@@ -137,6 +138,11 @@ pub const junction: Rows = blk: {
     break :blk r;
 };
 
+/// The scale corpus's conductors (`LOWER`, `UPPER`) and its one via row
+/// (`CUT` joining them).
+pub const comb_conductors = [_]geom.LayerId{ @fromBackingInt(0), @fromBackingInt(1) };
+pub const comb_vias: extract.Vias = .{ .cut = &.{@fromBackingInt(2)}, .connects = &.{.{ @fromBackingInt(0), @fromBackingInt(1) }} };
+
 /// `crates/extract/tests/field/common`'s `uniform_stack`: three identical
 /// rows, 100 nm thick at 300 nm, 0.1 Ω/□, k 3.9.
 pub fn uniformRows(area: f64, fringe: f64) Rows {
@@ -153,4 +159,26 @@ pub fn solveFf(c: *const Case, rows: *const Rows, selected: []const u32, out: []
     const accuracy = try capacitance.extractInto(gpa, device, c.problem(rows), selected, &matrix, &diag);
     for (out, matrix.value.items) |*o, v| o.* = v * 1e15;
     return accuracy;
+}
+
+/// crates/testgen/src/scale.rs's `scale_corpus` at hierarchy depth 1 (one
+/// block, so its shuffle moves nothing): net `n` is a comb in band `n`, a
+/// rail on layer 0, `(polygons / nets - 1) / 2` fingers on layer 1 and a
+/// cut on layer 2 under each finger, the cuts on no net. Built here until
+/// testgen ports the corpus; its nets are known by construction.
+pub fn scaleComb(nets: u32, polygons: u32) !Case {
+    std.debug.assert(nets > 0 and polygons >= 3 * nets);
+    const fingers: i64 = (polygons / nets - 1) / 2;
+    var boxes: std.ArrayList(Box) = .empty;
+    defer boxes.deinit(gpa);
+    for (0..nets) |n| {
+        const y: i64 = @as(i64, @intCast(n)) * 1_000;
+        try boxes.append(gpa, .{ .layer = 0, .net = @intCast(n), .r = .{ 0, y, fingers * 400 + 120, y + 200 } });
+        for (0..@intCast(fingers)) |f| {
+            const x: i64 = @as(i64, @intCast(f)) * 400;
+            try boxes.append(gpa, .{ .layer = 1, .net = @intCast(n), .r = .{ x, y, x + 120, y + 600 } });
+            try boxes.append(gpa, .{ .layer = 2, .net = extract.none, .r = .{ x + 20, y + 60, x + 100, y + 140 } });
+        }
+    }
+    return Case.init(boxes.items, &.{}, 3);
 }
