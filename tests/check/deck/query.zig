@@ -1,8 +1,6 @@
 //! The query API answers what the checker enforces (deck-library plan P2,
 //! ledger D3; testing-plan L9b). Ported from
-//! crates/check/tests/deck/query.rs; the ERC half
-//! (`the_electrical_queries_read_what_the_deck_states`) waits for the ERC
-//! port (wave 4), and the shipped decks are read with their ERC rows out.
+//! crates/check/tests/deck/query.rs.
 //!
 //! Oracle: differential against the checker, on planted cases. For every
 //! rule of every shipped deck that a query answers for, a layout is drawn
@@ -187,7 +185,7 @@ test "every query is the limit the checker reports" {
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     for (common.shipped) |name| {
-        var c = try common.compileText(try common.drcOnly(arena.allocator(), name), 1000);
+        var c = try common.compileText(try common.shippedText(arena.allocator(), name), 1000);
         defer c.deinit();
         const cd = &c.cd;
         var covered: u32 = 0;
@@ -293,4 +291,49 @@ test "the queries keep to the layers they are asked about" {
     try testing.expectEqual(@as(?[2]i64, null), rows.items[0].window);
     try q.densityInto(gpa, cd, v, &rows);
     try testing.expectEqual(@as(usize, 0), rows.items.len);
+}
+
+test "the electrical queries read what the deck states" {
+    // Oracle: the deck text, pdks/sky130.deck's `ar.met1.1`, `EM.met1_mcon`,
+    // `vgs.esd_nfet`, `vds.d10v5`, `vgs.01v8` and `vds.01v8`.
+    var arena: std.heap.ArenaAllocator = .init(gpa);
+    defer arena.deinit();
+    var c = try common.compileText(try common.shippedText(arena.allocator(), "sky130"), 1000);
+    defer c.deinit();
+    const cd = &c.cd;
+    const layer = struct {
+        fn of(cc: *const common.Compiled, name: []const u8) LayerId {
+            return cc.cd.deck.layers.id(&cc.strings, name).?;
+        }
+    }.of;
+    // rule ar.met1.1 antenna_electrical(gate, met1; max_ratio: 400,
+    //     sidewall: 350nm, .. diode: antenna_diode, ..)
+    var antenna: std.ArrayList(q.AntennaLimit) = .empty;
+    defer antenna.deinit(gpa);
+    try q.antennaInto(gpa, cd, layer(&c, "met1"), &antenna);
+    try testing.expectEqual(@as(usize, 1), antenna.items.len);
+    const a = antenna.items[0];
+    try testing.expectEqual(c.strings.get("ar.met1.1").?, a.rule);
+    try testing.expectEqual(layer(&c, "gate"), a.gate);
+    try testing.expectEqual(@as(u64, @bitCast(@as(f64, 400.0))), @as(u64, @bitCast(a.max_ratio)));
+    try testing.expectEqual(check.erc.antenna_tables.AntennaMeasure{ .sidewall = 350 }, a.measure);
+    try testing.expectEqual(@as(?LayerId, layer(&c, "antenna_diode")), a.diode);
+    // rule EM.met1_mcon em_current_density(met1, mcon; max_density:
+    //     2.8mA/um, max_current_per_cut: 0.36mA, narrow: none)
+    var em: std.ArrayList(q.EmLimit) = .empty;
+    defer em.deinit(gpa);
+    try q.emLimitInto(gpa, cd, layer(&c, "mcon"), &em);
+    try testing.expectEqual(@as(usize, 1), em.items.len);
+    try testing.expectEqual(c.strings.get("EM.met1_mcon").?, em.items[0].rule);
+    // 2.8 mA/um is 2800 A/m; 0.36 mA is 360 uA.
+    try testing.expectEqual(@as(u64, @bitCast(@as(f64, 2800.0))), @as(u64, @bitCast(em.items[0].max_density.raw)));
+    try testing.expectEqual(@as(u64, @bitCast(@as(f64, 360.0))), @as(u64, @bitCast(em.items[0].max_current_per_cut.raw)));
+    // vgs.esd_nfet gate_oxide 5V; vds.d10v5 drain_source 11V (g5d10_fets).
+    const esd = q.fetLimits(cd, c.strings.get("sky130_fd_pr__esd_nfet_g5v0d10v5").?);
+    try testing.expectEqual(@as(f64, 5000.0), esd.gate_oxide.?.raw);
+    try testing.expectEqual(@as(f64, 11_000.0), esd.drain_source.?.raw);
+    // vgs.01v8 and vds.01v8, 1.95 V each (lv_fets).
+    const lv = q.fetLimits(cd, c.strings.get("sky130_fd_pr__nfet_01v8").?);
+    try testing.expectEqual(@as(f64, 1950.0), lv.gate_oxide.?.raw);
+    try testing.expectEqual(@as(f64, 1950.0), lv.drain_source.?.raw);
 }
