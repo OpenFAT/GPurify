@@ -46,7 +46,7 @@ test "the potential rows on the gpu match the host bit for bit" {
     for (sizes) |n| {
         var m = try operators.randomPotential(gpa, &rng, n, 4);
         defer m.deinit(gpa);
-        var gpu = extract.gpu.Gpu.init(device, &m, null) orelse return error.NoGpuDriver;
+        var gpu = extract.gpu.Gpu.init(std.testing.allocator, device, &m, null) orelse return error.NoGpuDriver;
         defer gpu.deinit();
         try compare(n, &rng, &gpu, &m, null);
     }
@@ -65,7 +65,7 @@ test "the field rows on the gpu match the host bit for bit" {
             defer m.deinit(gpa);
             // The potential rows are the conductors': `first` of them.
             m.near.start.shrinkRetainingCapacity(first + 1);
-            var gpu = extract.gpu.Gpu.init(device, &m, &f) orelse return error.NoGpuDriver;
+            var gpu = extract.gpu.Gpu.init(std.testing.allocator, device, &m, &f) orelse return error.NoGpuDriver;
             defer gpu.deinit();
             try compare(first + rows, &rng, &gpu, &m, &f);
         }
