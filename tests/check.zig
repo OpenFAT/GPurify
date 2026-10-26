@@ -71,4 +71,7 @@ test {
     _ = @import("check/erc/intent_gate.zig");
     _ = @import("check/erc/antenna_and_density.zig");
     _ = @import("check/erc/closed_form.zig");
+    _ = @import("check/erc/ported_antenna.zig");
+    _ = @import("check/erc/ported_antenna_electrical.zig");
+    _ = @import("check/erc/ported_density.zig");
 }

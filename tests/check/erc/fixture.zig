@@ -283,7 +283,10 @@ pub fn run(arena: Allocator, f: *const Fixture) !Ran {
 /// relative 1e-9 for the floating kinds.
 pub fn same(a: Measurement, b: Measurement) bool {
     if (a.kind != b.kind) return false;
-    if (!a.kind.isFloat()) return a.raw == b.raw;
+    switch (a.kind) {
+        .length, .area, .count => return a.raw == b.raw,
+        .ratio, .voltage, .current, .resistance => {},
+    }
     const x = a.float();
     const y = b.float();
     return @abs(x - y) <= 1e-9 * @max(@abs(x), @abs(y), 1e-30);
