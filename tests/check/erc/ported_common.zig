@@ -11,7 +11,7 @@
 //!
 //! Contents:
 //! - `pub const esd_process`, `pub const esd_clamps`, `pub const strip`, `pub const strip_y`, `pub const Diode = enum`, `marker(d) Marker`, `pub const Marker`, `pub const Placed`
-//! - `pub const diode_process`, `pub const Pin`, `pub const domain_nets`
+//! - `pub const diode_process`, `pub const valued_process`, `pub const Pin`, `pub const domain_nets`
 //! - `pub fn everyPlacementInto(arena, fixtures: []const Fixture, out: *std.ArrayList(Fixture)) !void`
 //! - `pub fn side(limit: f64, value: f64) []const u8`, `pub fn sweep(value: f64) [3]f64`
 //! - `pub fn ohms(x: f64) Finding`, `pub fn microamps(x: f64) Finding`, `pub fn area(nm2: i128) Finding`, `pub fn at(f: Finding, x: i64, y: i64) Finding`
@@ -120,6 +120,15 @@ pub const diode_process = board.topo_process ++
     \\layer mkres = gds(28, 0)
     \\device diode mkdi model "dio" terminals [diff, diff]
     \\device resistor mkres model "rs" terminals [diff, diff]
+    \\
+;
+
+/// `diode_process` with the `rs` resistor valued at `sheet 100ohm`.
+pub const valued_process = board.topo_process ++
+    \\layer mkdi = gds(27, 0)
+    \\layer mkres = gds(28, 0)
+    \\device diode mkdi model "dio" terminals [diff, diff]
+    \\device resistor mkres model "rs" terminals [diff, diff] sheet 100ohm
     \\
 ;
 
