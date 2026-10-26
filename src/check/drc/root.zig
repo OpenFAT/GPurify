@@ -21,7 +21,7 @@
 //! - `rule_set`: `RuleSet`, `Slot`, `Csr`
 //! - `params`: `Error`, `Diagnostic`, `Reader`; `compile`: `fromDeck`; `validate`: `validate`
 //! - `rule_layers`: `layersOf`; `scratch`: `Scratch`, `Ctx`; `run_` (run.zig): `run`, `ported`
-//! - family files: `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
+//! - family files: `area_critical`, `area_density`, `area`, `density`, `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
 //!   `spacing_ends`, `spacing_net`, `spacing_table`
 //! - aliases: `Kind`, `Rule`, `RuleSet`, `Error`, `Diagnostic`, `fromDeck`, `run`
 
@@ -49,6 +49,10 @@ pub const facing_edges = @import("facing_edges.zig");
 pub const facing = @import("facing.zig");
 pub const facing_keep_out = @import("facing_keep_out.zig");
 pub const facing_span = @import("facing_span.zig");
+pub const density = @import("density.zig");
+pub const area = @import("area.zig");
+pub const area_density = @import("area_density.zig");
+pub const area_critical = @import("area_critical.zig");
 
 pub const Kind = kinds.Kind;
 pub const Rule = rows.Rule;
@@ -81,4 +85,8 @@ test {
     _ = facing;
     _ = facing_keep_out;
     _ = facing_span;
+    _ = density;
+    _ = area;
+    _ = area_density;
+    _ = area_critical;
 }

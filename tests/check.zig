@@ -16,4 +16,7 @@ test {
     _ = @import("check/drc/width_rules.zig");
     _ = @import("check/drc/spacing_rules.zig");
     _ = @import("check/drc/spacing_deck.zig");
+    _ = @import("check/drc/density_kernel.zig");
+    _ = @import("check/drc/area_rules.zig");
+    _ = @import("check/drc/density_rules.zig");
 }

@@ -56,6 +56,7 @@ pub const topology = struct {
 // kernel-owning file here.
 comptime {
     _ = proximity_distance;
+    _ = drc.density;
 }
 
 // ---- private ----

@@ -42,6 +42,10 @@ const facing_edges = @import("facing_edges.zig");
 const facing = @import("facing.zig");
 const facing_keep_out = @import("facing_keep_out.zig");
 const facing_span = @import("facing_span.zig");
+const density = @import("density.zig");
+const area = @import("area.zig");
+const area_density = @import("area_density.zig");
+const area_critical = @import("area_critical.zig");
 
 /// Runs every rule of `rs` over `store`. `out` and `runs` are cleared
 /// first. `poly_net` is the extraction's net column (`NetTable.netColumn`)
@@ -94,18 +98,9 @@ pub fn run(gpa: Allocator, device: Device, rs: *const RuleSet, store: *const Geo
 /// not (`error.KindNotPorted`) until its family lands.
 pub fn ported(kind: Kind) bool {
     return switch (kind) {
-        .min_area,
-        .min_enclosed_area,
-        .cheesing,
-        .density,
-        .global_density,
-        .critical_area,
-        .mean_critical_area,
-        .density_balance,
         .via_redundancy,
         .dfm_score,
         .cut_area_change,
-        .cover_density,
         .min_enclosure,
         .noncoincident_enclosure,
         .full_width,
@@ -136,12 +131,8 @@ pub fn ported(kind: Kind) bool {
         .edge_min_length,
         .edge_spacing,
         .edge_enclosure,
-        .count,
-        .aspect_ratio,
-        .total_area,
         .edge_width,
         .edge_facing_space,
-        .region_density,
         .min_interior_angle,
         .polygon_validity,
         .origin,
@@ -187,20 +178,24 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .span_length => |r| facing_span.spanLength(c, r),
         .convex_corner_spacing => |r| facing_span.convexCornerSpacing(c, r),
         .exact_pitch => |r| facing_span.exactPitch(c, r),
+        .min_area => |r| area.minArea(c, r),
+        .min_enclosed_area => |r| area.minEnclosedArea(c, r),
+        .cheesing => |r| area.cheesing(c, r),
+        .aspect_ratio => |r| area.aspectRatio(c, r),
+        .region_density => |r| area.regionDensity(c, r),
+        .count => |r| area.count(c, r),
+        .total_area => |r| area.totalArea(c, r),
+        .global_density => |r| area.globalDensity(c, r),
+        .density => |r| area_density.density(c, r),
+        .density_balance => |r| area_density.densityBalance(c, r),
+        .cover_density => |r| area_density.coverDensity(c, r),
+        .critical_area => |r| area_critical.criticalArea(c, r),
+        .mean_critical_area => |r| area_critical.meanCriticalArea(c, r),
         // ponytail: families still to port refuse (never pass) until their
         // file lands; the deck compiler refuses these kinds by name.
-        .min_area,
-        .min_enclosed_area,
-        .cheesing,
-        .density,
-        .global_density,
-        .critical_area,
-        .mean_critical_area,
-        .density_balance,
         .via_redundancy,
         .dfm_score,
         .cut_area_change,
-        .cover_density,
         .min_enclosure,
         .noncoincident_enclosure,
         .full_width,
@@ -231,12 +226,8 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .edge_min_length,
         .edge_spacing,
         .edge_enclosure,
-        .count,
-        .aspect_ratio,
-        .total_area,
         .edge_width,
         .edge_facing_space,
-        .region_density,
         .min_interior_angle,
         .polygon_validity,
         .origin,
