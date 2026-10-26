@@ -76,4 +76,7 @@ test {
     _ = @import("check/erc/ported_circuit.zig");
     _ = @import("check/erc/ported_topology.zig");
     _ = @import("check/erc/ported_latchup.zig");
+    _ = @import("check/erc/exhaustive_circuits.zig");
+    _ = @import("check/erc/exhaustive_geometric.zig");
+    _ = @import("check/erc/exhaustive_expressible.zig");
 }
