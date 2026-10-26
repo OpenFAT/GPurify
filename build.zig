@@ -12,7 +12,7 @@ const owners = [_]Owner{
     .{ .name = "geom", .deps = &.{"gompute"}, .kernels = true },
     .{ .name = "ingest", .deps = &.{"geom"} },
     .{ .name = "check", .deps = &.{ "gompute", "geom", "ingest" } },
-    .{ .name = "extract", .deps = &.{ "gompute", "geom", "ingest", "check" } },
+    .{ .name = "extract", .deps = &.{ "gompute", "geom", "ingest", "check" }, .kernels = true },
     .{ .name = "gpurify", .deps = &.{ "geom", "ingest", "check", "extract" } },
 };
 
@@ -22,6 +22,8 @@ pub fn build(b: *Build) void {
     const gpu = b.option(bool, "gpu", "Compile the GPU device kernels (default true)") orelse true;
     const cuda_arch = b.option([]const u8, "cuda-arch", "CUDA arch (sm_75, ...), `auto` to probe the build machine, `none` to omit") orelse "auto";
     const hip_arch = b.option([]const u8, "hip-arch", "HIP arch (gfx1100, ...), `none` to omit") orelse "gfx1100";
+    const gpu_tests = b.option(bool, "gpu-tests", "Run the CPU-vs-GPU differentials; fails without a CUDA/HIP driver") orelse false;
+    const slow_tests = b.option(bool, "slow-tests", "Run the field-solve tests too slow for Debug (on by default outside Debug)") orelse (optimize != .debug);
 
     const gompute_dep = b.dependency("gompute", .{});
     var roots: std.ArrayList(gompute_build.KernelRoot) = .empty;
@@ -43,6 +45,8 @@ pub fn build(b: *Build) void {
     // Suites find tests/, pdks/ and docs/ through this, from any cwd.
     const paths = b.addOptions();
     paths.addOption([]const u8, "root", b.pathResolve(&.{ b.root.root_dir.path orelse ".", b.root.sub_path }));
+    paths.addOption(bool, "gpu_tests", gpu_tests);
+    paths.addOption(bool, "slow_tests", slow_tests);
     const paths_import: Import = .{ .name = "paths", .module = paths.createModule() };
 
     var mods: std.StringArrayHashMapUnmanaged(*Build.Module) = .empty;
@@ -56,6 +60,9 @@ pub fn build(b: *Build) void {
         });
         for (o.deps) |d| m.addImport(d, mods.get(d) orelse
             std.debug.panic("module '{s}' imports '{s}', which is not above it in `owners`", .{ o.name, d }));
+        // A kernel root's host side asks `has_cuda`/`has_hip` before naming a
+        // raw kernel, which is a compile error in a build without artifacts.
+        if (o.kernels) m.addImport("gompute_kernels", kernels.kernels);
         mods.put(b.allocator, o.name, m) catch @panic("OOM");
     }
 
