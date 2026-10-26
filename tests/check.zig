@@ -23,4 +23,6 @@ test {
     _ = @import("check/drc/edge_rules.zig");
     _ = @import("check/drc/overlay_rules.zig");
     _ = @import("check/drc/via_rules.zig");
+    _ = @import("check/drc/allowed_width_rules.zig");
+    _ = @import("check/drc/corner_model.zig");
 }
