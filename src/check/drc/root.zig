@@ -21,7 +21,7 @@
 //! - `rule_set`: `RuleSet`, `Slot`, `Csr`
 //! - `params`: `Error`, `Diagnostic`, `Reader`; `compile`: `fromDeck`; `validate`: `validate`
 //! - `rule_layers`: `layersOf`; `scratch`: `Scratch`, `Ctx`; `run_` (run.zig): `run`, `ported`
-//! - family files: `area_critical`, `area_density`, `area`, `density`, `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
+//! - family files: `edge`, `grid`, `area_critical`, `area_density`, `area`, `density`, `facing_span`, `facing_keep_out`, `facing`, `facing_edges`, `width`, `width_edges`, `width_step`, `pattern`, `runs`, `parts`, `spacing`,
 //!   `spacing_ends`, `spacing_net`, `spacing_table`
 //! - aliases: `Kind`, `Rule`, `RuleSet`, `Error`, `Diagnostic`, `fromDeck`, `run`
 
@@ -53,6 +53,8 @@ pub const density = @import("density.zig");
 pub const area = @import("area.zig");
 pub const area_density = @import("area_density.zig");
 pub const area_critical = @import("area_critical.zig");
+pub const grid = @import("grid.zig");
+pub const edge = @import("edge.zig");
 
 pub const Kind = kinds.Kind;
 pub const Rule = rows.Rule;
@@ -89,4 +91,6 @@ test {
     _ = area;
     _ = area_density;
     _ = area_critical;
+    _ = grid;
+    _ = edge;
 }

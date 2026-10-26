@@ -46,6 +46,8 @@ const density = @import("density.zig");
 const area = @import("area.zig");
 const area_density = @import("area_density.zig");
 const area_critical = @import("area_critical.zig");
+const grid = @import("grid.zig");
+const edge = @import("edge.zig");
 
 /// Runs every rule of `rs` over `store`. `out` and `runs` are cleared
 /// first. `poly_net` is the extraction's net column (`NetTable.netColumn`)
@@ -111,8 +113,6 @@ pub fn ported(kind: Kind) bool {
         .gate_corner,
         .overlap,
         .max_distance_to_tap,
-        .off_grid,
-        .angle,
         .redundant_via,
         .minimum_cut,
         .via_stack,
@@ -128,14 +128,6 @@ pub fn ported(kind: Kind) bool {
         .forbidden,
         .must_contain,
         .must_be_inside,
-        .edge_min_length,
-        .edge_spacing,
-        .edge_enclosure,
-        .edge_width,
-        .edge_facing_space,
-        .min_interior_angle,
-        .polygon_validity,
-        .origin,
         .keep_out_zone,
         => false,
         else => true,
@@ -178,6 +170,16 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .span_length => |r| facing_span.spanLength(c, r),
         .convex_corner_spacing => |r| facing_span.convexCornerSpacing(c, r),
         .exact_pitch => |r| facing_span.exactPitch(c, r),
+        .off_grid => |r| grid.offGrid(c, r),
+        .angle => |r| grid.angle(c, r),
+        .min_interior_angle => |r| grid.minInteriorAngle(c, r),
+        .polygon_validity => |r| grid.polygonValidity(c, r),
+        .origin => |r| grid.origin(c, r),
+        .edge_min_length => |r| edge.minLength(c, r),
+        .edge_spacing => |r| edge.spacing(c, r),
+        .edge_enclosure => |r| edge.enclosure(c, r),
+        .edge_width => |r| edge.facing(c, r.layer, r.limit, 0, true),
+        .edge_facing_space => |r| edge.facing(c, r.layer, r.limit, r.prl, false),
         .min_area => |r| area.minArea(c, r),
         .min_enclosed_area => |r| area.minEnclosedArea(c, r),
         .cheesing => |r| area.cheesing(c, r),
@@ -206,8 +208,6 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .gate_corner,
         .overlap,
         .max_distance_to_tap,
-        .off_grid,
-        .angle,
         .redundant_via,
         .minimum_cut,
         .via_stack,
@@ -223,14 +223,6 @@ fn dispatch(c: *const Ctx, rule: Rule) Error!Verdict {
         .forbidden,
         .must_contain,
         .must_be_inside,
-        .edge_min_length,
-        .edge_spacing,
-        .edge_enclosure,
-        .edge_width,
-        .edge_facing_space,
-        .min_interior_angle,
-        .polygon_validity,
-        .origin,
         .keep_out_zone,
         => report.refused,
     };
