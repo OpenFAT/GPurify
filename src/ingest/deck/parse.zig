@@ -55,8 +55,11 @@ pub fn parseSource(arena: Allocator, gpa: Allocator, text: []const u8, layout: G
     defer scratch_state.deinit();
     const scratch = scratch_state.allocator();
     const src = try arena.dupe(u8, text);
+    var lex_errors: std.ArrayList(Diagnostic) = .empty;
+    const toks = try lex.lex(scratch, src, &lex_errors);
+    // The diagnostics outlive `scratch`: the parser's list is the arena's.
     var errors: std.ArrayList(Diagnostic) = .empty;
-    const toks = try lex.lex(scratch, src, &errors);
+    try errors.appendSlice(arena, lex_errors.items);
     var p = try Parser.init(arena, scratch, src, toks, layout, errors);
     try statements(&p, toks.len - 1);
     try statements_mod.checkIgnored(&p);
