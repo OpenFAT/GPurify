@@ -15,7 +15,7 @@ const testing = std.testing;
 const geom = @import("geom");
 const check = @import("check");
 const testgen = @import("testgen");
-const options = @import("check_options");
+const paths = @import("paths");
 const proximity = check.proximity;
 const report = check.report;
 const Scratch = proximity.Scratch;
@@ -223,11 +223,11 @@ test "a layer is validated once and forgotten on request" {
     try testing.expectEqual(null, try v.getAny(gpa, &store, @fromBackingInt(1)));
 }
 
-test "the GPU pair-distance kernel gives the CPU's bits (-Dcheck-gpu-test)" {
+test "the GPU pair-distance kernel gives the CPU's bits (-Dgpu-tests)" {
     // Oracle: differential, CPU body against GPU body, bit-equal, at 0, 1,
     // block - 1, block and 3 * block + 1 pairs (block = 256 lanes). Off by
     // default; with the gate on it fails without a driver, never skips.
-    if (!options.gpu_test) return;
+    if (!paths.gpu_tests) return;
     var lb = LayoutBuilder.init(1);
     defer lb.deinit(gpa);
     var rng = testgen.Rng.init(9);

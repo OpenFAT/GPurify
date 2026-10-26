@@ -29,6 +29,11 @@ Load each with the Skill tool (other agents: read
 - Pass `-Dgpu=false` for a fast loop. Run once without it before committing
   anything that touches a Gompute spec or row kernel: the device compile must
   stay green.
+- `-Dgpu-tests=true` adds the CPU-vs-GPU row-kernel differentials (off by
+  default). They fail, never skip, in a build without device kernels or on
+  a machine without a CUDA/HIP driver.
+- `-Dslow-tests` runs the field-solve tests too slow for Debug; it defaults
+  to on outside Debug, so `-Doptimize=ReleaseSafe` runs everything.
 - Gate on the exit code. `cmd | tail` swallows it.
 - Run one zig process per agent, and don't build while `free -g` shows under
   6 GB available.
