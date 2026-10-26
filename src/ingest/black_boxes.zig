@@ -156,3 +156,45 @@ fn inDomain(v: i64, diag: *Diagnostic) Error!i64 {
     diag.coordinate = v;
     return error.CoordinateOutOfRange;
 }
+
+test "each placement of a boxed cell is listed with its extent and pins placed" {
+    // Oracle: construct-from-answer. `TOP` places `LEAF` (a 400 square with a
+    // pin at (100, 100)) at (1000, 0), then mirrored at (0, 2000): the boxes,
+    // in walk order, are the square and pin moved by each transform, worked
+    // by hand (the mirror maps y to 2000 - y). `*` matches the root too, but
+    // a root is never a black box; no pattern lists nothing.
+    const testing = std.testing;
+    const tgpa = testing.allocator;
+    const fixture = @import("gds_fixture.zig");
+    var arena: std.heap.ArenaAllocator = .init(tgpa);
+    defer arena.deinit();
+    var strings: StrTable = .empty;
+    defer strings.deinit(tgpa);
+    const layers = try LayerTable.build(arena.allocator(), &.{.{ .name = try strings.intern(tgpa, "met1"), .layer = 68, .datatype = 20 }});
+    const sq: fixture.Boundary = .{ .layer = 68, .datatype = 20, .xs = &.{ 0, 400, 400, 0 }, .ys = &.{ 0, 0, 400, 400 } };
+    const bytes = try fixture.library(tgpa, &.{
+        .{ .name = "LEAF", .boundaries = &.{sq}, .texts = &.{.{ .layer = 68, .texttype = 20, .x = 100, .y = 100, .string = "A" }} },
+        .{ .name = "TOP", .refs = &.{ .{ .cell = "LEAF", .x = 1000 }, .{ .cell = "LEAF", .strans = 0x8000, .y = 2000 } } },
+    }, 1e-9);
+    defer tgpa.free(bytes);
+    var diag: Diagnostic = .{};
+    var lib = try Library.parse(tgpa, bytes, &strings, &diag);
+    defer lib.deinit(tgpa);
+    var p: Provenance = .{};
+    defer p.deinit(tgpa);
+    try blackBoxesInto(tgpa, &lib, &.{"*"}, &layers, &strings, &p, &diag);
+    try testing.expectEqual(2, p.blackBoxCount());
+    const want = [2]struct { Bbox, [2]i64 }{
+        .{ .{ .xlo = 1000, .ylo = 0, .xhi = 1400, .yhi = 400 }, .{ 1100, 100 } },
+        .{ .{ .xlo = 0, .ylo = 1600, .xhi = 400, .yhi = 2000 }, .{ 100, 1900 } },
+    };
+    for (want, 0..) |w, i| {
+        const b = p.blackBox(@intCast(i));
+        try testing.expectEqualStrings("LEAF", strings.resolve(b.cell));
+        try testing.expectEqual(w[0], b.extent);
+        try testing.expectEqual(1, b.pins.len);
+        try testing.expectEqual(w[1], [2]i64{ b.pins[0].x, b.pins[0].y });
+    }
+    try blackBoxesInto(tgpa, &lib, &.{}, &layers, &strings, &p, &diag);
+    try testing.expectEqual(0, p.blackBoxCount());
+}
