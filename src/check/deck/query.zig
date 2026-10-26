@@ -6,8 +6,8 @@
 //! Every length is in grid units of `CompiledDeck.grid`. Each query reads
 //! one kind's table (SoA) in deck order. Ported from
 //! crates/check/src/deck/query.rs and drc/ruleset.rs
-//! (`Rule::required_spacing`, `SpacingQuery`); the ERC queries (`antenna`,
-//! `em_limit`, `fet_limits`) wait for the ERC port (wave 4).
+//! (`Rule::required_spacing`, `SpacingQuery`), and the ERC queries
+//! (`antenna`, `em_limit`, `fet_limits`).
 //!
 //! Contents:
 //! - `pub const Enclosure = struct`, `pub const DensityLimit = struct`, `pub const SpacingQuery = struct`
@@ -21,6 +21,10 @@
 //!   `maxViaStack(cd, cut: LayerId) ?u16`, `projectionSpacing(cd, a: LayerId, b: LayerId) ?Dbu`,
 //!   `contains(cd, outer: LayerId, inner: LayerId) ?[2]u32`
 //! - `pub fn densityInto(gpa: Allocator, cd: *const CompiledDeck, layer: LayerId, out: *std.ArrayList(DensityLimit)) Allocator.Error!void`
+//! - `pub const AntennaLimit = struct`, `pub const EmLimit = struct`, `pub const FetLimits = struct`
+//! - `pub fn antennaInto(gpa: Allocator, cd: *const CompiledDeck, collector: LayerId, out: *std.ArrayList(AntennaLimit)) Allocator.Error!void`
+//! - `pub fn emLimitInto(gpa: Allocator, cd: *const CompiledDeck, layer: LayerId, out: *std.ArrayList(EmLimit)) Allocator.Error!void`
+//! - `pub fn fetLimits(cd: *const CompiledDeck, model: StrId) FetLimits`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -34,6 +38,11 @@ const tables = @import("../drc/tables.zig");
 const CutClassTable = tables.CutClassTable;
 const Kind = @import("../drc/kinds.zig").Kind;
 const rows = @import("../drc/rows.zig");
+const erc_antenna = @import("../erc/antenna_tables.zig");
+const erc_electrical = @import("../erc/electrical_tables.zig");
+const Millivolts = @import("../report.zig").Millivolts;
+const Microamps = @import("../report.zig").Microamps;
+const ModelLimitTable = @import("../erc/domain_tables.zig").ModelLimitTable;
 const CompiledDeck = @import("compile.zig").CompiledDeck;
 
 /// The enclosure rules between one inner and one outer layer. A rule with
@@ -63,6 +72,39 @@ pub const DensityLimit = struct {
     /// A fraction of the window or die.
     limit: f64,
     sense: LimitSense,
+};
+
+/// One `antenna` or `antenna_electrical` row whose collectors include a
+/// layer.
+pub const AntennaLimit = struct {
+    rule: StrId,
+    /// The gate layer the ratio is taken against.
+    gate: LayerId,
+    /// The largest collector-to-gate ratio the row allows.
+    max_ratio: f64,
+    /// Whether the collector counts its area or its sidewall.
+    measure: erc_antenna.AntennaMeasure,
+    /// The diode layer: whose gates an `antenna` row skips, whose area an
+    /// `antenna_electrical` row credits.
+    diode: ?LayerId,
+};
+
+/// The current a layer may carry, from one `em_current_density` row.
+pub const EmLimit = struct {
+    rule: StrId,
+    /// Wire current per unit width, A/m.
+    max_density: erc_electrical.CurrentDensity,
+    /// The current one cut may carry.
+    max_current_per_cut: Microamps,
+};
+
+/// The voltages a device model may see: the smallest `gate_oxide` and
+/// `drain_source` limits naming it, null without one.
+pub const FetLimits = struct {
+    /// The most its gate may differ from its source, drain or bulk.
+    gate_oxide: ?Millivolts,
+    /// The most its drain may differ from its source.
+    drain_source: ?Millivolts,
 };
 
 /// Two shapes as the spacing rules see them. A width is the narrowest a
@@ -287,7 +329,51 @@ pub fn densityInto(gpa: Allocator, cd: *const CompiledDeck, layer: LayerId, out:
     };
 }
 
+/// The `antenna` rows, then the `antenna_electrical` rows, that count
+/// `collector` among their collectors, each in deck order; `out` refilled.
+pub fn antennaInto(gpa: Allocator, cd: *const CompiledDeck, collector: LayerId, out: *std.ArrayList(AntennaLimit)) Allocator.Error!void {
+    out.clearRetainingCapacity();
+    try antennaRows(gpa, &cd.erc.tables.antenna, collector, out);
+    try antennaRows(gpa, &cd.erc.tables.antenna_electrical, collector, out);
+}
+
+/// The `em_current_density` rows naming `layer`, in deck order; `out`
+/// refilled.
+pub fn emLimitInto(gpa: Allocator, cd: *const CompiledDeck, layer: LayerId, out: *std.ArrayList(EmLimit)) Allocator.Error!void {
+    out.clearRetainingCapacity();
+    const t = &cd.erc.tables.em_current_density;
+    for (t.head.rule.items, 0..) |rule, row| {
+        const from = t.layer_start.items[row];
+        const at = from + (std.mem.indexOfScalar(LayerId, t.layer.items[from..t.layer_start.items[row + 1]], layer) orelse continue);
+        try out.append(gpa, .{ .rule = rule, .max_density = t.max_density.items[at], .max_current_per_cut = t.max_current_per_cut.items[at] });
+    }
+}
+
+/// The voltage limits on device model `model` (an interned model name).
+pub fn fetLimits(cd: *const CompiledDeck, model: StrId) FetLimits {
+    return .{ .gate_oxide = smallest(&cd.erc.tables.gate_oxide, model), .drain_source = smallest(&cd.erc.tables.drain_source, model) };
+}
+
 // ---- private ----
+
+fn antennaRows(gpa: Allocator, t: anytype, collector: LayerId, out: *std.ArrayList(AntennaLimit)) Allocator.Error!void {
+    for (t.head.rule.items, 0..) |rule, row| {
+        const from = t.collector_start.items[row];
+        const at = from + (std.mem.indexOfScalar(LayerId, t.collector.items[from..t.collector_start.items[row + 1]], collector) orelse continue);
+        try out.append(gpa, .{ .rule = rule, .gate = t.gate.items[row], .max_ratio = t.max_ratio.items[row], .measure = t.collector_measure.items[at], .diode = t.diode.items[row] });
+    }
+}
+
+/// The least `max_voltage` of the rows naming `model`.
+fn smallest(t: *const ModelLimitTable, model: StrId) ?Millivolts {
+    var best: ?Millivolts = null;
+    for (t.max_voltage.items, 0..) |v, row| {
+        const models = t.model.items[t.model_start.items[row]..t.model_start.items[row + 1]];
+        if (std.mem.indexOfScalar(StrId, models, model) == null) continue;
+        if (best == null or v.raw < best.?.raw) best = v;
+    }
+    return best;
+}
 
 fn bump(best: *?Dbu, limit: Dbu) void {
     best.* = @max(best.* orelse limit, limit);

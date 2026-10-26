@@ -4,8 +4,7 @@
 //!
 //! Oracle: round trip. `compile(print(d))` in the same string table types
 //! every rule as `d` does, rule by rule, and printing that again gives the
-//! same text. Until the ERC port (wave 4) a shipped deck is read with its
-//! ERC rows taken out (`drcOnly`), since compile refuses them by name.
+//! same text.
 
 const std = @import("std");
 const testing = std.testing;
@@ -51,11 +50,11 @@ fn expectRefusals(text: []const u8, swaps: []const [2][]const u8) !void {
 }
 
 test "every shipped deck survives printing" {
-    // Oracle: round trip (ERC rows out until wave 4).
+    // Oracle: round trip, every rule of both domains typed the same.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     for (common.shipped) |name| {
-        var c = try compileText(try common.drcOnly(arena.allocator(), name), 1000);
+        var c = try compileText(try common.shippedText(arena.allocator(), name), 1000);
         defer c.deinit();
         try assertRoundTrip(name, &c);
     }

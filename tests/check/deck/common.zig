@@ -1,13 +1,12 @@
 //! Fixtures the deck suites share: a deck compiled from text with its
-//! arena and strings, a shipped deck with its ERC rows out (wave 4), and
-//! the printer round trip. Ported from crates/check/tests/deck/{main,
+//! arena and strings, a shipped deck's text, and the printer round trip. Ported from crates/check/tests/deck/{main,
 //! printer, builder}.rs (`grid`, `DECKS`, `assert_round_trip`,
 //! `assert_same`).
 //!
 //! Contents:
 //! - `pub const Compiled = struct`, `Compiled.deinit`, `pub const shipped`
 //! - `pub fn compileText(text: []const u8, dbu_per_um: i64) !Compiled`, `pub fn refused(text: []const u8) bool`
-//! - `pub fn drcOnly(arena: Allocator, name: []const u8) ![]const u8`
+//! - `pub fn shippedText(arena: Allocator, name: []const u8) ![]const u8`
 //! - `pub fn assertRoundTrip(what: []const u8, c: *Compiled) !void`, `pub fn assertSame(a: *const CompiledDeck, b: *const CompiledDeck) !void`
 
 const std = @import("std");
@@ -57,36 +56,10 @@ pub fn refused(text: []const u8) bool {
     return false;
 }
 
-/// A shipped deck's text with its ERC rows (and the stage entries and
-/// waivers naming them) taken out, reprinted, in `arena`.
-pub fn drcOnly(arena: std.mem.Allocator, name: []const u8) ![]const u8 {
+/// A shipped deck's whole text, in `arena`.
+pub fn shippedText(arena: std.mem.Allocator, name: []const u8) ![]const u8 {
     const path = try std.fmt.allocPrint(arena, "{s}/pdks/{s}.deck", .{ paths.root, name });
-    const text = try std.Io.Dir.cwd().readFileAlloc(testing.io, path, arena, .unlimited);
-    const grid = try geom.Grid.init(1000);
-    var diag: ingest.deck.Diag = .{};
-    var doc = try ingest.deck.parseSource(arena, gpa, text, grid, &diag);
-    var kept: usize = 0;
-    for (doc.rules.items) |r| if (!check.erc.kinds.isKind(r.kind)) {
-        doc.rules.items[kept] = r;
-        kept += 1;
-    };
-    doc.rules.shrinkRetainingCapacity(kept);
-    for (doc.stages.items) |*stage| {
-        var n: usize = 0;
-        for (stage.rules.items) |id| if (stated(&doc, id)) {
-            stage.rules.items[n] = id;
-            n += 1;
-        };
-        stage.rules.shrinkRetainingCapacity(n);
-    }
-    var w: usize = 0;
-    for (doc.waivers.items) |waiver| if (stated(&doc, waiver.rule)) {
-        doc.waivers.items[w] = waiver;
-        w += 1;
-    };
-    doc.waivers.shrinkRetainingCapacity(w);
-    var why: []const u8 = "";
-    return ingest.deck.print(arena, &doc, grid, &why);
+    return std.Io.Dir.cwd().readFileAlloc(testing.io, path, arena, .unlimited);
 }
 
 /// `c` printed, compiled back into its strings with every rule typed the
@@ -118,11 +91,23 @@ pub fn assertSame(a: *const deck.CompiledDeck, b: *const deck.CompiledDeck) !voi
         try testing.expectEqual(a.drc.severity.items[i], b.drc.severity.items[i]);
     }
     try testing.expectEqual(a.deck.layers.len(), b.deck.layers.len());
+    try testing.expectEqualSlices(check.erc.rule_set.Slot, a.erc.order.items, b.erc.order.items);
+    inline for (@typeInfo(check.erc.rule_set.Tables).@"struct".field_names) |kind| {
+        const ta = &@field(a.erc.tables, kind);
+        const tb = &@field(b.erc.tables, kind);
+        inline for (@typeInfo(@TypeOf(ta.*)).@"struct".field_names) |column| try sameColumn(@field(ta, column), @field(tb, column));
+    }
 }
 
 // ---- private ----
 
-fn stated(doc: *const ingest.deck.DeckSource, id: []const u8) bool {
-    for (doc.rules.items) |r| if (std.mem.eql(u8, r.id, id)) return true;
-    return false;
+/// One rule-table column (or head) element by element.
+fn sameColumn(a: anytype, b: @TypeOf(a)) !void {
+    if (@hasField(@TypeOf(a), "rule")) {
+        try testing.expectEqualSlices(geom.StrId, a.rule.items, b.rule.items);
+        try testing.expectEqualSlices(check.report.Severity, a.severity.items, b.severity.items);
+        return;
+    }
+    try testing.expectEqual(a.items.len, b.items.len);
+    for (a.items, b.items) |x, y| try testing.expect(std.meta.eql(x, y));
 }
