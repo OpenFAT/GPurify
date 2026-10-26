@@ -59,6 +59,8 @@ pub const @"export" = struct {
 /// Liberty generation: a `.lib` per corner and a Verilog blackbox.
 pub const liberty = struct {
     pub const spec = @import("liberty/spec.zig");
+    pub const numbers = @import("liberty/numbers.zig");
+    pub const write = @import("liberty/write.zig");
 };
 
 test {
