@@ -13,6 +13,8 @@
 //! - `integration`: the DEF integration checks (integration.zig)
 //! - `triage`: `Clusters`, `clusterInto` (triage.zig); `p2p`: `resistanceInto`, `coupling` (p2p.zig);
 //!   `xor`: `Xor`, `run` (xor.zig)
+//! - `fill`: `fillInto`, `fillGds` (fill.zig); `enhance`: `enhanceGds` (enhance.zig);
+//!   `incremental`: `DrcState`, `check`, `recheck`, `reach` (incremental.zig)
 //! - `export`: the report writers (export/*.zig)
 //!   - `header`: `Header`, `Error`, `Diagnostic`
 //!   - `json`: `writeReport`, `writeString`
@@ -30,6 +32,9 @@ pub const integration = @import("integration.zig");
 pub const triage = @import("triage.zig");
 pub const p2p = @import("p2p.zig");
 pub const xor = @import("xor.zig");
+pub const fill = @import("fill.zig");
+pub const enhance = @import("enhance.zig");
+pub const incremental = @import("incremental.zig");
 const run_ = @import("run.zig");
 pub const designExtent = @import("checks_erc.zig").designExtent;
 pub const paramNames = @import("checks_lvs.zig").paramNames;
@@ -81,25 +86,22 @@ pub const @"export" = struct {
     pub const Diagnostic = header.Diagnostic;
 };
 
-test {
+// ---- private ----
+
+/// `std.testing.refAllDecls`, recursing into the namespaces this module
+/// declares, so a pub function no test calls yet is still compiled.
+fn refAll(comptime T: type) void {
     const std = @import("std");
-    std.testing.refAllDecls(@This());
-    std.testing.refAllDecls(@"export");
-    inline for (.{ "header", "json", "text", "network", "envelope", "spef", "dspf", "netlist" }) |name| {
-        std.testing.refAllDecls(@field(@"export", name));
+    inline for (comptime std.meta.declarations(T)) |name| {
+        const decl = @field(T, name);
+        if (@TypeOf(decl) == type) switch (@typeInfo(decl)) {
+            .@"struct", .@"union", .@"enum" => refAll(decl),
+            else => {},
+        } else _ = &@field(T, name);
     }
-    _ = load_;
-    _ = extracted;
-    _ = reference;
-    _ = pdks;
-    _ = run_;
-    _ = integration;
-    _ = triage;
-    _ = p2p;
-    _ = xor;
-    _ = @import("checks_drc.zig");
-    _ = @import("checks_erc.zig");
-    _ = @import("checks_lvs.zig");
-    _ = @import("checks_pex.zig");
-    _ = @import("checks_after.zig");
+}
+
+test {
+    refAll(@This());
+    inline for (.{ @import("checks_drc.zig"), @import("checks_erc.zig"), @import("checks_lvs.zig"), @import("checks_pex.zig"), @import("checks_after.zig") }) |file| refAll(file);
 }

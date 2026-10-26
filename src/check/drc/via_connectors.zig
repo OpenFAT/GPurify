@@ -6,12 +6,14 @@
 //! rate is too low (`via_redundancy`). Ported from
 //! crates/check/src/drc/rules/via.rs (`Connectors`, `first_label`,
 //! `cut_area_change`, `Vias`, `neighbours`, `covers`, `clear`,
-//! `via_redundancy`); `redundant_cuts` (the `enhance` flow's insertions)
-//! has no caller here and is not ported.
+//! `via_redundancy`, `redundant_cuts`, `Insertion`, `second_cut`,
+//! `neighbours`, `grown`, `margin`).
 //!
 //! Contents:
 //! - `pub fn cutAreaChange(c: *const Ctx, r: CutAreaChange) Error!Verdict`
 //! - `pub fn viaRedundancy(c: *const Ctx, r: ViaRedundancy) Error!Verdict`
+//! - `pub const Insertion = struct { cut, lower, upper }`
+//! - `pub fn redundantCutsInto(gpa: Allocator, store: *const GeometryStore, layers: [3]LayerId, pitch: Dbu, space: Dbu, out: *std.ArrayList(Insertion)) Allocator.Error!bool`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -20,17 +22,23 @@ const Dbu = geom.Dbu;
 const DbuArea = geom.DbuArea;
 const Bbox = geom.Bbox;
 const LayerId = geom.LayerId;
+const GeometryStore = geom.GeometryStore;
 const ValidatedLayer = geom.ValidatedLayer;
 const report = @import("../report.zig");
 const Verdict = report.Verdict;
 const rects = @import("../rects.zig");
 const SortedRects = rects.SortedRects;
 const proximity_inside = @import("../proximity_inside.zig");
+const proximity = @import("../proximity.zig");
 const rows = @import("rows.zig");
 const scratch = @import("scratch.zig");
 const Ctx = scratch.Ctx;
 const Error = scratch.Error;
 const ran = scratch.ran;
+
+/// A second cut beside a single-cut via, and the patch of each metal
+/// that does not already hold it.
+pub const Insertion = struct { cut: Bbox, lower: ?Bbox, upper: ?Bbox };
 
 /// A connector's `(lower, upper)` figures.
 const Figures = [2]u32;
@@ -241,6 +249,61 @@ pub fn viaRedundancy(c: *const Ctx, r: rows.ViaRedundancy) Error!Verdict {
     return ran(vias);
 }
 
+/// Where a second cut goes beside each single-cut via, as `gpurify
+/// enhance` adds them (catalog FLOW-009), in connector order: where
+/// `viaRedundancy` finds room, the first neighbour it finds; for a dead
+/// via, the first neighbour at least `space` from every cut, with a patch
+/// of each metal that does not hold it: the box round both cuts, grown by
+/// the margin the metal already leaves round the via's cut. Each cut is
+/// also `space` from every cut placed before it. `layers` is `(cut, lower,
+/// upper)`; false when a layer does not validate (the rule's refusal).
+pub fn redundantCutsInto(gpa: Allocator, store: *const GeometryStore, layers: [3]LayerId, pitch: Dbu, space: Dbu, out: *std.ArrayList(Insertion)) Allocator.Error!bool {
+    out.clearRetainingCapacity();
+    var s: proximity.Scratch = .{};
+    defer s.deinit(gpa);
+    var merged: [3]ValidatedLayer = @splat(.empty);
+    defer for (&merged) |*l| l.deinit(gpa);
+    for (&merged, [3]LayerId{ layers[1], layers[2], layers[0] }) |*m, l| {
+        if (!try proximity_inside.mergedInto(gpa, store, l, &s, m)) return false;
+    }
+    var k: Connectors = .{};
+    defer k.deinit(gpa);
+    try k.build(gpa, &merged[0], &merged[1]);
+    var under: SortedRects = .{};
+    defer under.deinit(gpa);
+    var over: SortedRects = .{};
+    defer over.deinit(gpa);
+    try rects.figureRectsInto(gpa, &merged[0], &under);
+    try rects.figureRectsInto(gpa, &merged[1], &over);
+    var held: std.ArrayList(u32) = .empty;
+    defer held.deinit(gpa);
+    var start: std.ArrayList(u32) = .empty;
+    defer start.deinit(gpa);
+    try k.cutsInto(gpa, &merged[2], &held, &start);
+    var cuts: std.ArrayList(Bbox) = .empty;
+    defer cuts.deinit(gpa);
+    try cuts.appendSlice(gpa, merged[2].bboxes());
+    for (0..k.figures.items.len) |at| {
+        const on = held.items[start.items[at]..start.items[at + 1]];
+        if (on.len != 1) continue;
+        const b = merged[2].bboxes()[on[0]];
+        const lo, const hi = k.figures.items[at];
+        const second = for (neighbours(b, pitch)) |c| {
+            if (covers(&under, lo, c) and covers(&over, hi, c) and clear(c, cuts.items, space)) break c;
+        } else null;
+        const insertion: Insertion = if (second) |c| .{ .cut = c, .lower = null, .upper = null } else blk: {
+            const below = margin(&under, lo, b, pitch) orelse continue;
+            const above = margin(&over, hi, b, pitch) orelse continue;
+            const c = for (neighbours(b, pitch)) |n| (if (clear(n, cuts.items, space)) break n) else continue;
+            const both = b.merge(c);
+            break :blk .{ .cut = c, .lower = if (covers(&under, lo, c)) null else grown(both, below), .upper = if (covers(&over, hi, c)) null else grown(both, above) };
+        };
+        try cuts.append(gpa, insertion.cut);
+        try out.append(gpa, insertion);
+    }
+    return true;
+}
+
 // ---- private ----
 
 fn lessFigures(_: void, p: Figures, q: Figures) bool {
@@ -274,4 +337,28 @@ fn clear(c: Bbox, cuts: []const Bbox, space: Dbu) bool {
     const space2 = geom.mulWide(space, space);
     for (cuts) |other| if (rects.bboxGap2(c, other) < space2) return false;
     return true;
+}
+
+/// A cut's four neighbours: its box moved `pitch` right, left, up, down.
+fn neighbours(b: Bbox, pitch: Dbu) [4]Bbox {
+    var out: [4]Bbox = undefined;
+    for (&out, [4][2]i64{ .{ pitch, 0 }, .{ -pitch, 0 }, .{ 0, pitch }, .{ 0, -pitch } }) |*o, d| o.* = .{ .xlo = b.xlo + d[0], .ylo = b.ylo + d[1], .xhi = b.xhi + d[0], .yhi = b.yhi + d[1] };
+    return out;
+}
+
+fn grown(b: Bbox, by: i64) Bbox {
+    return .{ .xlo = b.xlo - by, .ylo = b.ylo - by, .xhi = b.xhi + by, .yhi = b.yhi + by };
+}
+
+/// The most `figure` extends round `b` on every side, up to `cap`; null
+/// when it does not hold `b`.
+fn margin(sorted: *const SortedRects, figure: u32, b: Bbox, cap: i64) ?i64 {
+    if (!covers(sorted, figure, b)) return null;
+    var lo: i64 = 0;
+    var hi = cap;
+    while (lo < hi) {
+        const mid = lo + @divTrunc(hi - lo + 1, 2);
+        if (covers(sorted, figure, grown(b, mid))) lo = mid else hi = mid - 1;
+    }
+    return lo;
 }

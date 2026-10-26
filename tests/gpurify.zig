@@ -8,4 +8,5 @@ test {
     _ = @import("gpurify/golden.zig");
     _ = @import("gpurify/test_all.zig");
     _ = @import("gpurify/triage.zig");
+    _ = @import("gpurify/edits.zig");
 }
