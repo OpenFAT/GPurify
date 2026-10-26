@@ -1,7 +1,6 @@
 //! The bitmap reference DRC (X3): every small pattern, run through the
 //! engine and through an oracle written from each DRC rule kind's doc
-//! comment alone. Ported from tests/exhaustive/bitmap.rs (its fuzz entry
-//! `case` aside: no fuzz target reads it here).
+//! comment alone. Ported from tests/exhaustive/bitmap.rs.
 //!
 //! A pattern is an n×n grid of cells of side `s`, each filled or empty, and
 //! each filled cell is drawn as its own rectangle, so abutting cells merge
@@ -53,6 +52,7 @@
 //!
 //! Contents:
 //! - `pub fn fixturesInto(arena: Allocator, depth: Depth, out: *std.ArrayList(Fixture)) !void`
+//! - `pub fn case(arena: Allocator, index: u32) !?Fixture`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -195,6 +195,27 @@ pub fn fixturesInto(arena: Allocator, depth: Depth, out: *std.ArrayList(Fixture)
     for (&kinds) |*kind| try singleLayerInto(arena, kind, depth, out);
     try enclosuresInto(arena, depth, out);
     for (&pairs) |*kind| try rectPairsInto(arena, kind, depth, out);
+}
+
+/// The fixture at `index` (taken modulo the domain) of every domain
+/// `fixturesInto` enumerates at the nightly depth, in its order: each
+/// single-layer kind's 2^16 patterns, the 2^18 enclosure patterns, then
+/// each pair kind's 100 × 100 rectangle pairs; null for a pair the rule
+/// does not decide. The `drc_e2e` fuzz target reads it.
+pub fn case(arena: Allocator, index: u32) !?Fixture {
+    const domain: u32 = kinds.len * (1 << 16) + (1 << 18) + pairs.len * 100 * 100;
+    const i: u32 = index % domain;
+    const singles: u32 = kinds.len << 16;
+    if (i < singles) {
+        const kind = &kinds[i >> 16];
+        return try single(arena, kind, try deck(arena, &.{"met1"}, kind.name, kind.check, kind.unit, kind.limits), i & 0xffff);
+    }
+    const e = i - singles;
+    if (e < 1 << 18) return try enclosure(arena, try enclosureDeck(arena), e, try hosting(arena, .{ .n = 3, .bits = e & 0x1ff }));
+    const p = e - (1 << 18);
+    const kind = &pairs[p / 10_000];
+    const all = rects();
+    return rectPair(arena, kind, try deck(arena, &.{ "poly", "diff" }, kind.name, kind.check, "nm", &pair_limits), all[p % 10_000 / 100], all[p % 100]);
 }
 
 // ---- private ----
@@ -399,23 +420,26 @@ fn short(d2: i64, limit: i64) ?Finding {
 
 fn singleLayerInto(arena: Allocator, kind: *const Kind, depth: Depth, out: *std.ArrayList(Fixture)) !void {
     const text = try deck(arena, &.{"met1"}, kind.name, kind.check, kind.unit, kind.limits);
-    for (try sample(arena, depth, 1 << 16, kind.name)) |bits| {
-        const p: Pattern = .{ .n = 4, .bits = bits };
-        var f: Fixture = .init(try std.fmt.allocPrint(arena, "bitmap/{s}/4x4/{x:0>4}", .{ kind.name, bits }), try arena.dupe([]const u8, &.{kind.catalog}), text, harness.drc);
-        try p.draw(arena, &f.layout, "met1", 0);
-        const values = try kind.measure(arena, try p.figures(arena), p.n);
-        const lengths = std.mem.eql(u8, kind.unit, "nm");
-        for (kind.limits) |limit| {
-            var found: std.ArrayList(Finding) = .empty;
-            for (values) |v| {
-                if (lengths) {
-                    if (short(v, limit)) |fd| try found.append(arena, fd);
-                } else if (v < limit) try found.append(arena, .area(v));
-            }
-            try f.claim(arena, .rule(try ruleId(arena, kind.name, limit), found.items));
+    for (try sample(arena, depth, 1 << 16, kind.name)) |bits| try out.append(arena, try single(arena, kind, text, bits));
+}
+
+/// One 4×4 pattern of a single-layer kind.
+fn single(arena: Allocator, kind: *const Kind, text: []const u8, bits: u32) !Fixture {
+    const p: Pattern = .{ .n = 4, .bits = bits };
+    var f: Fixture = .init(try std.fmt.allocPrint(arena, "bitmap/{s}/4x4/{x:0>4}", .{ kind.name, bits }), try arena.dupe([]const u8, &.{kind.catalog}), text, harness.drc);
+    try p.draw(arena, &f.layout, "met1", 0);
+    const values = try kind.measure(arena, try p.figures(arena), p.n);
+    const lengths = std.mem.eql(u8, kind.unit, "nm");
+    for (kind.limits) |limit| {
+        var found: std.ArrayList(Finding) = .empty;
+        for (values) |v| {
+            if (lengths) {
+                if (short(v, limit)) |fd| try found.append(arena, fd);
+            } else if (v < limit) try found.append(arena, .area(v));
         }
-        try out.append(arena, f);
+        try f.claim(arena, .rule(try ruleId(arena, kind.name, limit), found.items));
     }
+    return f;
 }
 
 fn hosting(arena: Allocator, outer: Pattern) !Hosting {
@@ -433,25 +457,32 @@ fn hosting(arena: Allocator, outer: Pattern) !Hosting {
 }
 
 fn enclosuresInto(arena: Allocator, depth: Depth, out: *std.ArrayList(Fixture)) !void {
-    const text = try deck(arena, &.{ "met1", "via1" }, "min_enclosure", "enclosure(via1, met1)", "nm", &enclosure_limits);
+    const text = try enclosureDeck(arena);
     var hostings: [1 << 9]Hosting = undefined;
     for (&hostings, 0..) |*h, bits| h.* = try hosting(arena, .{ .n = 3, .bits = @intCast(bits) });
-    for (try sample(arena, depth, 1 << 18, "min_enclosure")) |bits| {
-        // The outer pattern is the low nine bits, the inner the high nine.
-        const outer: Pattern = .{ .n = 3, .bits = bits & 0x1ff };
-        const inner: Pattern = .{ .n = 3, .bits = bits >> 9 };
-        var f: Fixture = .init(try std.fmt.allocPrint(arena, "bitmap/min_enclosure/3x3/{x:0>3}_in_{x:0>3}", .{ inner.bits, outer.bits }), &.{"DRC-040"}, text, harness.drc);
-        try outer.draw(arena, &f.layout, "met1", 0);
-        try inner.draw(arena, &f.layout, "via1", inset);
-        for (enclosure_limits) |limit| {
-            var found: std.ArrayList(Finding) = .empty;
-            for (0..9) |i| if (inner.bits >> @intCast(i) & 1 == 1) {
-                if (short(hostings[bits & 0x1ff][i], limit)) |fd| try found.append(arena, fd);
-            };
-            try f.claim(arena, .rule(try ruleId(arena, "min_enclosure", limit), found.items));
-        }
-        try out.append(arena, f);
+    for (try sample(arena, depth, 1 << 18, "min_enclosure")) |bits| try out.append(arena, try enclosure(arena, text, bits, hostings[bits & 0x1ff]));
+}
+
+fn enclosureDeck(arena: Allocator) ![]const u8 {
+    return deck(arena, &.{ "met1", "via1" }, "min_enclosure", "enclosure(via1, met1)", "nm", &enclosure_limits);
+}
+
+/// One enclosure pattern: the outer is the low nine bits, the inner the
+/// high nine; `e2` is the outer's hosting.
+fn enclosure(arena: Allocator, text: []const u8, bits: u32, e2: Hosting) !Fixture {
+    const outer: Pattern = .{ .n = 3, .bits = bits & 0x1ff };
+    const inner: Pattern = .{ .n = 3, .bits = bits >> 9 };
+    var f: Fixture = .init(try std.fmt.allocPrint(arena, "bitmap/min_enclosure/3x3/{x:0>3}_in_{x:0>3}", .{ inner.bits, outer.bits }), &.{"DRC-040"}, text, harness.drc);
+    try outer.draw(arena, &f.layout, "met1", 0);
+    try inner.draw(arena, &f.layout, "via1", inset);
+    for (enclosure_limits) |limit| {
+        var found: std.ArrayList(Finding) = .empty;
+        for (0..9) |i| if (inner.bits >> @intCast(i) & 1 == 1) {
+            if (short(e2[i], limit)) |fd| try found.append(arena, fd);
+        };
+        try f.claim(arena, .rule(try ruleId(arena, "min_enclosure", limit), found.items));
     }
+    return f;
 }
 
 /// Every rectangle with corners on the lattice `0..=4`: 100.
@@ -524,18 +555,21 @@ fn rectPairsInto(arena: Allocator, kind: *const PairKind, depth: Depth, out: *st
     const text = try deck(arena, &.{ "poly", "diff" }, kind.name, kind.check, "nm", &pair_limits);
     const all = rects();
     for (try sample(arena, depth, all.len * all.len, kind.name)) |i| {
-        const a = all[i / all.len];
-        const b = all[i % all.len];
-        const m = kind.measure(a, b) orelse continue;
-        var f: Fixture = .init(try std.fmt.allocPrint(arena, "bitmap/{s}/a{d}{d}{d}{d}_b{d}{d}{d}{d}", .{ kind.name, a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3] }), try arena.dupe([]const u8, &.{kind.catalog}), text, harness.drc);
-        try f.layout.rect(arena, "poly", a[0] * s, a[1] * s, a[2] * s, a[3] * s);
-        try f.layout.rect(arena, "diff", b[0] * s, b[1] * s, b[2] * s, b[3] * s);
-        for (pair_limits) |limit| {
-            const found: ?Finding = if (m.rule) |v| short(v * v, limit) else null;
-            try f.claim(arena, .rule(try ruleId(arena, kind.name, limit), if (found) |fd| &.{fd} else &.{}));
-        }
-        try out.append(arena, f);
+        if (try rectPair(arena, kind, text, all[i / all.len], all[i % all.len])) |f| try out.append(arena, f);
     }
+}
+
+/// One rectangle per layer, or null where the rule does not decide them.
+fn rectPair(arena: Allocator, kind: *const PairKind, text: []const u8, a: Rect, b: Rect) !?Fixture {
+    const m = kind.measure(a, b) orelse return null;
+    var f: Fixture = .init(try std.fmt.allocPrint(arena, "bitmap/{s}/a{d}{d}{d}{d}_b{d}{d}{d}{d}", .{ kind.name, a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3] }), try arena.dupe([]const u8, &.{kind.catalog}), text, harness.drc);
+    try f.layout.rect(arena, "poly", a[0] * s, a[1] * s, a[2] * s, a[3] * s);
+    try f.layout.rect(arena, "diff", b[0] * s, b[1] * s, b[2] * s, b[3] * s);
+    for (pair_limits) |limit| {
+        const found: ?Finding = if (m.rule) |v| short(v * v, limit) else null;
+        try f.claim(arena, .rule(try ruleId(arena, kind.name, limit), if (found) |fd| &.{fd} else &.{}));
+    }
+    return f;
 }
 
 test "every bitmap fixture agrees with the cell oracle" {
