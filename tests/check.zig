@@ -17,4 +17,5 @@ test {
     _ = @import("check/lvs/graph.zig");
     _ = @import("check/lvs/compare.zig");
     _ = @import("check/lvs/reduce.zig");
+    _ = @import("check/lvs/controls.zig");
 }
