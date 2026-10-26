@@ -22,6 +22,7 @@
 //! - `pub const FieldMesh = struct { edge_nm, window_nm }`, `pub const field_mesh`, `pub const spice_mesh`
 //! - `pub const Error = error{Solve} || Allocator.Error`
 //! - `pub fn fieldSolve(arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, targets: []const u32, how: FieldMesh, out: *ParasiticNetwork, diag: *Diagnostic) Error!void`
+//! - `format`, `lessThan`: the formatter's and sort context's hooks
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -58,6 +59,14 @@ pub const spice_mesh: FieldMesh = .{ .edge_nm = 200, .window_nm = 3000 };
 /// `Solve`: a layer the mesh cannot take, or a solve that did not converge;
 /// `diag.message` is the one `pex` reports for the same refusal.
 pub const Error = error{Solve} || Allocator.Error;
+
+/// Rust's `{}` of an `f64`.
+const Display = struct {
+    v: f64,
+    pub fn format(d: Display, w: *std.Io.Writer) std.Io.Writer.Error!void {
+        return geom.float.display(w, d.v);
+    }
+};
 
 /// Field-solves the wiring of `targets` (layout net ids) into `out`
 /// (cleared): one node per net, canonical order.
@@ -226,14 +235,6 @@ fn solveRefusal(arena: Allocator, loaded: *const Loaded, err: extract.capacitanc
         error.OutOfMemory => error.OutOfMemory,
     };
 }
-
-/// Rust's `{}` of an `f64`.
-const Display = struct {
-    v: f64,
-    pub fn format(d: Display, w: *std.Io.Writer) std.Io.Writer.Error!void {
-        return geom.float.display(w, d.v);
-    }
-};
 
 /// The same wiring with every conductor's overlapping shapes on a layer
 /// merged into one outline, into `out`, and each outline's layout net. Two

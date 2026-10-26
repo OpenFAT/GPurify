@@ -101,6 +101,10 @@ pub const Grids = struct {
 /// How cases sharing an edge fold point by point.
 pub const Pick = enum { worst, best };
 
+/// One timing table family of an edge: its group, its sigma twin's, and
+/// the grid column it reads.
+const Column = struct { group: []const u8, sigma_group: []const u8, of: *const fn (*const Grids, usize) []f64 };
+
 /// The states leakage is taken in: the spec's, else each case's
 /// preparation, else everything low; duplicates once.
 pub fn leakageStates(arena: Allocator, macro: *const MacroSpec, all_low: Vector) Allocator.Error![]const []const Vector {
@@ -209,7 +213,7 @@ pub fn casesDisagree(macro: *const MacroSpec) bool {
     for (macro.arcs) |arc| {
         var seen = [3]bool{ false, false, false };
         for (arc.cases) |case| {
-            const slot: usize = if (case.output orelse case.data) |e| @intFromEnum(e) else 2;
+            const slot: usize = if (case.output orelse case.data) |e| @backingInt(e) else 2;
             if (seen[slot]) return true;
             seen[slot] = true;
         }
@@ -218,10 +222,6 @@ pub fn casesDisagree(macro: *const MacroSpec) bool {
 }
 
 // ---- private ----
-
-/// One timing table family of an edge: its group, its sigma twin's, and
-/// the grid column it reads.
-const Column = struct { group: []const u8, sigma_group: []const u8, of: *const fn (*const Grids, usize) []f64 };
 
 /// The cases `ks` of one table folded point by point; null with no case.
 fn fold(arena: Allocator, grids: *const Grids, ks: []const usize, of: *const fn (*const Grids, usize) []f64, pick: Pick) Allocator.Error!?[]f64 {

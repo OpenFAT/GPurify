@@ -36,11 +36,6 @@ pub const Error = error{ Spawn, Died, Measure, Io } || Allocator.Error;
 /// Measured values by key; null is a measurement that failed.
 pub const Results = std.StringArrayHashMapUnmanaged(?f64);
 
-/// The value of `key`, or null when it was not echoed or not measured.
-pub fn need(results: *const Results, key: []const u8) ?f64 {
-    return results.get(key) orelse null;
-}
-
 /// Where a session runs: its allocator (thread-safe: sessions run on
 /// several threads), I/O, the directory deck paths are under (the child's
 /// working directory), and the child's environment (null: inherited; the
@@ -147,6 +142,14 @@ pub const Session = struct {
     }
 };
 
+/// Sessions beyond this share the work of the ones that started.
+const max_workers = 256;
+
+/// The value of `key`, or null when it was not echoed or not measured.
+pub fn need(results: *const Results, key: []const u8) ?f64 {
+    return results.get(key) orelse null;
+}
+
 /// Appends to `state` the state lines of `commands` (`alter`, `altermod`,
 /// `option`, `setseed`, `reset`), in order. A setting rewritten (`alter X =
 /// …`) replaces the line that set it before, so the replayed state stays the
@@ -251,9 +254,6 @@ pub fn runPool(env: Env, sim: Simulator, deck: []const u8, corner: []const u8, w
 }
 
 // ---- private ----
-
-/// Sessions beyond this share the work of the ones that started.
-const max_workers = 256;
 
 fn ioError(scratch: Allocator, diag: *Diagnostic, comptime fmt: []const u8, args: anytype) Error {
     diag.message = try scratch.print("io: " ++ fmt, args);

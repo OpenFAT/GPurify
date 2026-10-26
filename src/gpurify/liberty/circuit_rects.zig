@@ -26,6 +26,24 @@ const Builder = graph.Builder;
 const RectIndex = graph.RectIndex;
 const shared = graph.shared;
 
+/// One rectangle side on a sweep line: `starts` 0 where a rectangle ends, 1
+/// where one starts, so endings sort first.
+const Side = struct {
+    at: i64,
+    starts: u8,
+    lo: i64,
+    hi: i64,
+    id: u32,
+
+    fn lessThan(_: void, p: Side, q: Side) bool {
+        if (p.at != q.at) return p.at < q.at;
+        if (p.starts != q.starts) return p.starts < q.starts;
+        if (p.lo != q.lo) return p.lo < q.lo;
+        if (p.hi != q.hi) return p.hi < q.hi;
+        return p.id < q.id;
+    }
+};
+
 /// Cuts every conductor polygon on a net into rectangles; one proto node
 /// each. `Geometry` for a layer that is not valid rectilinear geometry.
 pub fn rectangles(b: *Builder, diag: *Diagnostic) Error!void {
@@ -206,24 +224,6 @@ pub fn connected(b: *Builder, diag: *Diagnostic) Error!void {
 }
 
 // ---- private ----
-
-/// One rectangle side on a sweep line: `starts` 0 where a rectangle ends, 1
-/// where one starts, so endings sort first.
-const Side = struct {
-    at: i64,
-    starts: u8,
-    lo: i64,
-    hi: i64,
-    id: u32,
-
-    fn lessThan(_: void, p: Side, q: Side) bool {
-        if (p.at != q.at) return p.at < q.at;
-        if (p.starts != q.starts) return p.starts < q.starts;
-        if (p.lo != q.lo) return p.lo < q.lo;
-        if (p.hi != q.hi) return p.hi < q.hi;
-        return p.id < q.id;
-    }
-};
 
 fn layerLess(_: void, p: graph.LayerIndex, q: graph.LayerIndex) bool {
     return @backingInt(p.layer) < @backingInt(q.layer);

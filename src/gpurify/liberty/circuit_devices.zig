@@ -30,6 +30,76 @@ const graph = @import("circuit_graph.zig");
 const Builder = graph.Builder;
 const RectIndex = graph.RectIndex;
 
+/// One terminal in card order.
+const Card = struct {
+    rank: u8,
+    net: NetId,
+    role: TerminalRole,
+
+    fn lessThan(_: void, p: Card, q: Card) bool {
+        return p.rank < q.rank;
+    }
+};
+
+/// The active region a channel sits in: its source/drain diffusions and the
+/// other channels, which tile it between the isolation edges.
+const Active = struct {
+    store: *const geom.GeometryStore,
+    sd_index: RectIndex,
+    sd_polys: std.ArrayList(PolyId) = .empty,
+    channels: RectIndex,
+    markers: std.ArrayList(Bbox) = .empty,
+
+    /// BSIM4 length of diffusion: from each side of the gate to the
+    /// isolation edge along the channel's centre line, walking across any
+    /// diffusion and other finger in the way. Null when the channel's
+    /// direction cannot be told.
+    ///
+    /// ponytail: one centre line, by bounding boxes; an irregular active
+    /// region wants the width-weighted `1/(SA + L/2)` average BSIM4 defines.
+    fn lod(x: *const Active, a: Allocator, gate: Bbox, touching: []const u32) Allocator.Error!?[2]i64 {
+        // Current flows across the edge a source/drain diffusion abuts.
+        var along_x = false;
+        var along_y = false;
+        for (touching) |p| {
+            const s = graph.shared(x.store.polyBbox(x.sd_polys.items[p]), gate);
+            along_x = along_x or (s[0] == 0 and s[1] > 0);
+            along_y = along_y or (s[1] == 0 and s[0] > 0);
+        }
+        if (along_x == along_y) return null;
+        const g = axis(gate, along_x);
+        const centre: i64 = @intCast(@divTrunc(@as(i128, g[2]) + g[3], 2));
+        const left = try x.walk(a, g[0], -1, centre, along_x);
+        const right = try x.walk(a, g[1], 1, centre, along_x);
+        return .{ g[0] - left, right - g[1] };
+    }
+
+    /// From `start` outward along the centre line, each step landing on a
+    /// box that starts where the last ended; where the walk stops.
+    fn walk(x: *const Active, a: Allocator, start: i64, outward: i64, centre: i64, along_x: bool) Allocator.Error!i64 {
+        var at = start;
+        var found: std.ArrayList(u32) = .empty;
+        var boxes: std.ArrayList(Bbox) = .empty;
+        for (0..1024) |_| {
+            const probe: Bbox = if (along_x) .point(at, centre) else .point(centre, at);
+            boxes.clearRetainingCapacity();
+            try x.sd_index.query(a, probe, &found);
+            for (found.items) |p| try boxes.append(a, x.store.polyBbox(x.sd_polys.items[p]));
+            try x.channels.query(a, probe, &found);
+            for (found.items) |m| try boxes.append(a, x.markers.items[m]);
+            var next: ?i64 = null;
+            for (boxes.items) |box| {
+                const c = axis(box, along_x);
+                if (c[2] > centre or c[3] < centre) continue;
+                if (outward > 0 and c[0] == at and c[1] > at) next = if (next) |n| @max(n, c[1]) else c[1];
+                if (outward < 0 and c[1] == at and c[0] < at) next = if (next) |n| @min(n, c[0]) else c[0];
+            }
+            at = next orelse return at;
+        }
+        return at;
+    }
+};
+
 /// Appends one card per recognised device, in device-table order.
 pub fn devices(b: *Builder, out: *Circuit) Allocator.Error!void {
     const a = b.arena;
@@ -124,76 +194,6 @@ pub fn devices(b: *Builder, out: *Circuit) Allocator.Error!void {
 }
 
 // ---- private ----
-
-/// One terminal in card order.
-const Card = struct {
-    rank: u8,
-    net: NetId,
-    role: TerminalRole,
-
-    fn lessThan(_: void, p: Card, q: Card) bool {
-        return p.rank < q.rank;
-    }
-};
-
-/// The active region a channel sits in: its source/drain diffusions and the
-/// other channels, which tile it between the isolation edges.
-const Active = struct {
-    store: *const geom.GeometryStore,
-    sd_index: RectIndex,
-    sd_polys: std.ArrayList(PolyId) = .empty,
-    channels: RectIndex,
-    markers: std.ArrayList(Bbox) = .empty,
-
-    /// BSIM4 length of diffusion: from each side of the gate to the
-    /// isolation edge along the channel's centre line, walking across any
-    /// diffusion and other finger in the way. Null when the channel's
-    /// direction cannot be told.
-    ///
-    /// ponytail: one centre line, by bounding boxes; an irregular active
-    /// region wants the width-weighted `1/(SA + L/2)` average BSIM4 defines.
-    fn lod(x: *const Active, a: Allocator, gate: Bbox, touching: []const u32) Allocator.Error!?[2]i64 {
-        // Current flows across the edge a source/drain diffusion abuts.
-        var along_x = false;
-        var along_y = false;
-        for (touching) |p| {
-            const s = graph.shared(x.store.polyBbox(x.sd_polys.items[p]), gate);
-            along_x = along_x or (s[0] == 0 and s[1] > 0);
-            along_y = along_y or (s[1] == 0 and s[0] > 0);
-        }
-        if (along_x == along_y) return null;
-        const g = axis(gate, along_x);
-        const centre: i64 = @intCast(@divTrunc(@as(i128, g[2]) + g[3], 2));
-        const left = try x.walk(a, g[0], -1, centre, along_x);
-        const right = try x.walk(a, g[1], 1, centre, along_x);
-        return .{ g[0] - left, right - g[1] };
-    }
-
-    /// From `start` outward along the centre line, each step landing on a
-    /// box that starts where the last ended; where the walk stops.
-    fn walk(x: *const Active, a: Allocator, start: i64, outward: i64, centre: i64, along_x: bool) Allocator.Error!i64 {
-        var at = start;
-        var found: std.ArrayList(u32) = .empty;
-        var boxes: std.ArrayList(Bbox) = .empty;
-        for (0..1024) |_| {
-            const probe: Bbox = if (along_x) .point(at, centre) else .point(centre, at);
-            boxes.clearRetainingCapacity();
-            try x.sd_index.query(a, probe, &found);
-            for (found.items) |p| try boxes.append(a, x.store.polyBbox(x.sd_polys.items[p]));
-            try x.channels.query(a, probe, &found);
-            for (found.items) |m| try boxes.append(a, x.markers.items[m]);
-            var next: ?i64 = null;
-            for (boxes.items) |box| {
-                const c = axis(box, along_x);
-                if (c[2] > centre or c[3] < centre) continue;
-                if (outward > 0 and c[0] == at and c[1] > at) next = if (next) |n| @max(n, c[1]) else c[1];
-                if (outward < 0 and c[1] == at and c[0] < at) next = if (next) |n| @min(n, c[0]) else c[0];
-            }
-            at = next orelse return at;
-        }
-        return at;
-    }
-};
 
 /// Coordinates along the channel (`lo`, `hi`) and across it.
 fn axis(b: Bbox, along_x: bool) [4]i64 {

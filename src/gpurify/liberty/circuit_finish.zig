@@ -6,6 +6,7 @@
 //!
 //! Contents:
 //! - `pub fn finish(b: *Builder, macro: *const MacroSpec, out: *Circuit) Allocator.Error!void`
+//! - `lessThan`: the sort context's hook
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;

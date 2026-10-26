@@ -16,6 +16,7 @@
 //! - `pub const Builder = struct`, `init`, `proto`, `rectNode`, `find`, `join`, `anchor`, `anchorHub`, `stackRow`, `isWire`, `resistor`, `cap`, `sortedCaps`
 //! - `pub fn findIn(parent: []u32, start: u32) u32`, `pub fn joinIn(parent: []u32, x: u32, y: u32) void`
 //! - `pub fn shared(a: Bbox, b: Bbox) [2]i64`, `pub fn contact(a: Bbox, b: Bbox) i64`, `pub fn gap2(a: Bbox, b: Bbox) i128`
+//! - `pub const LayerIndex = struct { layer, index }`, `Builder.stack(b) *const ProcessStack`, `lessThan`: the sort context's hook
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;

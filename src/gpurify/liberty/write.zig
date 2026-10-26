@@ -230,7 +230,7 @@ fn timingAxes(kind: ArcKind) Axes {
 
 /// Rust's `BTreeSet<(Axes, name, n1, n2)>` order: the name compares as text.
 fn templateLess(_: void, a: Template, b: Template) bool {
-    if (a.axes != b.axes) return @intFromEnum(a.axes) < @intFromEnum(b.axes);
+    if (a.axes != b.axes) return @backingInt(a.axes) < @backingInt(b.axes);
     var buf_a: [64]u8 = undefined;
     var buf_b: [64]u8 = undefined;
     var wa: Writer = .fixed(&buf_a);

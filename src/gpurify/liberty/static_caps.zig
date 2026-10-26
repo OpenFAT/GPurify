@@ -32,6 +32,20 @@ const Pin = @import("write.zig").Pin;
 /// Points of each digital pin's swing.
 const points = 9;
 
+/// The one sweep, run on a one-session pool.
+const Run = struct {
+    commands: []const u8,
+    values: []?f64,
+    tests: usize,
+
+    fn task(run: *const Run, session: *Session, scratch: Allocator, _: u32, diag: *Diagnostic) Error!void {
+        const results = try session.run(scratch, run.commands, diag);
+        for (0..run.tests) |t| for (0..points) |k| {
+            run.values[t * points + k] = session_.need(&results, try scratch.print("c{d}_{d}", .{ t, k }));
+        };
+    }
+};
+
 /// Measures and sets every input, clock and analog pin's capacitance.
 pub fn staticCaps(arena: Allocator, env: Env, macro: *const MacroSpec, corner: *const CornerSpec, c: *const Circuit, wire_ff: []const f64, deck_path: []const u8, pins: []Pin, diag: *Diagnostic) Error!void {
     var deck: std.ArrayList(u8) = .empty;
@@ -138,20 +152,6 @@ pub fn staticCaps(arena: Allocator, env: Env, macro: *const MacroSpec, corner: *
 }
 
 // ---- private ----
-
-/// The one sweep, run on a one-session pool.
-const Run = struct {
-    commands: []const u8,
-    values: []?f64,
-    tests: usize,
-
-    fn task(run: *const Run, session: *Session, scratch: Allocator, _: u32, diag: *Diagnostic) Error!void {
-        const results = try session.run(scratch, run.commands, diag);
-        for (0..run.tests) |t| for (0..points) |k| {
-            run.values[t * points + k] = session_.need(&results, try scratch.print("c{d}_{d}", .{ t, k }));
-        };
-    }
-};
 
 fn supply(corner: *const CornerSpec, name: ?[]const u8) f64 {
     return if (name) |n| corner.supplies.get(n).? else 0.0;

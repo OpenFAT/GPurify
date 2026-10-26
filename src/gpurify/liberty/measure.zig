@@ -28,6 +28,7 @@
 //! - `pub fn unmeasuredLeakage(scratch: Allocator, k: usize, state: []const Vector) Allocator.Error![]const u8`
 //! - `pub fn inputEdge(arc: ArcSpec, case: CaseSpec) Edge`
 //! - `pub const prep_ramp: f64`
+//! - `pub const Supply = struct { pin, volts }`, `format`: the message formatter's hook
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -173,6 +174,14 @@ pub const Supply = struct { pin: usize, volts: f64 };
 /// delay ns, output transition ns, internal energy pJ.
 pub const Row = struct { delay: []f64, transition: []f64, energy: []f64 };
 
+/// Rust's `{}` of an `f64`, for a message.
+const Display = struct {
+    v: f64,
+    pub fn format(d: Display, w: *std.Io.Writer) std.Io.Writer.Error!void {
+        return float.display(w, d.v);
+    }
+};
+
 /// Measures row `row` of a delay case: input slew `slews_ns[row]` into every
 /// load, one transient per load, in one batch. `Measure` when the vectors
 /// already leave the related pin where its edge goes, when the output does
@@ -296,14 +305,6 @@ pub fn inputEdge(arc: ArcSpec, case: CaseSpec) Edge {
 }
 
 // ---- private ----
-
-/// Rust's `{}` of an `f64`, for a message.
-const Display = struct {
-    v: f64,
-    pub fn format(d: Display, w: *std.Io.Writer) std.Io.Writer.Error!void {
-        return float.display(w, d.v);
-    }
-};
 
 fn riseFall(edge: Edge) []const u8 {
     return switch (edge) {

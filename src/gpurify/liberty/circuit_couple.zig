@@ -9,6 +9,7 @@
 //! Contents:
 //! - `pub fn couplings(b: *Builder, analytical: *const ParasiticNetwork, problem: extract.analytical.Problem, diag: *Diagnostic) Error!void`
 //! - `pub fn calibrate(b: *Builder, field: *const ParasiticNetwork) Allocator.Error!void`
+//! - `lessThan`: the sort context's hook
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -22,6 +23,9 @@ const Diagnostic = @import("spec.zig").Diagnostic;
 const Error = @import("circuit.zig").Error;
 const graph = @import("circuit_graph.zig");
 const Builder = graph.Builder;
+
+/// What a capacitor joins, by the nets of its rectangle nodes.
+const Joins = union(enum) { ground: u32, pair: [2]u32, other };
 
 /// The analytical extractor's coupling between wire layers (diffusions and
 /// wells couple through junctions, the models' job), each element on the
@@ -99,9 +103,6 @@ pub fn calibrate(b: *Builder, field: *const ParasiticNetwork) Allocator.Error!vo
 fn Totals(comptime K: type) type {
     return std.AutoArrayHashMapUnmanaged(K, f64);
 }
-
-/// What a capacitor joins, by the nets of its rectangle nodes.
-const Joins = union(enum) { ground: u32, pair: [2]u32, other };
 
 fn classify(b: *const Builder, key: [2]u32) Joins {
     const near = rectNet(b, key[0]);

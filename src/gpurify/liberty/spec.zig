@@ -73,48 +73,6 @@ pub const Accuracy = enum(u8) {
 /// The message of the last refusal, in the caller's arena.
 pub const Diagnostic = struct { message: []const u8 = "" };
 
-/// A JSON object read as parallel slices sorted by key (a `BTreeMap`): a
-/// repeated key keeps its last value.
-pub fn Sorted(comptime T: type) type {
-    return struct {
-        const Self = @This();
-        names: []const []const u8 = &.{},
-        values: []const T = &.{},
-
-        pub fn get(s: Self, key: []const u8) ?T {
-            const i = std.sort.binarySearch([]const u8, s.names, key, order) orelse return null;
-            return s.values[i];
-        }
-
-        pub fn jsonParse(arena: Allocator, source: anytype, options: json.ParseOptions) !Self {
-            var names: std.ArrayList([]const u8) = .empty;
-            var values: std.ArrayList(T) = .empty;
-            if (.object_begin != try source.next()) return error.UnexpectedToken;
-            while (true) {
-                switch (try source.nextAlloc(arena, .alloc_always)) {
-                    .allocated_string => |key| {
-                        const value = try json.innerParse(T, arena, source, options);
-                        const at = std.sort.lowerBound([]const u8, names.items, key, order);
-                        if (at < names.items.len and std.mem.eql(u8, names.items[at], key)) {
-                            values.items[at] = value;
-                        } else {
-                            try names.insert(arena, at, key);
-                            try values.insert(arena, at, value);
-                        }
-                    },
-                    .object_end => break,
-                    else => return error.UnexpectedToken,
-                }
-            }
-            return .{ .names = names.items, .values = values.items };
-        }
-
-        fn order(key: []const u8, item: []const u8) std.math.Order {
-            return std.mem.order(u8, key, item);
-        }
-    };
-}
-
 /// Pin values applied together, by pin name; unnamed pins keep their value.
 pub const Vector = Sorted(Level);
 
@@ -327,6 +285,66 @@ pub const MacroSpec = struct {
 /// `Invalid`: well-formed but its parts disagree. `diag.message` says which.
 pub const Error = error{ Malformed, Invalid } || Allocator.Error;
 
+const inverter =
+    \\{
+    \\    "cell": "inv",
+    \\    "pins": [
+    \\        {"name": "A", "role": "input", "power": "VPWR", "ground": "VGND"},
+    \\        {"name": "Y", "role": "output", "power": "VPWR", "ground": "VGND", "function": "!A"},
+    \\        {"name": "VPWR", "role": "power"},
+    \\        {"name": "VGND", "role": "ground"}
+    \\    ],
+    \\    "arcs": [{"from": "A", "to": "Y", "kind": "combinational", "cases": [
+    \\        {"vectors": [{"A": "0"}], "edge": "rise", "output": "fall"},
+    \\        {"vectors": [{"A": "1"}], "edge": "fall", "output": "rise"}
+    \\    ]}],
+    \\    "corners": [{"name": "tt_025C_1v80", "temperature": 25,
+    \\                 "supplies": {"VPWR": 1.8, "VGND": 0}, "models": []}]
+    \\}
+;
+
+/// A JSON object read as parallel slices sorted by key (a `BTreeMap`): a
+/// repeated key keeps its last value.
+pub fn Sorted(comptime T: type) type {
+    return struct {
+        const Self = @This();
+        names: []const []const u8 = &.{},
+        values: []const T = &.{},
+
+        pub fn get(s: Self, key: []const u8) ?T {
+            const i = std.sort.binarySearch([]const u8, s.names, key, order) orelse return null;
+            return s.values[i];
+        }
+
+        pub fn jsonParse(arena: Allocator, source: anytype, options: json.ParseOptions) !Self {
+            var names: std.ArrayList([]const u8) = .empty;
+            var values: std.ArrayList(T) = .empty;
+            if (.object_begin != try source.next()) return error.UnexpectedToken;
+            while (true) {
+                switch (try source.nextAlloc(arena, .alloc_always)) {
+                    .allocated_string => |key| {
+                        const value = try json.innerParse(T, arena, source, options);
+                        const at = std.sort.lowerBound([]const u8, names.items, key, order);
+                        if (at < names.items.len and std.mem.eql(u8, names.items[at], key)) {
+                            values.items[at] = value;
+                        } else {
+                            try names.insert(arena, at, key);
+                            try values.insert(arena, at, value);
+                        }
+                    },
+                    .object_end => break,
+                    else => return error.UnexpectedToken,
+                }
+            }
+            return .{ .names = names.items, .values = values.items };
+        }
+
+        fn order(key: []const u8, item: []const u8) std.math.Order {
+            return std.mem.order(u8, key, item);
+        }
+    };
+}
+
 /// Parses and validates a spec; every relation spec.rs `parse` documents is
 /// checked, and the first offence is the message.
 pub fn parse(arena: Allocator, text: []const u8, diag: *Diagnostic) Error!MacroSpec {
@@ -455,24 +473,6 @@ fn bad(arena: Allocator, diag: *Diagnostic, comptime fmt: []const u8, args: anyt
     diag.message = try arena.print(fmt, args);
     return error.Invalid;
 }
-
-const inverter =
-    \\{
-    \\    "cell": "inv",
-    \\    "pins": [
-    \\        {"name": "A", "role": "input", "power": "VPWR", "ground": "VGND"},
-    \\        {"name": "Y", "role": "output", "power": "VPWR", "ground": "VGND", "function": "!A"},
-    \\        {"name": "VPWR", "role": "power"},
-    \\        {"name": "VGND", "role": "ground"}
-    \\    ],
-    \\    "arcs": [{"from": "A", "to": "Y", "kind": "combinational", "cases": [
-    \\        {"vectors": [{"A": "0"}], "edge": "rise", "output": "fall"},
-    \\        {"vectors": [{"A": "1"}], "edge": "fall", "output": "rise"}
-    \\    ]}],
-    \\    "corners": [{"name": "tt_025C_1v80", "temperature": 25,
-    \\                 "supplies": {"VPWR": 1.8, "VGND": 0}, "models": []}]
-    \\}
-;
 
 test "an inverter spec parses" {
     // Oracle: construct-from-answer. `inverter` drives `A` low in its first

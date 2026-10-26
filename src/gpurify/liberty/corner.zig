@@ -8,6 +8,7 @@
 //! - `pub const Run = struct { arena, env, macro, accuracy, work, prepared }`
 //! - `pub const Error = session.Error || error{Refused}`
 //! - `pub fn characterize(run: Run, corner: *const CornerSpec, notes: *std.ArrayList([]const u8), diag: *Diagnostic) Error![2]?Cell`
+//! - `format`: the message formatter's hook
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -48,56 +49,6 @@ pub const Run = struct {
 
 /// `Refused`: `statistical` asked of a corner with no `mc_models`.
 pub const Error = session.Error || error{Refused};
-
-/// The corner's cell, worst case first, then the best case when cases
-/// disagree (else null). Notes the constraints clamped to the window.
-pub fn characterize(run: Run, corner: *const CornerSpec, notes: *std.ArrayList([]const u8), diag: *Diagnostic) Error![2]?Cell {
-    const a = run.arena;
-    const macro = run.macro;
-    var cell: Cell = .{ .name = macro.cell, .pins = try a.alloc(Pin, macro.pins.len) };
-    for (cell.pins, macro.pins) |*p, s| p.* = .{ .spec = s };
-    if (run.accuracy == .interface) return .{ cell, null };
-    const bench: Bench = .{ .macro = macro, .corner = corner, .effort = effort, .reltol = precision.reltol };
-    const states = try assemble.leakageStates(a, macro, try measure_static.allLow(&bench, a));
-    const leakage = try a.alloc(f64, states.len);
-    const deck = try writeDeck(run, corner, false, diag);
-    var tasks: std.ArrayList(Task) = .empty;
-    if (@intFromEnum(run.accuracy) < @intFromEnum(Accuracy.spice)) {
-        try tasks.append(a, .leakage);
-        const ctx: Ctx = .{ .bench = &bench, .tasks = tasks.items, .states = states, .leakage = leakage, .pins = cell.pins, .grids = &.{} };
-        try session.runPool(run.env, macro.simulator, deck, corner.name, 1, 1, &ctx, Ctx.task, a, diag);
-        try assemble.setLeakage(a, &cell, macro, states, leakage);
-        const path = try a.print("{s}/{s}__{s}_devices.cir", .{ run.work, macro.cell, corner.name });
-        try staticCaps(a, run.env, macro, corner, &run.prepared.circuit.?, run.prepared.wire_ff, path, cell.pins, diag);
-        return .{ cell, null };
-    }
-
-    // Everything independent goes on the pool at once.
-    for (macro.pins, 0..) |pin, i| switch (pin.role) {
-        .input, .clock => try tasks.append(a, .{ .cap = @intCast(i) }),
-        .analog => try tasks.append(a, .{ .analog = @intCast(i) }),
-        .power, .ground, .nwell, .pwell, .output => {},
-    };
-    try tasks.append(a, .leakage);
-    try arcTasks(a, macro, null, &tasks);
-    const grids = try a.alloc(Grids, 1);
-    grids[0] = try .init(a, macro);
-    const ctx: Ctx = .{ .bench = &bench, .tasks = tasks.items, .states = states, .leakage = leakage, .pins = cell.pins, .grids = grids };
-    try session.runPool(run.env, macro.simulator, deck, corner.name, run.prepared.workers, @intCast(tasks.items.len), &ctx, Ctx.task, a, diag);
-    try assemble.setLeakage(a, &cell, macro, states, leakage);
-    const c = macro.characterization;
-    for (macro.arcs, 0..) |arc, k_arc| if (arc.kind.isConstraint()) for (0..arc.cases.len) |k| {
-        const window = c.constraint_window_ns;
-        const clamped = for (grids[0].constraintOf(grids[0].caseIndex(k_arc, k))) |v| (if (v <= -window) break true) else false;
-        if (clamped) try notes.append(a, try a.print("{s}: arc {s} -> {s} case {d} passes even {f} ns on the wrong side of the clock; its constraint is clamped to -{f} ns", .{ corner.name, arc.from, arc.to, k, Display{ .v = window }, Display{ .v = window } }));
-    };
-    const sigma: ?*const Grids = if (run.accuracy == .statistical) try monteCarlo(run, corner, &bench, diag) else null;
-    const worst = try assemble.assemble(a, macro, cell, &grids[0], sigma, .worst);
-    const best = if (assemble.casesDisagree(macro)) try assemble.assemble(a, macro, cell, &grids[0], sigma, .best) else null;
-    return .{ worst, best };
-}
-
-// ---- private ----
 
 /// Tolerances every analysis runs at. Against a reltol 1e-6, 0.1 ps-step
 /// reference these agree to 0.03 % on a 10 ps edge into 0.5 fF and to
@@ -167,6 +118,56 @@ const Display = struct {
         return float.display(w, d.v);
     }
 };
+
+/// The corner's cell, worst case first, then the best case when cases
+/// disagree (else null). Notes the constraints clamped to the window.
+pub fn characterize(run: Run, corner: *const CornerSpec, notes: *std.ArrayList([]const u8), diag: *Diagnostic) Error![2]?Cell {
+    const a = run.arena;
+    const macro = run.macro;
+    var cell: Cell = .{ .name = macro.cell, .pins = try a.alloc(Pin, macro.pins.len) };
+    for (cell.pins, macro.pins) |*p, s| p.* = .{ .spec = s };
+    if (run.accuracy == .interface) return .{ cell, null };
+    const bench: Bench = .{ .macro = macro, .corner = corner, .effort = effort, .reltol = precision.reltol };
+    const states = try assemble.leakageStates(a, macro, try measure_static.allLow(&bench, a));
+    const leakage = try a.alloc(f64, states.len);
+    const deck = try writeDeck(run, corner, false, diag);
+    var tasks: std.ArrayList(Task) = .empty;
+    if (@backingInt(run.accuracy) < @backingInt(Accuracy.spice)) {
+        try tasks.append(a, .leakage);
+        const ctx: Ctx = .{ .bench = &bench, .tasks = tasks.items, .states = states, .leakage = leakage, .pins = cell.pins, .grids = &.{} };
+        try session.runPool(run.env, macro.simulator, deck, corner.name, 1, 1, &ctx, Ctx.task, a, diag);
+        try assemble.setLeakage(a, &cell, macro, states, leakage);
+        const path = try a.print("{s}/{s}__{s}_devices.cir", .{ run.work, macro.cell, corner.name });
+        try staticCaps(a, run.env, macro, corner, &run.prepared.circuit.?, run.prepared.wire_ff, path, cell.pins, diag);
+        return .{ cell, null };
+    }
+
+    // Everything independent goes on the pool at once.
+    for (macro.pins, 0..) |pin, i| switch (pin.role) {
+        .input, .clock => try tasks.append(a, .{ .cap = @intCast(i) }),
+        .analog => try tasks.append(a, .{ .analog = @intCast(i) }),
+        .power, .ground, .nwell, .pwell, .output => {},
+    };
+    try tasks.append(a, .leakage);
+    try arcTasks(a, macro, null, &tasks);
+    const grids = try a.alloc(Grids, 1);
+    grids[0] = try .init(a, macro);
+    const ctx: Ctx = .{ .bench = &bench, .tasks = tasks.items, .states = states, .leakage = leakage, .pins = cell.pins, .grids = grids };
+    try session.runPool(run.env, macro.simulator, deck, corner.name, run.prepared.workers, @intCast(tasks.items.len), &ctx, Ctx.task, a, diag);
+    try assemble.setLeakage(a, &cell, macro, states, leakage);
+    const c = macro.characterization;
+    for (macro.arcs, 0..) |arc, k_arc| if (arc.kind.isConstraint()) for (0..arc.cases.len) |k| {
+        const window = c.constraint_window_ns;
+        const clamped = for (grids[0].constraintOf(grids[0].caseIndex(k_arc, k))) |v| (if (v <= -window) break true) else false;
+        if (clamped) try notes.append(a, try a.print("{s}: arc {s} -> {s} case {d} passes even {f} ns on the wrong side of the clock; its constraint is clamped to -{f} ns", .{ corner.name, arc.from, arc.to, k, Display{ .v = window }, Display{ .v = window } }));
+    };
+    const sigma: ?*const Grids = if (run.accuracy == .statistical) try monteCarlo(run, corner, &bench, diag) else null;
+    const worst = try assemble.assemble(a, macro, cell, &grids[0], sigma, .worst);
+    const best = if (assemble.casesDisagree(macro)) try assemble.assemble(a, macro, cell, &grids[0], sigma, .best) else null;
+    return .{ worst, best };
+}
+
+// ---- private ----
 
 /// Every table point of every arc case, in spec order.
 fn arcTasks(a: Allocator, macro: *const MacroSpec, sample: ?u32, tasks: *std.ArrayList(Task)) Allocator.Error!void {

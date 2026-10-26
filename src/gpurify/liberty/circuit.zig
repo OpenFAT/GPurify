@@ -24,6 +24,7 @@
 //! - `pub const Error = error{ MissingPin, ShortedPins, Geometry, Disconnected } || Allocator.Error`
 //! - `pub fn pinNetsInto(arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, macro: *const MacroSpec, start: *std.ArrayList(u32), nets: *std.ArrayList(NetId), diag: *Diagnostic) Error!void`
 //! - `pub fn build(arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, macro: *const MacroSpec, wires: Wires, diag: *Diagnostic) Error!Circuit`
+//! - `Circuit.deviceCount(c) usize`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;

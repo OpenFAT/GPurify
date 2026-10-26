@@ -16,6 +16,7 @@
 //! - `pub fn writeParam(w: *std.Io.Writer, name: []const u8, value: Param, scale: f64) std.Io.Writer.Error!void`
 //! - `pub const Precision = struct { reltol, abstol, vntol, trtol }`
 //! - `pub fn writeDeck(macro: *const MacroSpec, corner: *const CornerSpec, subckt: []const u8, precision: Precision, statistical: bool, w: *std.Io.Writer) std.Io.Writer.Error!void`
+//! - `format`: `Si`'s and the node formatter's hook
 
 const std = @import("std");
 const Writer = std.Io.Writer;
@@ -28,12 +29,6 @@ const Circuit = circuit.Circuit;
 const Param = circuit.Param;
 const numbers = @import("numbers.zig");
 
-/// A number as the simulator reads it: Rust's `{:e}` (`1.8e0`), never an
-/// SI suffix, which SPICE reads without case (`M` is milli).
-pub fn si(w: *Writer, value: f64) Writer.Error!void {
-    return numbers.exp(w, value);
-}
-
 /// `si` as a `{f}` argument.
 pub const Si = struct {
     value: f64,
@@ -41,6 +36,32 @@ pub const Si = struct {
         return si(w, s.value);
     }
 };
+
+/// Tolerances every analysis runs at.
+pub const Precision = struct {
+    reltol: f64,
+    /// A.
+    abstol: f64,
+    /// V.
+    vntol: f64,
+    /// Truncation-error overestimate; 1 trusts the error estimate fully.
+    trtol: f64,
+};
+
+/// A node name: `0` for ground, else `n<k>`.
+const Node = struct {
+    n: u32,
+    pub fn format(node: Node, w: *Writer) Writer.Error!void {
+        if (node.n == 0) return w.writeByte('0');
+        try w.print("n{d}", .{node.n});
+    }
+};
+
+/// A number as the simulator reads it: Rust's `{:e}` (`1.8e0`), never an
+/// SI suffix, which SPICE reads without case (`M` is milli).
+pub fn si(w: *Writer, value: f64) Writer.Error!void {
+    return numbers.exp(w, value);
+}
 
 pub fn fmtSi(value: f64) Si {
     return .{ .value = value };
@@ -83,17 +104,6 @@ pub fn writeParam(w: *Writer, name: []const u8, value: Param, scale: f64) Writer
     }
 }
 
-/// Tolerances every analysis runs at.
-pub const Precision = struct {
-    reltol: f64,
-    /// A.
-    abstol: f64,
-    /// V.
-    vntol: f64,
-    /// Truncation-error overestimate; 1 trusts the error estimate fully.
-    trtol: f64,
-};
-
 /// Appends one corner's testbench: its model lines (`mc_models` when
 /// `statistical`), the macro as `xdut`, a DC source on every supply, a
 /// rewritable PWL source on every input, clock and analog pin (an analog pin
@@ -120,15 +130,6 @@ pub fn writeDeck(macro: *const MacroSpec, corner: *const CornerSpec, subckt: []c
 }
 
 // ---- private ----
-
-/// A node name: `0` for ground, else `n<k>`.
-const Node = struct {
-    n: u32,
-    pub fn format(node: Node, w: *Writer) Writer.Error!void {
-        if (node.n == 0) return w.writeByte('0');
-        try w.print("n{d}", .{node.n});
-    }
-};
 
 test "a subckt writes nodes, scaled parameters and wire elements" {
     // Oracle: construct-from-answer, by spice.rs's card spellings: pins in

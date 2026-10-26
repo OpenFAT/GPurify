@@ -19,6 +19,7 @@
 //! - `pub fn constraintPoint(bench: *const Bench, session: *Session, scratch: Allocator, arc: ArcSpec, case: CaseSpec, clock_slew: f64, data_slew: f64, label: []const u8, diag: *Diagnostic) Error!f64`
 //! - `pub fn redraw(session: *Session, scratch: Allocator, sample: u32, diag: *Diagnostic) Error!void`
 //! - `pub fn sigmaInto(samples: []const []const f64, out: []f64) void`
+//! - `format`: the message formatter's hook
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -35,6 +36,18 @@ const Error = session_.Error;
 const need = session_.need;
 const measure = @import("measure.zig");
 const Bench = measure.Bench;
+
+/// A trial's outcome: failed, or passed with the clock-to-check delay (null
+/// when the check pin did not move after the clock).
+const Trial = union(enum) { fail, pass: ?f64 };
+
+/// Rust's `{}` of an `f64`, for a message.
+const Display = struct {
+    v: f64,
+    pub fn format(d: Display, w: *std.Io.Writer) std.Io.Writer.Error!void {
+        return float.display(w, d.v);
+    }
+};
 
 /// Setup or hold of one constraint case at one table point, ns: clock
 /// transition `clock_slew` and data transition `data_slew`, both ns. A
@@ -80,18 +93,6 @@ pub fn sigmaInto(samples: []const []const f64, out: []f64) void {
 }
 
 // ---- private ----
-
-/// A trial's outcome: failed, or passed with the clock-to-check delay (null
-/// when the check pin did not move after the clock).
-const Trial = union(enum) { fail, pass: ?f64 };
-
-/// Rust's `{}` of an `f64`, for a message.
-const Display = struct {
-    v: f64,
-    pub fn format(d: Display, w: *std.Io.Writer) std.Io.Writer.Error!void {
-        return float.display(w, d.v);
-    }
-};
 
 fn passes(t: Trial, reference: ?f64, limit: f64) bool {
     return switch (t) {
