@@ -20,6 +20,7 @@
 //! - `henry`: `InductMatrix`, `extractInductanceInto` (field/henry.zig)
 //! - `network`: `ParasiticNetwork`, `NodeId`, `Kind` (network.zig)
 //! - `quasistatic`: `extractInto`, `extractInductanceInto`, `overlay` (quasistatic.zig)
+//! - `compare`: `Comparison`, `Metric`, `Errors`, `errors`, `compareInto` (compare.zig)
 //! - `reduce`: `reduce` (reduce.zig)
 //! - `analytical`: `Problem`, `Error`, `Refusal`, `extractInto`, `nodeRectsInto` (analytical.zig)
 
@@ -39,6 +40,7 @@ pub const network = @import("network.zig");
 pub const quasistatic = @import("quasistatic.zig");
 pub const analytical = @import("analytical.zig");
 pub const reduce = @import("reduce.zig");
+pub const compare = @import("compare.zig");
 pub const NetPolys = @import("net_polys.zig").NetPolys;
 pub const NearPairs = @import("field/near.zig").NearPairs;
 
@@ -70,6 +72,7 @@ test {
     _ = quasistatic;
     _ = analytical;
     _ = reduce;
+    _ = compare;
     _ = @import("closed_form.zig");
     _ = @import("joins.zig");
     _ = @import("net_polys.zig");
