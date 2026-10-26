@@ -25,6 +25,7 @@
 //! - `fill`: `Treatment`, `Fill`, `treat` (fill.zig)
 //! - `tsv`: `Tsv`, `linerCapacitanceFf`, `addInto` (tsv.zig)
 //! - `device_region`: `Mos`, `addInto` (device_region.zig)
+//! - `substrate`: `Profile`, `Admittance`, `linesInto`, `admittanceInto`, `addInto` (substrate*.zig)
 //! - `reduce`: `reduce` (reduce.zig)
 //! - `analytical`: `Problem`, `Error`, `Refusal`, `extractInto`, `nodeRectsInto` (analytical.zig)
 
@@ -51,6 +52,7 @@ pub const dspf = @import("dspf.zig");
 pub const fill = @import("fill.zig");
 pub const tsv = @import("tsv.zig");
 pub const device_region = @import("device_region.zig");
+pub const substrate = @import("substrate.zig");
 pub const NetPolys = @import("net_polys.zig").NetPolys;
 pub const NearPairs = @import("field/near.zig").NearPairs;
 
@@ -89,6 +91,9 @@ test {
     _ = fill;
     _ = tsv;
     _ = device_region;
+    _ = substrate;
+    _ = @import("substrate_solve.zig");
+    _ = @import("substrate_modes.zig");
     _ = @import("closed_form.zig");
     _ = @import("joins.zig");
     _ = @import("net_polys.zig");
