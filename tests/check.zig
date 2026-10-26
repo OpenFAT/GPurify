@@ -63,4 +63,6 @@ test {
     _ = @import("check/drc/drc_kinds_edges.zig");
     _ = @import("check/drc/sky130_rules.zig");
     _ = @import("check/drc/pdk_decks.zig");
+    _ = @import("check/erc/fixture.zig");
+    _ = @import("check/erc/common.zig");
 }

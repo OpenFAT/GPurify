@@ -54,18 +54,18 @@ pub const Error = error{
     DuplicateRule,
     /// A row's table, band list, range or pattern is not well formed.
     BadTable,
-    /// The row is an ERC kind, which this build does not type yet (wave 4):
-    /// refused by name, never dropped.
-    ErcRulesNotPorted,
+    /// An ERC fraction outside `0 ..= 1`.
+    NotAFraction,
 } || Allocator.Error;
 
 /// What the error names: the row always, the rest as the error says.
 pub const Diagnostic = struct {
     /// The row's id as the deck spells it, interned.
     rule: StrId = @fromBackingInt(std.math.maxInt(u32)),
-    /// `UnknownKind`, `ErcRulesNotPorted`: the kind the row names.
+    /// `UnknownKind`: the kind the row names.
     kind: StrId = @fromBackingInt(std.math.maxInt(u32)),
-    /// `MissingParam`, `WrongParamType`: the kind-level parameter name.
+    /// `MissingParam`, `WrongParamType`, and an ERC row's
+    /// `NonPositiveLimit` and `NotAFraction`: the engine parameter name.
     param: []const u8 = "",
     /// `WrongLayerCount`: layers the kind takes (the larger where one is
     /// optional), and layers the row names.
@@ -76,6 +76,8 @@ pub const Diagnostic = struct {
     limit: i64 = 0,
     /// `UnrepresentableAngle`: the angle reduced modulo 360.
     degrees: i32 = 0,
+    /// An ERC row's `BadTable`: what is out of order.
+    why: []const u8 = "",
 };
 
 /// A density layer and its optional die boundary.
