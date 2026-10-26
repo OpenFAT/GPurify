@@ -26,6 +26,8 @@
 //! - `compile`: `fromDeck`; `build_row`, `build_stage`, `build_esd`, `build_layout`, `build_domain`: the kind builders; `validate`, `validate_more`
 //! - the families: `topology`, `matching`, `domain`, `domain_devices`, `supply`, `antenna`, `electrical`, `reliability`, `esd`, `latchup`
 //! - `run_` (run.zig): `RunInputs`, `run`; `check_` (check.zig): `Inputs`, `check`
+//! - the electrical and antenna families' parts: `electrical_current` (branch-current rows), `electrical_thermal`
+//!   (`em_thermal`), `antenna_stage` (stage nets, figures), `antenna_row` (the row model), `antenna_density` (windows)
 //! - aliases: `Kind`, `RuleSet`, `Design`, `Inputs`, `check`, `fromDeck`
 
 pub const kinds = @import("kinds.zig");
@@ -73,6 +75,11 @@ pub const esd = @import("esd.zig");
 pub const latchup = @import("latchup.zig");
 pub const run_ = @import("run.zig");
 pub const check_ = @import("check.zig");
+pub const electrical_current = @import("electrical_current.zig");
+pub const electrical_thermal = @import("electrical_thermal.zig");
+pub const antenna_stage = @import("antenna_stage.zig");
+pub const antenna_row = @import("antenna_row.zig");
+pub const antenna_density = @import("antenna_density.zig");
 
 pub const Kind = kinds.Kind;
 pub const RuleSet = rule_set.RuleSet;
@@ -100,4 +107,10 @@ test {
     _ = compile;
     _ = run_;
     _ = check_;
+    _ = electrical_current;
+    _ = electrical_thermal;
+    _ = antenna_stage;
+    _ = antenna_row;
+    _ = antenna_density;
+    _ = reliability;
 }

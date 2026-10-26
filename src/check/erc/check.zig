@@ -47,7 +47,7 @@ const Scratch = @import("scratch.zig").Scratch;
 const run_ = @import("run.zig");
 
 /// Boltzmann's constant in eV/K: activation energies are stated in eV.
-pub const boltzmann_ev_per_k: f64 = 8.617_333_262e-5;
+pub const boltzmann_ev_per_k = @import("electrical_tables.zig").boltzmann_ev_per_k;
 
 /// What one ERC run reads.
 pub const Inputs = struct {

@@ -65,4 +65,7 @@ test {
     _ = @import("check/drc/pdk_decks.zig");
     _ = @import("check/erc/fixture.zig");
     _ = @import("check/erc/common.zig");
+    _ = @import("check/erc/p2p_resistance_rule.zig");
+    _ = @import("check/erc/electrical_limits.zig");
+    _ = @import("check/erc/dynamic_and_thermal.zig");
 }

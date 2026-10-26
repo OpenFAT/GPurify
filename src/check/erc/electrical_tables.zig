@@ -8,7 +8,7 @@
 //! transform).
 //!
 //! Contents:
-//! - `pub const CurrentDensity`, `pub const Kelvin`, `pub const Narrow = struct { width: Dbu, current: Microamps }`
+//! - `pub const boltzmann_ev_per_k: f64`, `pub const CurrentDensity`, `pub const Kelvin`, `pub const Narrow = struct { width: Dbu, current: Microamps }`
 //! - `pub const P2pResistanceTable`, `IrDropTable`, `DynamicIrDropTable`, `EmCurrentDensityTable`, `EmAcTable`,
 //!   `ElectromigrationTable`, `EmThermalTable`
 
@@ -20,6 +20,9 @@ const report = @import("../report.zig");
 const Microamps = report.Microamps;
 const Ohms = report.Ohms;
 const RuleHead = @import("head.zig").RuleHead;
+
+/// Boltzmann's constant in eV/K: activation energies are stated in eV.
+pub const boltzmann_ev_per_k: f64 = 8.617_333_262e-5;
 
 /// Current per conductor width, A/m (= µA/µm).
 pub const CurrentDensity = geom.Qty(.current_density, .base);
