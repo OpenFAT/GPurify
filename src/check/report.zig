@@ -180,7 +180,7 @@ pub const Measurement = struct {
         switch (m.kind) {
             .length => try w.print("{d} dbu", .{m.raw}),
             .area => try w.print("{d} dbu^2", .{m.raw}),
-            .ratio => try w.print("{d}", .{m.float()}),
+            .ratio => try geom.float.display(w, m.float()),
             .count => try w.print("{d}", .{m.raw}),
             .voltage => try w.print("{f}", .{Millivolts{ .raw = m.float() }}),
             .current => try w.print("{f}", .{Microamps{ .raw = m.float() }}),
@@ -485,5 +485,22 @@ test "a ratio, a voltage and a current round-trip their bits" {
     for ([_]f64{ -0.0, 0.0, 5e-324, -3.5, 1e300 }) |x| {
         try std.testing.expectEqual(@as(u64, @bitCast(x)), @as(u64, @bitCast(Measurement.ratio(x).float())));
         try std.testing.expectEqual(@as(u64, @bitCast(x)), @as(u64, @bitCast(Measurement.voltage(.{ .raw = x }).float())));
+    }
+}
+
+test "a ratio prints Rust's Display, not Zig's {d}" {
+    // Oracle: rustc 1.95 `format!("{}", x)`, the vectors in geom/float.zig:
+    // NaN is `NaN` (Zig `{d}`: `nan`), and the exact tie 0x42e34af288390144
+    // rounds up to `169700940171274.13` (Zig `{d}`: `...274.12`).
+    const cases = [_]struct { f64, []const u8 }{
+        .{ std.math.nan(f64), "NaN" },
+        .{ @bitCast(@as(u64, 0x42e34af288390144)), "169700940171274.13" },
+        .{ 2100, "2100" },
+    };
+    var buf: [64]u8 = undefined;
+    for (cases) |c| {
+        var w: std.Io.Writer = .fixed(&buf);
+        try w.print("{f}", .{Measurement.ratio(c[0])});
+        try std.testing.expectEqualStrings(c[1], w.buffered());
     }
 }
