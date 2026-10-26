@@ -14,6 +14,9 @@
 //! - `pub const device: geom.Device`
 //! - `pub fn solveFf(c: *const Case, rows: *const Rows, selected: []const u32, out: []f64) !capacitance.Accuracy`
 //! - `pub fn scaleComb(nets: u32, polygons: u32) !Case`, `pub const comb_conductors`, `pub const comb_vias`
+//! - `pub const params: Rows`, `pub const Poly = struct { layer: u16, net: u32, pts: []const [2]i64 }`,
+//!   `pub const Symmetry = struct`, `Symmetry.all`, `Symmetry.apply`, `pub const offsets`,
+//!   `pub fn placed(polys: []const Poly, s: Symmetry, d: [2]i64) !Case`
 
 const std = @import("std");
 const geom = @import("geom");
@@ -143,6 +146,44 @@ pub const junction: Rows = blk: {
 pub const comb_conductors = [_]geom.LayerId{ @fromBackingInt(0), @fromBackingInt(1) };
 pub const comb_vias: extract.Vias = .{ .cut = &.{@fromBackingInt(2)}, .connects = &.{.{ @fromBackingInt(0), @fromBackingInt(1) }} };
 
+/// tests/exhaustive/pex.rs's `PARAMS`: the `met1`, `via1` and `met2` rows
+/// of tests/fixtures/params.deck, as layers 0, 1 and 2.
+pub const params: Rows = .of(
+    .{ .thickness = 400, .height = 1300, .sheet = 0.1, .k = 3.9, .area = 25, .fringe = 40 },
+    .{ .thickness = 300, .height = 1700, .sheet = 5.0, .k = 3.9, .area = 0, .fringe = 0 },
+    .{ .thickness = 400, .height = 2000, .sheet = 0.08, .k = 3.9, .area = 15, .fringe = 30 },
+);
+
+/// One drawn ring, counter-clockwise, and the net it is on.
+pub const Poly = struct { layer: u16, net: u32, pts: []const [2]i64 };
+
+/// The eight symmetries of the square: `turns` quarter turns, then a mirror
+/// in x (tests/exhaustive/harness.rs's `Symmetry`).
+pub const Symmetry = struct {
+    turns: u2,
+    mirror: bool,
+
+    pub const all: [8]Symmetry = blk: {
+        var out: [8]Symmetry = undefined;
+        for (0..8) |k| out[k] = .{ .turns = @intCast(k % 4), .mirror = k >= 4 };
+        break :blk out;
+    };
+
+    pub fn apply(s: Symmetry, p: [2]i64) [2]i64 {
+        var x = p[0];
+        var y = p[1];
+        for (0..s.turns) |_| {
+            const t = x;
+            x = -y;
+            y = t;
+        }
+        return .{ if (s.mirror) -x else x, y };
+    }
+};
+
+/// The translations a placement-invariant case is repeated at.
+pub const offsets = [2][2]i64{ .{ 0, 0 }, .{ -1_234_567, 987_654 } };
+
 /// `crates/extract/tests/field/common`'s `uniform_stack`: three identical
 /// rows, 100 nm thick at 300 nm, 0.1 Ω/□, k 3.9.
 pub fn uniformRows(area: f64, fringe: f64) Rows {
@@ -181,4 +222,25 @@ pub fn scaleComb(nets: u32, polygons: u32) !Case {
         }
     }
     return Case.init(boxes.items, &.{}, 3);
+}
+
+/// `polys` under `s`, moved by `d` (a mirror reverses each ring so it stays
+/// counter-clockwise), over layers 0 to 2.
+pub fn placed(polys: []const Poly, s: Symmetry, d: [2]i64) !Case {
+    var scratch: std.heap.ArenaAllocator = .init(gpa);
+    defer scratch.deinit();
+    const arena = scratch.allocator();
+    const shapes = try arena.alloc(Shape, polys.len);
+    for (shapes, polys) |*shape, poly| {
+        const xs = try arena.alloc(i64, poly.pts.len);
+        const ys = try arena.alloc(i64, poly.pts.len);
+        for (poly.pts, 0..) |p, k| {
+            const q = s.apply(p);
+            const at = if (s.mirror) poly.pts.len - 1 - k else k;
+            xs[at] = q[0] + d[0];
+            ys[at] = q[1] + d[1];
+        }
+        shape.* = .{ .layer = poly.layer, .net = poly.net, .xs = xs, .ys = ys };
+    }
+    return Case.init(&.{}, shapes, 3);
 }

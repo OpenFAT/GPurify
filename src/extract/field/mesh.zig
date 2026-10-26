@@ -98,7 +98,8 @@ pub const Error = error{
     /// describe: no row, or a row whose thickness or permittivity is not
     /// positive or whose height is not finite. `refused` names the smallest
     /// such layer. A layer the mesh leaves out (a junction, a global layer)
-    /// needs none of these.
+    /// needs none of these, but `capacitance.extractInto` refuses a junction
+    /// layer with no positive sheet resistance under this name too.
     MissingThickness,
     /// A selected net has no polygons.
     EmptyConductor,

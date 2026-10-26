@@ -18,6 +18,7 @@ test {
     _ = @import("extract/foreign.zig");
     _ = @import("extract/tsv.zig");
     _ = @import("extract/substrate.zig");
+    _ = @import("extract/closed_forms.zig");
     if (paths.slow_tests) _ = @import("extract/capacitance_slow.zig");
     if (paths.slow_tests) _ = @import("extract/substrate_slow.zig");
     if (paths.gpu_tests) _ = @import("extract/gpu.zig");
