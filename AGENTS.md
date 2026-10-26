@@ -32,6 +32,9 @@ Load each with the Skill tool (other agents: read
 - `-Dgpu-tests=true` adds the CPU-vs-GPU row-kernel differentials (off by
   default). They fail, never skip, in a build without device kernels or on
   a machine without a CUDA/HIP driver.
+- `-Dcomparison-tests=true` runs the comparisons against KLayout, Netgen,
+  Magic, FastCap, FastHenry, OpenROAD, Yosys and ngspice, inside
+  `nix develop .#comparison`. A missing tool fails, never skips.
 - `-Dslow-tests` runs the field-solve tests too slow for Debug; it defaults
   to on outside Debug, so `-Doptimize=ReleaseSafe` runs everything.
 - `zig build bench` (ReleaseFast whatever `-Doptimize` says, ~3 min, needs

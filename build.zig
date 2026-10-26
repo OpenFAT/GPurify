@@ -24,6 +24,7 @@ pub fn build(b: *Build) void {
     const hip_arch = b.option([]const u8, "hip-arch", "HIP arch (gfx1100, ...), `none` to omit") orelse "gfx1100";
     const gpu_tests = b.option(bool, "gpu-tests", "Run the CPU-vs-GPU differentials; fails without a CUDA/HIP driver") orelse false;
     const ngspice_tests = b.option(bool, "ngspice-tests", "Run the Liberty differential against ngspice; fails without ngspice on PATH") orelse false;
+    const comparison_tests = b.option(bool, "comparison-tests", "Run the comparisons against KLayout, Netgen, Magic, FastCap, FastHenry, OpenROAD, Yosys and ngspice (nix develop .#comparison); a missing tool fails") orelse false;
     const update_goldens = b.option(bool, "update-goldens", "Write missing or changed tests/golden files, then fail so the change is reviewed") orelse false;
     const test_filters = b.option([]const []const u8, "test-filter", "Run only the suite tests whose names contain this (repeatable)") orelse &.{};
     const slow_tests = b.option(bool, "slow-tests", "Run the field-solve tests too slow for Debug (on by default outside Debug)") orelse (optimize != .debug);
@@ -50,7 +51,8 @@ pub fn build(b: *Build) void {
     paths.addOption([]const u8, "root", b.pathResolve(&.{ b.root.root_dir.path orelse ".", b.root.sub_path }));
     paths.addOption(bool, "gpu_tests", gpu_tests);
     paths.addOption(bool, "slow_tests", slow_tests);
-    paths.addOption(bool, "ngspice_tests", ngspice_tests);
+    paths.addOption(bool, "ngspice_tests", ngspice_tests or comparison_tests);
+    paths.addOption(bool, "comparison_tests", comparison_tests);
     paths.addOption(bool, "update_goldens", update_goldens);
     const paths_import: Import = .{ .name = "paths", .module = paths.createModule() };
 

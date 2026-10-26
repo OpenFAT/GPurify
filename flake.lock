@@ -50,7 +50,7 @@
         "type": "github"
       }
     },
-    "nixpkgs-openroad": {
+    "nixpkgs-tools": {
       "locked": {
         "lastModified": 1790600678,
         "narHash": "sha256-6k3n7X2UsZ6tAlWTz99RimiZab+17tMUrw9sRUcELiA=",
@@ -70,7 +70,7 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-openroad": "nixpkgs-openroad",
+        "nixpkgs-tools": "nixpkgs-tools",
         "zig-overlay": "zig-overlay",
         "zls": "zls"
       }

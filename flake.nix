@@ -8,9 +8,10 @@
     zig-overlay.inputs.nixpkgs.follows = "nixpkgs";
     zls.url = "github:zigtools/zls";
     zls.inputs.nixpkgs.follows = "nixpkgs";
-    # OpenROAD alone, from a revision Hydra built it at: at newer pins its
-    # dependency or-tools is marked broken, so nothing evaluates or is cached.
-    nixpkgs-openroad.url = "github:NixOS/nixpkgs/f45c6f04c2f013f004bf94e284e95d72898d9393";
+    # The comparison tools, from one revision Hydra built and cached them all
+    # at: newer pins mark OpenROAD's or-tools broken and leave KLayout uncached
+    # (its Qt6 bindings then fail to build from source).
+    nixpkgs-tools.url = "github:NixOS/nixpkgs/f45c6f04c2f013f004bf94e284e95d72898d9393";
   };
 
   outputs =
@@ -19,13 +20,14 @@
       flake-utils,
       zig-overlay,
       zls,
-      nixpkgs-openroad,
+      nixpkgs-tools,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        tools = nixpkgs-tools.legacyPackages.${system};
         zig = zig-overlay.packages.${system}.master;
         default = pkgs.mkShell {
           packages = [
@@ -46,14 +48,14 @@
           inputsFrom = [ default ];
           inherit (default) shellHook;
           packages = [
-            pkgs.klayout
-            pkgs.netgen-vlsi
-            pkgs.magic-vlsi
-            pkgs.ngspice
-            pkgs.fastcap
-            pkgs.fasthenry
-            pkgs.yosys
-            nixpkgs-openroad.legacyPackages.${system}.openroad
+            tools.klayout
+            tools.netgen-vlsi
+            tools.magic-vlsi
+            tools.ngspice
+            tools.fastcap
+            tools.fasthenry
+            tools.yosys
+            tools.openroad
           ];
         };
       }
