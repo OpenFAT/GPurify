@@ -13,6 +13,7 @@
 //! - `pub fn equivalent(arena: Allocator, layout: *const Circuit, reference: *const Circuit) !bool`
 //! - `pub fn equivalentUnder(arena: Allocator, layout: *const Circuit, reference: *const Circuit, controls: *const Controls) !bool`
 //! - `pub fn gateReassignmentsInto(arena: Allocator, c: *const Circuit, out: *std.ArrayList(Circuit)) !void`
+//! - `pub fn reducedCount(arena: Allocator, c: *const Circuit) !usize`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -166,6 +167,13 @@ pub fn gateReassignmentsInto(arena: Allocator, c: *const Circuit, out: *std.Arra
         variants = next;
     }
     try out.appendSlice(arena, variants.items);
+}
+
+/// How many devices `c`'s own cards reduce to under the default
+/// controls (`reduce(c, Declared::of(c), false, default)` in Rust).
+pub fn reducedCount(arena: Allocator, c: *const Circuit) !usize {
+    const declared = try Declared.of(arena, c);
+    return (try reduce(arena, c, &declared, false, &.{})).devs.len;
 }
 
 // ---- private ----
