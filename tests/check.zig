@@ -24,6 +24,7 @@ test {
     _ = @import("check/drc/overlay_rules.zig");
     _ = @import("check/drc/via_rules.zig");
     _ = @import("check/drc/overlay_laws.zig");
+    _ = @import("check/drc/overlay_deck.zig");
     _ = @import("check/drc/presence_deck.zig");
     _ = @import("check/drc/dfm_deck.zig");
 }
