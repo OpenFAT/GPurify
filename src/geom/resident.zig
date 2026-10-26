@@ -57,9 +57,6 @@ pub const ResidentStore = struct {
     /// staging block during the upload only) on the first call. Asserts
     /// `store` is the one uploaded, unchanged.
     pub fn columns(r: *ResidentStore, comptime backend: Device.Backend, raw: anytype, gpa: Allocator, store: *const GeometryStore) !*const [4]usize {
-        // ponytail: the first GPU call pays the whole upload, whatever the
-        // run's total; charge it against the run's summed eligible work
-        // first if a run of few small calls on a big store ever shows.
         if (r.buffer == .cpu) {
             const bytes = std.mem.sliceAsBytes;
             const cols = [_][]const u8{ bytes(store.poly_vert_start.items), bytes(store.poly_vert_len.items), bytes(store.verts_x.items), bytes(store.verts_y.items) };

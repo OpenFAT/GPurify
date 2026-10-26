@@ -215,10 +215,6 @@ threshold and its BEM solves move without a code change. Calibration only
 moves calls between devices: every GPU kernel is bit-identical to its CPU
 body (the differentials, and `-Dgpu-tests` reruns every golden `all` job on
 the GPU and compares bytes), so the report does not depend on it.
-ponytail: the store upload is paid by the first GPU call whatever the run's
-total; a run whose GPU-eligible calls save less than one upload (~115 ms
-for a 4M-polygon store here) loses that much. The upgrade is to charge the
-upload against the run's summed eligible work before uploading.
 
 **Verification.** Every row kernel has a differential test: CPU body against
 GPU body, bit-equal, at sizes 0, 1, block−1, block, 3·block+1. It runs where a
