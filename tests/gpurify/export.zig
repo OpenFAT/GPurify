@@ -505,7 +505,7 @@ test "format_f64 writes six decimal places and no exponent" {
     var buf: [64]u8 = undefined;
     for (cases) |c| {
         var w: std.Io.Writer = .fixed(&buf);
-        try ex.float.fixed6(&w, c[0]);
+        try geom.float.fixed6(&w, c[0]);
         try testing.expectEqualStrings(c[1], w.buffered());
     }
 }

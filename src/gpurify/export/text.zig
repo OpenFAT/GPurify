@@ -5,7 +5,7 @@
 //! Each section is its own call, so the engine (wave 5) calls them in
 //! order: `writeRuns`, `writeViolations`, `writeMerges`, `writeVerdict`,
 //! `writeSummary`, Rust's `write_violations` then `write_summary`. Numbers
-//! are Rust's `{}` (float.zig); the LVS verdict is Rust's `{:?}` of it,
+//! are Rust's `{}` (geom.float); the LVS verdict is Rust's `{:?}` of it,
 //! raw ids included. `Summary` and `StageStatus` are the minimal shape the
 //! summary prints; the engine fills them. Rust's `write_error` (an error's
 //! cause chain) stays with the CLI: a Zig error has no chain.
@@ -36,7 +36,7 @@ const Merges = lvs.Merges;
 const UnpairedInstance = lvs.UnpairedInstance;
 const Verdict = lvs.verdict.Verdict;
 const Discrepancy = lvs.verdict.Discrepancy;
-const float = @import("float.zig");
+const float = geom.float;
 
 /// Whether a stage ran; a skip or refusal carries its reason.
 pub const StageStatus = union(enum) {

@@ -9,7 +9,7 @@
 //! `fix` where the row has a hint); `waived`, only when non-empty; `runs`
 //! (`rule`, `outcome`, `examined`, `violations`). Units: `nm`, `nm^2`,
 //! `mV`, `uA`, `ohm`; a ratio or count has none. Floats are `{:.6}`
-//! (float.zig). Keys are fixed, never a map's, so the bytes are
+//! (geom.float). Keys are fixed, never a map's, so the bytes are
 //! deterministic. A string escapes as serde_json does (RFC 8259 §7).
 //!
 //! Contents:
@@ -26,7 +26,7 @@ const report = @import("check").report;
 const Measurement = report.Measurement;
 const RuleRun = report.RuleRun;
 const Violations = report.Violations;
-const float = @import("float.zig");
+const float = geom.float;
 const Header = @import("header.zig").Header;
 
 /// `Unrepresentable`: a measured value, limit or fix is NaN or infinite,
