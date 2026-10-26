@@ -67,4 +67,7 @@ test {
     _ = @import("check/erc/common.zig");
     _ = @import("check/erc/topological_rules.zig");
     _ = @import("check/erc/supply_rules.zig");
+    _ = @import("check/erc/ported_circuit.zig");
+    _ = @import("check/erc/ported_topology.zig");
+    _ = @import("check/erc/ported_latchup.zig");
 }
