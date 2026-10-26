@@ -1,10 +1,12 @@
-//! The ESD and latch-up kinds in the deck library survive the printer.
-//! Ported from crates/check/tests/deck/esd_kinds.rs; its constructor test
-//! (`every_esd_and_latchup_kind_has_a_constructor_equal_to_its_text`)
-//! waits for the per-kind row constructors (`deck::rules`), as builder.zig
-//! notes.
+//! The ESD and latch-up kinds in the deck library: each constructor states
+//! what its deck spelling does, and every kind survives the printer.
+//! Ported from crates/check/tests/deck/esd_kinds.rs.
 
+const check = @import("check");
 const common = @import("common.zig");
+const DeckBuilder = check.deck.DeckBuilder;
+const row = check.deck.rules.row;
+const l = check.deck.expr.layer;
 
 const text =
     \\grid 1nm
@@ -34,6 +36,37 @@ const text =
     \\rule lv.bias latchup_victim(pad, diff, cont; within: 15um, max_distance: 2um, pad: none, bias: well, forward: below)
     \\
 ;
+
+// ---- private ----
+
+/// `text` built in code, statement by statement.
+fn build(b: *DeckBuilder) anyerror!void {
+    @setEvalBranchQuota(100_000);
+    const a = b.arena;
+    for ([_][]const u8{ "pad", "diff", "ring", "well", "cont", "mk", "gate" }, 1..) |name, gds| try b.layer(name, .{ @intCast(gds), 0 });
+    try b.doc.connectivity.conductors.appendSlice(a, &.{ "pad", "diff", "ring" });
+    try b.doc.devices.append(a, .{ .kind = .diode, .marker = "mk", .model = "dio", .terminals = &.{ "diff", "pad" } });
+    try b.rule("ep", row(.esd_path, .{ .pad = l("pad") }, .{ .clamp = &.{"dio"}, .current = 1_330_000.0, .clamp_resistance = 1.0, .max_resistance = 2.0, .clamp_it2 = 9250.0, .max_current_per_cut = 10_000.0, .max_voltage = 5000.0, .clamp_voltage = 700.0 }));
+    try b.rule("ep.ring", row(.esd_path, .{ .pad = l("pad"), .source = l("ring") }, .{ .clamp = &.{}, .current = 100_000.0, .clamp_resistance = 1.0, .max_resistance = 1.0, .max_density = 1000.0 }));
+    try b.rule("gc", row(.esd_ground_coupling, .{}, .{ .diode = &.{"dio"} }));
+    try b.rule("xd", row(.esd_cross_domain, .{}, .{ .diode = &.{"dio"}, .local = &.{}, .resistor = &.{} }));
+    try b.rule("xd.local", row(.esd_cross_domain, .{}, .{ .diode = &.{"dio"}, .local = &.{"dio"}, .resistor = &.{"dio"}, .min_series = 100.0, .max_ground_resistance = 2.0, .coupling_resistance = 1.0 }));
+    try b.rule("par", row(.esd_parasitic, .{ .pad = l("pad"), .diffusion = l("diff") }, .{ .min_spacing = 5000 }));
+    try b.rule("exp", row(.esd_exposed, .{ .pad = l("pad") }, .{ .clamp = &.{"dio"}, .resistor = &.{}, .rated = &.{"dio"} }));
+    try b.rule("grb", row(.guard_ring_bias, .{ .ring = l("ring") }, .{ .power = false }));
+    try b.rule("ta", row(.tie_area, .{ .region = l("well"), .contact = l("cont"), .channel = l("gate") }, .{ .min_ratio = 0.03 }));
+    try b.rule("gr", row(.guard_ring, .{ .target = l("diff"), .ring = l("ring") }, .{ .max_space = 15_000, .min_width = 2000, .pad = "pad" }));
+    try b.rule("gr.near", row(.guard_ring, .{ .target = l("mk"), .ring = l("ring") }, .{ .near = "well", .within = 50_000 }));
+    try b.rule("fd", row(.forward_diode, .{ .marker = l("mk") }, .{ .model = &.{"dio"} }));
+    try b.rule("ct", row(.conditional_tie, .{ .region = l("diff"), .tap = l("cont"), .well = l("well"), .other = l("gate") }, .{ .within = 50_000, .spacing = &.{ 1000, 2000 }, .max_distance = &.{ 15_000, 30_000, 50_000 } }));
+    try b.rule("lv", row(.latchup_victim, .{ .aggressor = l("pad"), .region = l("diff"), .tap = l("cont") }, .{ .within = 15_000, .max_distance = 2000, .pad = "pad" }));
+    try b.rule("lv.bias", row(.latchup_victim, .{ .aggressor = l("pad"), .region = l("diff"), .tap = l("cont") }, .{ .within = 15_000, .max_distance = 2000, .bias = "well", .forward = 1 }));
+}
+
+test "every esd and latchup kind has a constructor equal to its text" {
+    // Oracle: differential against the parser, the same deck written as text.
+    try common.assertBuildEqualsText("esd and latch-up kinds", text, build);
+}
 
 test "every esd and latchup kind survives printing" {
     // Oracle: round trip: every ESD and latch-up kind, each optional limit

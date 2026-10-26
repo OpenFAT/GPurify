@@ -26,7 +26,14 @@
 //!   - `dspf`: `writeDspf`
 //!   - `netlist`: `writeSpice`
 //!   - `network`: the checks and node naming the three share
+//! - `liberty`: Liberty generation (liberty/*.zig): `generate`, `Request`, `Generated`, `spec`
+//!   (also `numbers`, `write`, `circuit`, `spice`, `session`, `measure`, `measure_static`, `measure_constraint`,
+//!   `assemble`, `field`, `prepare`, `static_caps`, `corner`, `generate_`, `File`, `Accuracy`)
+//! - `Device`, `float` (geom); `foreign`: `Read`, `Error`, `Diagnostic`, `readSpefInto`, `readDspfInto`,
+//!   `ParasiticNetwork`, `Comparison`, `Errors`, `compareInto`, `errors` (extract), for `gpurify compare`
 
+const geom_ = @import("geom");
+const extract_ = @import("extract");
 const load_ = @import("load.zig");
 const extracted = @import("extracted.zig");
 pub const reference = @import("reference.zig");
@@ -92,6 +99,52 @@ pub const @"export" = struct {
     pub const Header = header.Header;
     pub const Error = header.Error;
     pub const Diagnostic = header.Diagnostic;
+};
+
+/// Liberty generation: a `.lib` per corner and a Verilog blackbox.
+pub const liberty = struct {
+    pub const spec = @import("liberty/spec.zig");
+    pub const numbers = @import("liberty/numbers.zig");
+    pub const write = @import("liberty/write.zig");
+    pub const circuit = @import("liberty/circuit.zig");
+    pub const spice = @import("liberty/spice.zig");
+    pub const session = @import("liberty/session.zig");
+    pub const measure = @import("liberty/measure.zig");
+    pub const measure_static = @import("liberty/measure_static.zig");
+    pub const measure_constraint = @import("liberty/measure_constraint.zig");
+    pub const assemble = @import("liberty/assemble.zig");
+    pub const field = @import("liberty/field.zig");
+    pub const prepare = @import("liberty/prepare.zig");
+    pub const static_caps = @import("liberty/static_caps.zig");
+    pub const corner = @import("liberty/corner.zig");
+    pub const generate_ = @import("liberty/generate.zig");
+    pub const generate = generate_.generate;
+    pub const Request = generate_.Request;
+    pub const Generated = generate_.Generated;
+    pub const File = generate_.File;
+    pub const Error = generate_.Error;
+    pub const Accuracy = spec.Accuracy;
+    pub const Diagnostic = spec.Diagnostic;
+};
+
+/// The backend a run's kernels go to (geom's).
+pub const Device = geom_.Device;
+/// Rust-exact float text (geom's), for report lines the CLI prints.
+pub const float = geom_.float;
+
+/// Another tool's parasitic netlists, read and compared net by net
+/// (extract's), as `gpurify compare` does.
+pub const foreign = struct {
+    pub const Read = extract_.foreign.Read;
+    pub const Error = extract_.foreign.Error;
+    pub const Diagnostic = extract_.foreign.Diagnostic;
+    pub const readSpefInto = extract_.spef.readInto;
+    pub const readDspfInto = extract_.dspf.readInto;
+    pub const ParasiticNetwork = extract_.network.ParasiticNetwork;
+    pub const Comparison = extract_.compare.Comparison;
+    pub const Errors = extract_.compare.Errors;
+    pub const compareInto = extract_.compare.compareInto;
+    pub const errors = extract_.compare.errors;
 };
 
 // ---- private ----

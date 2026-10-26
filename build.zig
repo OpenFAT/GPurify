@@ -23,6 +23,7 @@ pub fn build(b: *Build) void {
     const cuda_arch = b.option([]const u8, "cuda-arch", "CUDA arch (sm_75, ...), `auto` to probe the build machine, `none` to omit") orelse "auto";
     const hip_arch = b.option([]const u8, "hip-arch", "HIP arch (gfx1100, ...), `none` to omit") orelse "gfx1100";
     const gpu_tests = b.option(bool, "gpu-tests", "Run the CPU-vs-GPU differentials; fails without a CUDA/HIP driver") orelse false;
+    const ngspice_tests = b.option(bool, "ngspice-tests", "Run the Liberty differential against ngspice; fails without ngspice on PATH") orelse false;
     const update_goldens = b.option(bool, "update-goldens", "Write missing or changed tests/golden files, then fail so the change is reviewed") orelse false;
     const slow_tests = b.option(bool, "slow-tests", "Run the field-solve tests too slow for Debug (on by default outside Debug)") orelse (optimize != .debug);
 
@@ -48,6 +49,7 @@ pub fn build(b: *Build) void {
     paths.addOption([]const u8, "root", b.pathResolve(&.{ b.root.root_dir.path orelse ".", b.root.sub_path }));
     paths.addOption(bool, "gpu_tests", gpu_tests);
     paths.addOption(bool, "slow_tests", slow_tests);
+    paths.addOption(bool, "ngspice_tests", ngspice_tests);
     paths.addOption(bool, "update_goldens", update_goldens);
     const paths_import: Import = .{ .name = "paths", .module = paths.createModule() };
 
@@ -103,7 +105,24 @@ pub fn build(b: *Build) void {
     // `test-<owner>` runs the owner's unit tests and its tests/<owner>.zig
     // suite; `test` runs every one of them, the CLI's and testgen's.
     const test_all = b.step("test", "Run every suite");
-    test_all.dependOn(&b.addRunArtifact(b.addTest(.{ .name = "cli", .root_module = exe.root_module })).step);
+    // `test-cli`: the CLI's unit tests, then the built binary end to end on
+    // one corpus case against Rust's golden bytes (tests/golden.rs's job:
+    // exit code, stdout, stderr).
+    const test_cli = b.step("test-cli", "Run the CLI's tests and the binary against a golden");
+    test_cli.dependOn(&b.addRunArtifact(b.addTest(.{ .name = "cli", .root_module = exe.root_module })).step);
+    const golden_path = b.pathResolve(&.{ b.root.root_dir.path orelse ".", b.root.sub_path, "tests/golden/drc/DRC_VALID_ZERO.all" });
+    const golden = std.Io.Dir.cwd().readFileAlloc(b.graph.io, golden_path, b.allocator, .unlimited) catch @panic(golden_path);
+    const stdout_at = (std.mem.indexOf(u8, golden, "--- stdout\n") orelse @panic("golden without stdout")) + "--- stdout\n".len;
+    const stderr_at = std.mem.indexOf(u8, golden, "--- stderr\n") orelse @panic("golden without stderr");
+    const e2e = b.addRunArtifact(exe);
+    e2e.setCwd(b.path("."));
+    e2e.addArgs(&.{ "all", "tests/fixtures/drc/DRC_VALID_ZERO.gds", "--deck", "tests/fixtures/params.deck", "--format", "json" });
+    e2e.expectExitCode(std.fmt.parseInt(u8, golden["exit ".len..std.mem.indexOfScalar(u8, golden, '\n').?], 10) catch @panic("golden exit code"));
+    e2e.expectStdOutEqual(golden[stdout_at..stderr_at]);
+    e2e.expectStdErrEqual(golden[stderr_at + "--- stderr\n".len ..]);
+    e2e.has_side_effects = true; // reads tests/ files the cache cannot see
+    test_cli.dependOn(&e2e.step);
+    test_all.dependOn(test_cli);
     test_all.dependOn(&b.addRunArtifact(b.addTest(.{ .name = "testgen", .root_module = testgen })).step);
     for (owners) |o| {
         const step = b.step(b.fmt("test-{s}", .{o.name}), b.fmt("Run the {s} suites", .{o.name}));
