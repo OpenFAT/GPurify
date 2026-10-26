@@ -26,4 +26,5 @@ test {
     _ = @import("check/drc/allowed_width_rules.zig");
     _ = @import("check/drc/corner_model.zig");
     _ = @import("check/drc/shape_rules.zig");
+    _ = @import("check/drc/min_step_rules.zig");
 }
