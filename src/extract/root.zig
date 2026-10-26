@@ -14,7 +14,8 @@
 //! - `mesh`: `Mesh`, `MeshOptions`, `buildInto` (field/mesh.zig)
 //! - `panel`: `Panel`, `Panels`, `Axis`, `Ref` (field/panel.zig)
 //! - `capacitance`: `CapMatrix`, `Accuracy`, `extractInto`, ... (field/capacitance.zig)
-//! - `matvec`, `dielectric`: the row kernels and their host operators
+//! - `matvec`, `dielectric`: the row kernels and their host operators; `NearPairs` (field/near.zig)
+//! - `gpu`: `Gpu`, the row kernels' host GPU path (field/gpu.zig)
 //! - `filament`: partial-inductance integrals (field/filament.zig)
 //! - `henry`: `InductMatrix`, `extractInductanceInto` (field/henry.zig)
 
@@ -30,6 +31,8 @@ pub const dielectric = @import("field/dielectric.zig");
 pub const filament = @import("field/filament.zig");
 pub const henry = @import("field/henry.zig");
 pub const NetPolys = @import("net_polys.zig").NetPolys;
+pub const NearPairs = @import("field/near.zig").NearPairs;
+pub const gpu = @import("field/gpu.zig");
 
 pub const Stack = stack.Stack;
 

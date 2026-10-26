@@ -12,6 +12,7 @@
 //! - `pub const Gpu = struct`, `deinit`,
 //!   `init(device: Device, potential: *const Potential, field: ?*const Field) ?Gpu`,
 //!   `apply(gpu: *Gpu, x: []const f64, y: []f64) g.Error!void`
+//! - `pub const compiled: ?Device.Backend`
 //! - `pub fn wanted(device: Device, panels: usize) bool`
 
 const std = @import("std");
@@ -65,6 +66,10 @@ pub const Gpu = struct {
         }
     }
 };
+
+/// The GPU backend this build carries device kernels for, CUDA first; null
+/// in a build without device artifacts (`-Dgpu=false`).
+pub const compiled: ?Device.Backend = if (artifacts.has_cuda) .cuda else if (artifacts.has_hip) .hip else null;
 
 /// Whether a solve of `panels` panels should try the GPU: a GPU backend
 /// asked for, and a dense product of at least `min_gpu_work` pairs.
