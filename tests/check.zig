@@ -30,4 +30,6 @@ test {
     _ = @import("check/drc/drc_octilinear.zig");
     _ = @import("check/drc/drc_kinds.zig");
     _ = @import("check/drc/drc_kinds_edges.zig");
+    _ = @import("check/drc/sky130_rules.zig");
+    _ = @import("check/drc/pdk_decks.zig");
 }

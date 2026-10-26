@@ -264,9 +264,9 @@ test "rpm 1g one licon in a 0p35 terminal" {
     // rules; the terminal is `prec_resistor` AND li, table C3): a 0.35 um
     // resistor's head holds its slotted licon, then that and a square licon.
     const base = [_]R{
-        .{ "poly", 0, 0, 350, 10_000 },     .{ "poly_rs", -100, 3000, 450, 7000 },
+        .{ "poly", 0, 0, 350, 10_000 },      .{ "poly_rs", -100, 3000, 450, 7000 },
         .{ "rpm", -300, -300, 650, 10_300 }, .{ "psdm", -300, -300, 650, 10_300 },
-        .{ "li", 0, 0, 350, 2900 },         .{ "licon", 80, 300, 270, 2300 },
+        .{ "li", 0, 0, 350, 2900 },          .{ "licon", 80, 300, 270, 2300 },
     };
     try atLimit("rpm.1g", &base, &(base ++ [_]R{.{ "licon", 90, 2500, 260, 2670 }}));
 }
