@@ -71,4 +71,5 @@ test {
     _ = @import("field/integrals.zig");
     _ = @import("field/near.zig");
     _ = @import("field/rows.zig");
+    _ = @import("field/lanes.zig");
 }

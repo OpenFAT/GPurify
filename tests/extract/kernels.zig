@@ -3,7 +3,9 @@
 //! (`the_simd_matvec_matches_the_scalar_fold_bit_for_bit`) and
 //! dielectric.rs (`the_simd_field_rows_match_the_scalar_fold_bit_for_bit`):
 //! Rust checked its SIMD tiles against a scalar fold; here the threaded row
-//! blocks are checked against the fold written out once more.
+//! blocks, eight-lane tiles and their scalar tails, are checked against the
+//! fold written out once more; and the near-pair build against itself at
+//! another thread count.
 
 const std = @import("std");
 const testing = std.testing;
@@ -11,6 +13,8 @@ const extract = @import("extract");
 const testgen = @import("testgen");
 const Rng = testgen.Rng;
 const operators = @import("operators.zig");
+const fixture = @import("fixture.zig");
+const geom = @import("geom");
 const gpa = testing.allocator;
 
 /// Sizes crossing every row-block boundary, and one large enough that the
@@ -94,4 +98,25 @@ test "the field rows match the scalar fold bit for bit at any thread count" {
             }
         }
     }
+}
+
+test "the near pair build is the same at any thread count" {
+    // Oracle: determinism. Each row's near pairs are counted and filled by
+    // that row alone, so an 8 um plate's 576-panel operator (enough work for
+    // the threads to start) builds the same CSR, bit for bit, on one thread
+    // and on eight.
+    var case = try fixture.Case.init(&.{.{ .layer = 0, .net = 0, .r = .{ 0, 0, 8_000, 8_000 } }}, &.{}, 3);
+    defer case.deinit();
+    var m: extract.mesh.Mesh = .empty;
+    defer m.deinit(gpa);
+    var refused: geom.LayerId = undefined;
+    try extract.mesh.buildInto(gpa, &case.store, &case.nets, &.{}, &.{0}, fixture.coarse.stack(), .{ .max_edge = 500, .proximity_refine = 0, .max_panels = 1 << 20 }, fixture.grid, &m, &refused);
+    var one = try extract.matvec.Potential.init(gpa, 1, m.panel.slice(), m.epsilon.items, @intCast(m.panel.len));
+    defer one.deinit(gpa);
+    var eight = try extract.matvec.Potential.init(gpa, 8, m.panel.slice(), m.epsilon.items, @intCast(m.panel.len));
+    defer eight.deinit(gpa);
+    try testing.expect(m.panel.len * m.panel.len > 1 << 18);
+    try testing.expectEqualSlices(u32, one.near.start.items, eight.near.start.items);
+    try testing.expectEqualSlices(u32, one.near.column.items, eight.near.column.items);
+    try testing.expectEqualSlices(u64, @ptrCast(one.near.value.items), @ptrCast(eight.near.value.items));
 }

@@ -25,6 +25,7 @@
 //!   `apply(m: *const Potential, x: []const f64, y: []f64) void`, `cols(m: *const Potential) Cols`
 //! - `pub const Cols = struct { n, cx, cy, cz, radius, k, near_start, near_col, near_val }`
 //! - `pub fn potentialRow(c: anytype, i: usize, x: anytype) f64`
+//! - `pub fn potentialDense(comptime W: comptime_int, c: anytype, i: usize, x: anytype) lanes.Lane(W)`
 //! - private `Rule.count`, `Rule.fill`: the near-pair rule interface `near.zig` calls
 
 const std = @import("std");
@@ -38,6 +39,7 @@ const integrals = @import("integrals.zig");
 const near_mod = @import("near.zig");
 const NearPairs = near_mod.NearPairs;
 const row_threads = @import("rows.zig");
+const lanes = @import("lanes.zig");
 const P = g.GlobalPtr;
 
 /// Vacuum permittivity, F/m. CODATA 2018.
@@ -130,7 +132,13 @@ pub const Potential = struct {
             x: [*]const f64,
             y: [*]f64,
             fn run(b: @This(), lo: u32, hi: u32) void {
-                for (lo..hi) |i| b.y[i] = potentialRow(b.c, i, b.x);
+                const W = lanes.host_lanes;
+                var i: usize = lo;
+                while (i + W <= hi) : (i += W) {
+                    const dense_rows: [W]f64 = potentialDense(W, b.c, i, b.x);
+                    for (dense_rows, i..) |d, row| b.y[row] = near_mod.foldRow(b.c.near_start, b.c.near_col, b.c.near_val, row, b.x, d);
+                }
+                while (i < hi) : (i += 1) b.y[i] = potentialRow(b.c, i, b.x);
             }
         };
         row_threads.forBlocks(m.threads, rows, @as(u64, rows) * m.cx.len, Body{ .c = m.cols(), .x = x.ptr, .y = y.ptr }, Body.run);
@@ -207,28 +215,38 @@ const Rule = struct {
 /// The harmonic mean of `k` is exact in a uniform stack, where every `k` is
 /// one value. `c` is a `Cols` or the kernel's device columns.
 pub inline fn potentialRow(c: anytype, i: usize, x: anytype) f64 {
-    const ix = c.cx[i];
-    const iy = c.cy[i];
-    const iz = c.cz[i];
-    const ir = c.radius[i];
-    const ik = c.k[i];
-    var potential: f64 = 0.0;
+    return near_mod.foldRow(c.near_start, c.near_col, c.near_val, i, x, potentialDense(1, c, i, x));
+}
+
+/// The dense sums of rows `i..i + W`, lane `k` row `i + k`'s exact
+/// sequence of `potentialRow`'s fold (`lanes.zig`): the host's tiles at
+/// `W = host_lanes`, the device and the oracle at `W = 1`.
+pub inline fn potentialDense(comptime W: comptime_int, c: anytype, i: usize, x: anytype) lanes.Lane(W) {
+    const V = lanes.Lane(W);
+    const ix = lanes.load(W, c.cx, i);
+    const iy = lanes.load(W, c.cy, i);
+    const iz = lanes.load(W, c.cz, i);
+    const ir = lanes.load(W, c.radius, i);
+    const ik = lanes.load(W, c.k, i);
+    const two_ik = lanes.splat(W, 2.0) * ik;
+    var potential: V = lanes.splat(W, 0.0);
     var j: usize = 0;
     while (j < c.n) : (j += 1) {
-        const dx = ix - c.cx[j];
-        const dy = iy - c.cy[j];
-        const dz = iz - c.cz[j];
+        const jz = lanes.splat(W, c.cz[j]);
+        const dx = ix - lanes.splat(W, c.cx[j]);
+        const dy = iy - lanes.splat(W, c.cy[j]);
+        const dz = iz - jz;
         // Panel j's image sits at -cz[j].
-        const image_z = iz + c.cz[j];
+        const image_z = iz + jz;
         const plane = dx * dx + dy * dy;
-        const soft = ir * c.radius[j];
+        const soft = ir * lanes.splat(W, c.radius[j]);
         const r2 = plane + dz * dz + soft;
         const image2 = plane + image_z * image_z + soft;
-        const jk = c.k[j];
-        const weight = 2.0 * ik * jk * x[j] / (ik + jk);
+        const jk = lanes.splat(W, c.k[j]);
+        const weight = two_ik * jk * lanes.splat(W, x[j]) / (ik + jk);
         potential += weight / @sqrt(r2) - weight / @sqrt(image2);
     }
-    return near_mod.foldRow(c.near_start, c.near_col, c.near_val, i, x, potential);
+    return potential;
 }
 
 // ---- private ----

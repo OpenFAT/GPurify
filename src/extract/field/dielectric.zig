@@ -24,6 +24,8 @@
 //!   `apply(f: *const Field, x: []const f64, y: []f64) void`, `cols(f: *const Field) Cols`
 //! - `pub const Cols = struct { n, first, cx, cy, cz, weight, scale, inverse_area, near_start, near_col, near_val }`
 //! - `pub fn fieldRow(c: anytype, row: usize, x: anytype) f64`
+//! - `pub fn fieldDense(comptime W: comptime_int, c: anytype, r: usize, x: anytype) lanes.Lane(W)`,
+//!   `pub fn fieldFinish(c: anytype, r: usize, x: anytype, field: f64) f64`
 //! - private `Rule.count`, `Rule.fill`: the near-pair rule interface `near.zig` calls
 
 const std = @import("std");
@@ -37,6 +39,7 @@ const integrals = @import("integrals.zig");
 const near_mod = @import("near.zig");
 const NearPairs = near_mod.NearPairs;
 const row_threads = @import("rows.zig");
+const lanes = @import("lanes.zig");
 const matvec = @import("matvec.zig");
 const P = g.GlobalPtr;
 
@@ -130,7 +133,13 @@ pub const Field = struct {
             x: [*]const f64,
             y: [*]f64,
             fn run(b: @This(), lo: u32, hi: u32) void {
-                for (lo..hi) |r| b.y[b.c.first + r] = fieldRow(b.c, r, b.x);
+                const W = lanes.host_lanes;
+                var r: usize = lo;
+                while (r + W <= hi) : (r += W) {
+                    const sums: [W]f64 = fieldDense(W, b.c, r, b.x);
+                    for (sums, r..) |s, row| b.y[b.c.first + row] = fieldFinish(b.c, row, b.x, s);
+                }
+                while (r < hi) : (r += 1) b.y[b.c.first + r] = fieldRow(b.c, r, b.x);
             }
         };
         row_threads.forBlocks(f.threads, rows, @as(u64, rows) * n, Body{ .c = f.cols(), .x = x.ptr, .y = y.ptr }, Body.run);
@@ -193,25 +202,45 @@ const Rule = struct {
 /// bits depend on that order. `c` is a `Cols` or the kernel's device
 /// columns.
 pub inline fn fieldRow(c: anytype, r: usize, x: anytype) f64 {
+    return fieldFinish(c, r, x, fieldDense(1, c, r, x));
+}
+
+/// Row `r`'s near corrections and scale on top of its far-kernel sum
+/// `field`.
+pub inline fn fieldFinish(c: anytype, r: usize, x: anytype, field: f64) f64 {
+    const folded = near_mod.foldRow(c.near_start, c.near_col, c.near_val, r, x, field);
+    return c.scale[r] * (x[c.first + r] * c.inverse_area[r] - c.weight[r] * folded);
+}
+
+/// The far-kernel sums of interface rows `r..r + W`, lane `k` row `r + k`'s
+/// exact sequence (`lanes.zig`); a lane keeps its sum unchanged at its own
+/// column, the diagonal, as the scalar fold skips it.
+pub inline fn fieldDense(comptime W: comptime_int, c: anytype, r: usize, x: anytype) lanes.Lane(W) {
     const row = c.first + r;
-    const tx = c.cx[row];
-    const ty = c.cy[row];
-    const tz = c.cz[row];
-    var field: f64 = 0.0;
+    const tx = lanes.load(W, c.cx, row);
+    const ty = lanes.load(W, c.cy, row);
+    const tz = lanes.load(W, c.cz, row);
+    var field: lanes.Lane(W) = lanes.splat(W, 0.0);
     var p: usize = 0;
     while (p < c.n) : (p += 1) {
-        if (p == row) continue;
-        const dx = tx - c.cx[p];
-        const dy = ty - c.cy[p];
-        const dz = tz - c.cz[p];
-        const image = tz + c.cz[p];
+        if (W == 1 and p == row) continue;
+        const pz = lanes.splat(W, c.cz[p]);
+        const dx = tx - lanes.splat(W, c.cx[p]);
+        const dy = ty - lanes.splat(W, c.cy[p]);
+        const dz = tz - pz;
+        const image = tz + pz;
         const plane = dx * dx + dy * dy;
         const r2 = plane + dz * dz;
         const r2_image = plane + image * image;
-        field += x[p] * (dz / (r2 * @sqrt(r2)) - image / (r2_image * @sqrt(r2_image)));
+        const next = field + lanes.splat(W, x[p]) * (dz / (r2 * @sqrt(r2)) - image / (r2_image * @sqrt(r2_image)));
+        if (W == 1) {
+            field = next;
+        } else {
+            const diagonal = lanes.index(W, row) == @as(@Vector(W, usize), @splat(p));
+            field = @select(f64, diagonal, field, next);
+        }
     }
-    field = near_mod.foldRow(c.near_start, c.near_col, c.near_val, r, x, field);
-    return c.scale[r] * (x[row] * c.inverse_area[r] - c.weight[r] * field);
+    return field;
 }
 
 // ---- private ----
