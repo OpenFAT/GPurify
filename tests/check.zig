@@ -70,4 +70,5 @@ test {
     _ = @import("check/erc/dynamic_and_thermal.zig");
     _ = @import("check/erc/intent_gate.zig");
     _ = @import("check/erc/antenna_and_density.zig");
+    _ = @import("check/erc/closed_form.zig");
 }
