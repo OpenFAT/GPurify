@@ -105,6 +105,11 @@ test {
     _ = @import("check/erc/reference_domain.zig");
     _ = @import("check/erc/reference_coupling.zig");
     _ = @import("check/erc/reference_esd.zig");
+    _ = @import("check/erc/exhaustive_skipped.zig");
     _ = @import("check/erc/voltage_rules_other.zig");
     _ = @import("check/erc/esd_geometry_latchup.zig");
+    _ = @import("check/erc/exhaustive_rails.zig");
+    _ = @import("check/erc/exhaustive_ir.zig");
+    _ = @import("check/erc/exhaustive_em.zig");
+    _ = @import("check/erc/exhaustive_reliability.zig");
 }

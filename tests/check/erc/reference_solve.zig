@@ -1,7 +1,8 @@
 //! Naive references for the grid solves, written from the definitions and
 //! sharing no code with the engine: a dense nodal solve (Gaussian
 //! elimination with partial pivoting on the full conductance matrix)
-//! against the IC(0)-preconditioned CG solve, and the same elimination
+//! against the IC(0)-preconditioned CG solve and the `ir_drop` findings
+//! read from it (`erc.electrical.checkIrDrop`), and the same elimination
 //! stepped by backward Euler through one switching event against the
 //! transient, each within a tolerance derived from the solve's stopping
 //! rule. Ported from tests/exhaustive/erc_reference.rs (`supply_grid`,
@@ -23,6 +24,7 @@ const PowerGrid = erc.power_grid.PowerGrid;
 const PowerSolution = erc.power_grid.PowerSolution;
 const PowerDiag = erc.power_grid.PowerDiag;
 const Stimulus = erc.power_transient.Stimulus;
+const IntentMap = erc.facts.IntentMap;
 const common = @import("common.zig");
 const gpa = common.gpa;
 
@@ -191,6 +193,50 @@ fn inverseNorm(a: []const f64, m: usize) !f64 {
     return best;
 }
 
+/// The `ir_drop` half: a `max_drop` limit between two reference drops (past
+/// the lowest third) more than twice `tolerance` apart flags exactly the
+/// nodes whose reference drop is above it, each within `tolerance`. False
+/// when no such gap exists.
+fn irDropAgrees(grid: *const PowerGrid, solution: *const PowerSolution, reference: []const f64, tolerance: f64, power: bool) !bool {
+    // The drop toward the other rail: down for power, up for ground.
+    const nominal = grid.node_nominal.items[0].raw;
+    const drop = try gpa.alloc(f64, reference.len);
+    defer gpa.free(drop);
+    for (drop, reference) |*d, v| d.* = if (power) nominal - v else v - nominal;
+    const sorted = try gpa.dupe(f64, drop);
+    defer gpa.free(sorted);
+    std.mem.sortUnstable(f64, sorted, {}, std.sort.asc(f64));
+    const limit = for (sorted.len / 3..sorted.len -| 1) |i| {
+        if (sorted[i + 1] - sorted[i] > 2.0 * tolerance) break 0.5 * (sorted[i] + sorted[i + 1]);
+    } else return false;
+
+    // One supply on net 0 in a 1.8 V domain, limited to `limit`.
+    var intent: IntentMap = .{ .declared = true };
+    defer intent.deinit(gpa);
+    try intent.supply_net.append(gpa, @fromBackingInt(0));
+    try intent.supply_role.append(gpa, if (power) .power else .ground);
+    try intent.supply_domain.append(gpa, @fromBackingInt(0));
+    try intent.supply_voltage.append(gpa, .{ .raw = 1800.0 });
+    try common.limitNet(&intent, @fromBackingInt(0), .{ .max_drop = .{ .raw = limit } });
+    var t: erc.electrical_tables.IrDropTable = .{ .head = try common.head(common.rule(1)) };
+    defer erc.rule_set.deinitTable(gpa, &t);
+    var sink: common.Sink = .{};
+    defer sink.deinit();
+    try erc.electrical.checkIrDrop(sink.record(), .{ .solved = .{ .grid = grid, .solution = solution } }, &intent, &t);
+
+    // Exactly the nodes above the limit, in any order.
+    var flagged: u32 = 0;
+    for (drop, 0..) |d, node| if (d > limit) {
+        flagged += 1;
+        const row = for (0..sink.out.len()) |row| {
+            if (sink.out.at.items[row].eql(grid.node_at.items[node])) break row;
+        } else return error.NodeNotFlagged;
+        try testing.expect(@abs(sink.out.get(@intCast(row)).measured.float() - d) <= tolerance);
+    };
+    try testing.expectEqual(flagged, sink.out.len());
+    return true;
+}
+
 /// One switching event: every node's load times three as its triangle's
 /// peak, a rise of 50 or 100 ps, 0 to 5 pF of decap, followed for 300 ps.
 fn switching(rng: *Rng, grid: *const PowerGrid) !Stimulus {
@@ -290,11 +336,15 @@ fn denseTransient(grid: *const PowerGrid, s: *const Stimulus, best: []f64) !f64 
 }
 
 test "supply grids solve as a dense nodal solve does" {
-    // Oracle: a dense nodal solve. On forty generated supply grids, power
-    // and ground, 2 × 2 to 8 × 8, every node voltage the engine solves is
-    // within the tolerance `denseNodalSolve` derives of the dense solve's.
-    // (The `ir_drop` half of the Rust test is in electrical_reference.zig.)
+    // Oracle: a dense nodal solve. On forty generated supply grids, power and
+    // ground, 2 × 2 to 8 × 8, every node voltage the engine solves is within the
+    // tolerance [`dense_nodal_solve`] derives of the dense solve's, and an
+    // `ir_drop` row whose limit sits between two of the reference drops more
+    // than twice that tolerance apart flags exactly the nodes whose reference
+    // drop is above it, each measured within the tolerance.
+    // (The `ir_drop` half is `irDropAgrees`, below.)
     var rng = Rng.init(0xc6_0001);
+    var checked: u32 = 0;
     for (0..40) |case| {
         const power = case % 2 == 0;
         const k: u32 = @intCast(2 + case / 2 % 7);
@@ -306,7 +356,9 @@ test "supply grids solve as a dense nodal solve does" {
         var s = try common.solve(&grid);
         defer s.deinit(gpa);
         for (reference, s.node_voltage.items) |want, got| try testing.expect(@abs(got.raw - want) <= tolerance);
+        if (try irDropAgrees(&grid, &s, reference, tolerance, power)) checked += 1;
     }
+    try testing.expect(checked >= 30);
 }
 
 test "switching grids step as a dense backward euler does" {
