@@ -1,4 +1,4 @@
-//! check suite, ported from crates/check/tests/{report,topology}, plus the
+//! check suite, ported from crates/check/tests/{report,topology,lvs}, plus the
 //! dependency-order gate.
 test {
     _ = @import("check");
@@ -13,4 +13,5 @@ test {
     _ = @import("check/topology_devices.zig");
     _ = @import("check/topology_ports.zig");
     _ = @import("check/topology_laws.zig");
+    _ = @import("check/lvs/digest.zig");
 }
