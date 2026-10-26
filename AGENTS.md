@@ -34,6 +34,12 @@ Load each with the Skill tool (other agents: read
   a machine without a CUDA/HIP driver.
 - `-Dslow-tests` runs the field-solve tests too slow for Debug; it defaults
   to on outside Debug, so `-Doptimize=ReleaseSafe` runs everything.
+- `zig build bench` (ReleaseFast whatever `-Doptimize` says, ~3 min, needs
+  ~4 GB free) prints CPU 1 thread, CPU all threads and GPU times per kernel
+  over a size sweep, and each kernel's crossover. Run it after touching a
+  row kernel, `geom.bulk` or a work estimate, and before changing
+  `auto_min_gpu_work` (src/main.zig) or the table in ARCHITECTURE.md's GPU
+  section. Without a driver it prints the CPU columns only.
 - Move data to the GPU in bulk: every upload goes through `geom.bulk.upload`
   (one allocation, one copy), never one `Buffer.upload` per column.
 - Gate on the exit code. `cmd | tail` swallows it.

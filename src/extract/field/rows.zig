@@ -20,7 +20,8 @@ pub const block: u32 = 64;
 
 /// Pair evaluations below which threads cost more than they save: a spawn is
 /// tens of microseconds, a pair a few nanoseconds.
-// ponytail: a calibration knob, measured once on a laptop; `zig build bench` when it matters.
+/// `zig build bench`, 32 threads: at 2^18 (512 panels) one thread takes
+/// 0.83 ms and 32 take 0.77; at 2^20, 3.3 ms against 1.5.
 const min_parallel_work: u64 = 1 << 18;
 
 const max_threads = 64;

@@ -54,12 +54,13 @@ pub fn build(b: *Build) void {
     const paths_import: Import = .{ .name = "paths", .module = paths.createModule() };
 
     var mods: std.StringArrayHashMapUnmanaged(*Build.Module) = .empty;
+    kernels.gompute.optimize = null;
     mods.put(b.allocator, "gompute", kernels.gompute) catch @panic("OOM");
     for (owners) |o| {
         const m = b.addModule(o.name, .{
             .root_source_file = b.path(b.fmt("src/{s}/root.zig", .{o.name})),
             .target = target,
-            .optimize = optimize,
+            // Inherited from each root, so `bench` builds them ReleaseFast.
             .link_libc = gpu, // Gompute dlopens the CUDA/HIP driver
         });
         for (o.deps) |d| m.addImport(d, mods.get(d) orelse
@@ -77,7 +78,6 @@ pub fn build(b: *Build) void {
     const testgen = b.createModule(.{
         .root_source_file = b.path("tests/testgen.zig"),
         .target = target,
-        .optimize = optimize,
         .imports = &.{
             .{ .name = "geom", .module = mods.get("geom").? },
             .{ .name = "ingest", .module = mods.get("ingest").? },
@@ -101,6 +101,23 @@ pub fn build(b: *Build) void {
     run_cmd.step.dependOn(b.getInstallStep());
     run_cmd.addPassthruArgs();
     b.step("run", "Run gpurify").dependOn(&run_cmd.step);
+
+    // `bench`: every GPU-capable kernel, CPU against GPU, ReleaseFast
+    // whatever -Doptimize says (tools/bench.zig).
+    const bench = b.addExecutable(.{ .name = "bench", .root_module = b.createModule(.{
+        .root_source_file = b.path("tools/bench.zig"),
+        .target = target,
+        .optimize = .fast,
+        .link_libc = gpu,
+        .imports = &.{
+            .{ .name = "gompute", .module = kernels.gompute },
+            .{ .name = "geom", .module = mods.get("geom").? },
+            .{ .name = "check", .module = mods.get("check").? },
+            .{ .name = "extract", .module = mods.get("extract").? },
+            .{ .name = "testgen", .module = testgen },
+        },
+    }) });
+    b.step("bench", "Time every GPU-capable kernel on the CPU and the GPU").dependOn(&b.addRunArtifact(bench).step);
 
     // `test-<owner>` runs the owner's unit tests and its tests/<owner>.zig
     // suite; `test` runs every one of them, the CLI's and testgen's.

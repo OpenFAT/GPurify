@@ -127,17 +127,31 @@ analyses only what the kernels reference.
    same body across a `std.Thread.Pool` of row blocks. One body for both
    backends means the results agree bit for bit.
 
-**Where the GPU earns it**, ranked by measured or estimated work. Everything
-not listed stays on the CPU until a profile says otherwise.
+**Where the GPU earns it**, measured by `zig build bench` (tools/bench.zig)
+on the calibration machine: an RTX 4060 Laptop (GeForce, f64 at 1/64 rate,
+PCIe 4.0 x8) against 32 CPU threads (16 cores), ReleaseFast. GPU times
+include the kernel load, the one bulk upload and the download; a BEM solve
+uploads once (setup) and then pays only the per-apply call. Everything not
+listed stays on the CPU until a profile says otherwise.
 
-| Kernel | Work | Shape | Exactness |
-|---|---|---|---|
-| BEM matvec + dielectric rows (`extract`) | dense O(P²) per GMRES iteration, P = 10³–10⁵ (cap 2²⁰), ~50–1000 iterations × conductors: 10⁸–10¹² evals | row kernel, strict ascending-j fold per row | f64, no FMA contraction (strict float mode), so bit-identical to the CPU |
-| Near-pair Galerkin build (`extract`) | O(rows·P) distance test + 4×4 quadrature per near pair | row kernel, count → host scan → fill (CSR) | same |
-| Henry Zb assembly (`extract`) | dense nb² mutual inductances, three formulas | row kernel; pairs binned by formula first so warps don't diverge | same |
-| Candidate-pair exact distance (`check/proximity`) | per pair O(edgesA·edgesB), every spacing/enclosure/net rule | row kernel over the pair list | integer / f64 exact below 2²⁶: bit-identical |
-| Density windows (`check/drc/area`, antenna) | windows × rects binned by row | row kernel per window | integer areas: exact |
-| `axpy`, `xpay` (`geom`) | O(n) per CG/GMRES step | `zip` spec | no FMA: exact |
+| Kernel | Work unit | Largest size: CPU 1 thread / 32 threads / GPU | GPU vs 32 threads | Bottleneck on the GPU | Exactness |
+|---|---|---|---|---|---|
+| BEM potential rows (`extract`) | P² per apply | P = 32768: ~3.4 s / 313 ms / 579 ms (setup 0.6 ms) | 0.54×, never wins (best 0.72× at P = 2048) | f64 compute: 2 sqrt + 3 div per pair at 1/64 rate, ~1.9 G pairs/s, at the f64 roofline | f64, strict ascending-j fold, no FMA: bit-identical |
+| BEM field rows (`extract`) | P² per apply | P = 32768: ~2.8 s / 268 ms / 473 ms (setup 1.1 ms) | 0.57×; ties (1.04×) at P = 1024–2048, inside noise | same | same |
+| Candidate-pair exact distance (`check/proximity`) | edge pairs (16 per rectangle pair) | 6.2M pairs: 369 ms / 33 ms / 187 ms | 0.18×, never wins past 250k edge pairs | transfer: kernel 2.9 ms, the whole store's 340 MB upload 171 ms | integer, gaps clamped to 2²⁶: bit-identical |
+| Density windows (`check/drc/density`) | windows (~100 rects each) | 249k windows: 45 ms / 8.6 ms / 243 ms | 0.04×, never wins | transfer: kernel 7.6 ms (no better than the CPU), 400 MB of binned rects up 225 ms | integer areas: exact |
+| `axpy`, `xpay` (`geom`) | n | 2²⁴: 18 ms / – / 42 ms | 0.44× against one thread | transfer: O(n) work for O(n) bytes | no FMA: exact |
+
+So `--backend auto` keeps every call on the CPU on this machine
+(`auto_min_gpu_work` is never, in src/main.zig). The GPU paths stay for
+`--backend cuda|hip` and for a card with full-rate f64 or a host with few
+cores. Not built, because the bench says they would lose here: the
+near-pair Galerkin build and Henry's Zb assembly are f64 quadrature and
+closed forms heavier per pair than the matvec, which already loses at 0.54×;
+pinned staging in `geom.bulk` would at best halve an upload that is 60× the
+pair kernel, and even at PCIe peak (13 GB/s, ~26 ms for 340 MB) the pair
+distances only tie 32 threads. The path that would win is a device-resident
+store uploaded once per run and shared by every spacing rule.
 
 **Bulk movement.** Data crosses to the device in one allocation and one copy
 per solve or launch batch, never one transfer per column: `geom.bulk.upload`
@@ -158,8 +172,12 @@ backends; add it only when a profile shows `dot` dominating.
 min_gpu_work: u64, threads: u16 }`, built once by the spine from
 `--backend auto|cpu|cuda|hip` and passed down as a parameter (no global). A
 kernel call goes to the GPU when `backend != .cpu` and its work estimate is at
-least `min_gpu_work`. That threshold is a calibration knob, measured by
-`zig build bench`, not a constant.
+least `min_gpu_work`. `--backend cuda|hip` sets it to 0 (every call goes to
+the GPU it named); `auto` sets it to the calibrated `auto_min_gpu_work`,
+never on the calibration machine above. One threshold serves every kernel
+only while it is 0 or never: the work units differ (P², edge pairs,
+windows), so a machine with a finite crossover gives `Device` one field per
+kernel.
 
 **Verification.** Every row kernel has a differential test: CPU body against
 GPU body, bit-equal, at sizes 0, 1, block−1, block, 3·block+1. It runs where a
