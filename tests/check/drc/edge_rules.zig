@@ -33,6 +33,19 @@ const Result = struct {
     }
 };
 
+/// The edge_spacing cases at limit 100 (see the test's oracle).
+const spacing_edges = [_]Seg{
+    seg(0, 0, 200, 0),         seg(200, 99, 0, 99),
+    seg(1000, 0, 1200, 0),     seg(1200, 100, 1000, 100),
+    seg(2000, 0, 2100, 0),     seg(2150, 0, 2250, 0),
+    seg(3000, 0, 3100, 0),     seg(3160, 80, 3260, 80),
+    seg(4000, 0, 4100, 0),     seg(4160, 79, 4260, 79),
+    seg(5000, 0, 5100, 0),     seg(5150, 10, 5150, 110),
+    seg(6000, 0, 6100, 0),     seg(6100, 0, 6200, 0),
+    seg(500, 7050, 600, 7050), seg(0, 7000, 1000, 7000),
+};
+const spacing_found = [_]Found{ .{ .m = 50, .x = 550, .y = 7025 }, .{ .m = 50, .x = 2125, .y = 0 }, .{ .m = 99, .x = 100, .y = 49 }, .{ .m = 99, .x = 4130, .y = 39 } };
+
 // ---- private ----
 
 fn seg(ax: i64, ay: i64, bx: i64, by: i64) Seg {
@@ -99,19 +112,6 @@ fn values(r: *const Result, buf: []i64) []i64 {
     std.mem.sortUnstable(i64, buf[0..r.found.items.len], {}, std.sort.asc(i64));
     return buf[0..r.found.items.len];
 }
-
-/// The edge_spacing cases at limit 100 (see the test's oracle).
-const spacing_edges = [_]Seg{
-    seg(0, 0, 200, 0),         seg(200, 99, 0, 99),
-    seg(1000, 0, 1200, 0),     seg(1200, 100, 1000, 100),
-    seg(2000, 0, 2100, 0),     seg(2150, 0, 2250, 0),
-    seg(3000, 0, 3100, 0),     seg(3160, 80, 3260, 80),
-    seg(4000, 0, 4100, 0),     seg(4160, 79, 4260, 79),
-    seg(5000, 0, 5100, 0),     seg(5150, 10, 5150, 110),
-    seg(6000, 0, 6100, 0),     seg(6100, 0, 6200, 0),
-    seg(500, 7050, 600, 7050), seg(0, 7000, 1000, 7000),
-};
-const spacing_found = [_]Found{ .{ .m = 50, .x = 550, .y = 7025 }, .{ .m = 50, .x = 2125, .y = 0 }, .{ .m = 99, .x = 100, .y = 49 }, .{ .m = 99, .x = 4130, .y = 39 } };
 
 /// The two sides of a rectangle `w` wide from x = `x0`, 1000 high, as a
 /// counter-clockwise ring runs them: left down, right up.

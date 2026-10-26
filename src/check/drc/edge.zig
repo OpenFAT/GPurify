@@ -28,6 +28,10 @@ const scratch = @import("scratch.zig");
 const Ctx = scratch.Ctx;
 const Error = scratch.Error;
 
+/// The strip `depth` deep outside an axis edge, whether its depth runs
+/// along y, and +1 when depth grows with the coordinate.
+const Strip = struct { band: Bbox, along_y: bool, sign: i64 };
+
 /// An edge shorter than `limit` (sky130 difftap.4). `examined` counts edges.
 pub fn minLength(c: *const Ctx, r: rows.LayerLimit) Error!Verdict {
     const edges = c.store.edgesOnLayer(r.layer);
@@ -203,10 +207,6 @@ fn run(e: Seg, f: Seg) i64 {
     const bf = segBbox(f);
     return if (horizontal(e)) @min(be.xhi, bf.xhi) - @max(be.xlo, bf.xlo) else @min(be.yhi, bf.yhi) - @max(be.ylo, bf.ylo);
 }
-
-/// The strip `depth` deep outside an axis edge, whether its depth runs
-/// along y, and +1 when depth grows with the coordinate.
-const Strip = struct { band: Bbox, along_y: bool, sign: i64 };
 
 fn strip(e: Seg, depth: Dbu) Strip {
     var b = segBbox(e);
