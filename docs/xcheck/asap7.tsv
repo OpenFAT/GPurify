@@ -1,0 +1,293 @@
+# Ledger: pdks/asap7.deck against OpenROAD-flow-scripts' KLayout deck,
+# flow/platforms/asap7/drc/asap7.lydrc (BSD-2, copied to
+# tests/fixtures/asap7/asap7.lydrc from commit 64939f3717ad7c694199ba04cb98924b98022868),
+# DRC and ERC on the fixture cells of tests/fixtures/asap7. tests/gpurify/asap7_klayout.zig
+# holds every row to it under -Dcomparison-tests.
+#   ours     our rule ids (several: one check our deck splits); - for none
+#   theirs   KLayout's report categories (its doubled or described names cut
+#            to the id); - for none
+#   status   agrees (same verdict on every cell) | differs (another verdict on
+#            some cell) | ours_only | theirs_only
+#   note     how it differs, or why one side has no rule
+ours	theirs	status	note
+FIN.W.1 FIN.W.1.max	FIN.W.1 FIN.W.1a	agrees	
+FIN.S.1 FIN.S.1.space	FIN.S.1	agrees	
+GATE.W.1 GATE.W.1.max	GATE.W.1	agrees	
+GATE.ACTIVE.AUX.3	GATE.AUX.3	agrees	
+ACTIVE.AUX.1	ACTIVE.AUX.1 ACTIVE.AUX.1_edges	agrees	
+ACTIVE.LUP.1.NMOS ACTIVE.LUP.1.PMOS	ACTIVE.LUP.1	agrees	A lone cell draws no tap: both flag both polarities
+SRAM.ACTIVE.A.2A	SRAM.ACTIVE.A.1A	agrees	KLayout names the DRM's SRAM.ACTIVE.A.2A SRAM.ACTIVE.A.1A
+SRAM.ACTIVE.A.2B	SRAM.ACTIVE.A.1B	agrees	KLayout names the DRM's SRAM.ACTIVE.A.2B SRAM.ACTIVE.A.1B
+NSELECT.GATE.EX.1	NSELECT.GATE.EX.1-2	agrees	
+PSELECT.GATE.EX.1	PSELECT.GATE.EX.1-2	agrees	
+LISD.S.3 SRAM.LISD.S.4	LISD.S.3-4	agrees	
+LISD.S.2 LIG.S.2	LISD.S.2	agrees	KLayout writes its LIG.S.2 under the id LISD.S.2
+LIG.S.3	LIG.S.3 LIG.S.4-5	agrees	
+SRAM.LIG.GATE.A.4	LIG.GATE.A.4	agrees	
+V1.M1.EN.1 V1.M1.EN.1.ALL	V1.M1.EN.1	agrees	
+M1.S.3	M1.S.3 M1.S.4-5	agrees	
+M2.S.3	M2.S.3 M2.S.4-5	agrees	
+M3.S.3	M3.S.3 M3.S.4-5	agrees	
+V4.W.1 V4.W.1.max	V4.W.1	agrees	
+V5.W.1 V5.W.1.max	V5.W.1	agrees	
+V6.W.1 V6.W.1.max	V6.W.1	agrees	
+V7.W.1 V7.W.1.max	V7.W.1	agrees	
+V8.W.1 V8.W.1.max	V8.W.1	agrees	
+V9.W.1 V9.W.1.max	V9.W.1	agrees	
+V4.S.1 V4.S.3	V4.S.1-2-3	agrees	
+V5.S.1 V5.S.3	V5.S.1-2-3	agrees	
+V6.S.1 V6.S.3	V6.S.1-2-3	agrees	
+V7.S.1 V7.S.3	V7.S.1-2-3	agrees	
+V8.S.1 V8.S.2	V8.S.1-2	agrees	
+V9.S.1 V9.S.2	V9.S.1-2	agrees	
+ACTIVE.A.1A	ACTIVE.A.1A	agrees	
+ACTIVE.A.1B	ACTIVE.A.1B	agrees	
+ACTIVE.FIN.EX.1	ACTIVE.FIN.EX.1	agrees	
+ACTIVE.S.1	ACTIVE.S.1	agrees	
+ACTIVE.S.2B	ACTIVE.S.2B	agrees	
+ACTIVE.W.1	ACTIVE.W.1	agrees	
+ACTIVE.W.3	ACTIVE.W.3	agrees	
+ACTIVE.WELL.EN.1	ACTIVE.WELL.EN.1	agrees	
+ACTIVE.WELL.S.4	ACTIVE.WELL.S.4	agrees	
+FIN.AUX.1	FIN.AUX.1	agrees	
+FIN.W.2	FIN.W.2	agrees	
+GATE.ACTIVE.EX.1	GATE.ACTIVE.EX.1	agrees	
+GATE.ACTIVE.EX.2	GATE.ACTIVE.EX.2	agrees	
+GATE.ACTIVE.S.4	GATE.ACTIVE.S.4	agrees	
+GATE.AUX.1	GATE.AUX.1	agrees	
+GATE.S.1	GATE.S.1	agrees	
+GATE.S.2	GATE.S.2	agrees	
+GATE.W.2	GATE.W.2	agrees	
+GCUT.ACTIVE.S.1	GCUT.ACTIVE.S.1	agrees	
+GCUT.AUX.1	GCUT.AUX.1	agrees	
+GCUT.AUX.2	GCUT.AUX.2	agrees	
+GCUT.GATE.EX.1	GCUT.GATE.EX.1	agrees	
+GCUT.GATE.S.2	GCUT.GATE.S.2	agrees	
+GCUT.S.3	GCUT.S.3	agrees	
+GCUT.W.1	GCUT.W.1	agrees	
+LIG.A.1	LIG.A.1	agrees	
+LIG.GATE.A.3	LIG.GATE.A.3	agrees	
+LIG.GATE.AUX.1	LIG.GATE.AUX.1	agrees	
+LIG.GATE.S.10	LIG.GATE.S.10	agrees	
+LIG.LISD.A.2	LIG.LISD.A.2	agrees	
+LIG.LISD.OV.1	LIG.LISD.OV.1	agrees	
+LIG.LISD.S.6	LIG.LISD.S.6	agrees	KLayout's is net-blind and projected; no fixture pair is within 14 nm
+LIG.S.1	LIG.S.1	agrees	
+LIG.SDT.S.8	LIG.SDT.S.8	agrees	
+LIG.W.1	LIG.W.1	agrees	
+LISD.A.1	LISD.A.1	agrees	
+LISD.S.1	LISD.S.1	agrees	
+LISD.W.1	LISD.W.1	agrees	
+M1.A.1	M1.A.1	agrees	
+M1.S.1	M1.S.1	agrees	
+M1.S.6	M1.S.6	agrees	
+M1.W.1	M1.W.1	agrees	
+M2.A.1	M2.A.1	agrees	
+M2.S.1	M2.S.1	agrees	
+M2.S.2	M2.S.2	agrees	
+M2.S.6	M2.S.6	agrees	
+M2.W.1	M2.W.1	agrees	
+M3.A.1	M3.A.1	agrees	
+M3.S.1	M3.S.1	agrees	
+M3.S.2	M3.S.2	agrees	
+M3.S.6	M3.S.6	agrees	
+M3.W.1	M3.W.1	agrees	
+M4.AUX.3	M4.AUX.3	agrees	
+M4.S.1	M4.S.1	agrees	
+M4.S.2	M4.S.2	agrees	
+M4.W.1	M4.W.1	agrees	
+M4.W.2	M4.W.2	agrees	
+M4.W.5	M4.W.5	agrees	
+M5.AUX.3	M5.AUX.3	agrees	
+M5.S.1	M5.S.1	agrees	
+M5.S.2	M5.S.2	agrees	
+M5.W.1	M5.W.1	agrees	
+M5.W.2	M5.W.2	agrees	
+M5.W.5	M5.W.5	agrees	
+M6.AUX.3	M6.AUX.3	agrees	
+M6.S.1	M6.S.1	agrees	
+M6.S.2	M6.S.2	agrees	
+M6.W.1	M6.W.1	agrees	
+M6.W.2	M6.W.2	agrees	
+M6.W.5	M6.W.5	agrees	
+M7.AUX.3	M7.AUX.3	agrees	
+M7.S.1	M7.S.1	agrees	
+M7.S.2	M7.S.2	agrees	
+M7.W.1	M7.W.1	agrees	
+M7.W.2	M7.W.2	agrees	
+M7.W.5	M7.W.5	agrees	
+M8.A.1	M8.A.1	agrees	
+M8.L.1	M8.L.1	agrees	
+M8.S.1	M8.S.1	agrees	
+M8.S.2	M8.S.2	agrees	
+M8.S.4	M8.S.4	agrees	
+M8.S.5	M8.S.5	agrees	
+M8.S.6	M8.S.6	agrees	
+M8.S.7	M8.S.7	agrees	
+M8.S.8	M8.S.8	agrees	
+M8.W.1	M8.W.1	agrees	
+M8.W.2	M8.W.2	agrees	
+M8.W.3	M8.W.3	agrees	
+M8.W.4	M8.W.4	agrees	
+M8.W.5	M8.W.5	agrees	
+M9.A.1	M9.A.1	agrees	
+M9.L.1	M9.L.1	agrees	
+M9.S.1	M9.S.1	agrees	
+M9.S.2	M9.S.2	agrees	
+M9.S.4	M9.S.4	agrees	
+M9.S.5	M9.S.5	agrees	
+M9.S.6	M9.S.6	agrees	
+M9.S.7	M9.S.7	agrees	
+M9.S.8	M9.S.8	agrees	
+M9.W.1	M9.W.1	agrees	
+M9.W.2	M9.W.2	agrees	
+M9.W.3	M9.W.3	agrees	
+M9.W.4	M9.W.4	agrees	
+M9.W.5	M9.W.5	agrees	
+NSELECT.ACTIVE.EN.1	NSELECT.ACTIVE.EN.1	agrees	
+NSELECT.ACTIVE.EN.2	NSELECT.ACTIVE.EN.2	agrees	
+NSELECT.PSELECT.AUX.1	NSELECT.PSELECT.AUX.1	agrees	
+NSELECT.W.1	NSELECT.W.1	agrees	
+NSELECT.W.2	NSELECT.W.2	agrees	
+PSELECT.ACTIVE.EN.1	PSELECT.ACTIVE.EN.1	agrees	
+PSELECT.ACTIVE.EN.2	PSELECT.ACTIVE.EN.2	agrees	
+PSELECT.W.1	PSELECT.W.1	agrees	
+PSELECT.W.2	PSELECT.W.2	agrees	
+SDT.GATE.S.2	SDT.GATE.S.2	agrees	
+SDT.S.1	SDT.S.1	agrees	
+SDT.W.1	SDT.W.1	agrees	
+SDT.W.2	SDT.W.2	agrees	
+SRAM.ACTIVE.AUX.2	SRAM.ACTIVE.AUX.2	agrees	
+SRAM.LIG.GATE.OV.2	SRAM.LIG.GATE.OV.2	agrees	
+SRAM.SDT.W.4	SRAM.SDT.W.4	agrees	
+V0.LIG.A.1	V0.LIG.A.1	agrees	
+V0.LISD.EN.2	V0.LISD.EN.2	agrees	
+V0.M1.AUX.3	V0.M1.AUX.3	agrees	
+V0.M1.EN.1	V0.M1.EN.1	differs	The DRM's two opposite sides are (5 & 5) | (5 & 0); ours holds (5 & 5) and flags AOI21x1 and BUFx2, where a V0 is flush on one side of an axis and 5 nm in on the other; KLayout reads one side of 5 nm, the DRM's (5 & 0)
+V0.S.1	V0.S.1	differs	Ours is the 18 nm half; the 27 nm between V0 on parallel M1 tracks that are not aligned needs tracks, which KLayout approximates as Euclidean 27 nm (one finding on TIEHIx1)
+V0.S.2	V0.S.2	agrees	
+V0.W.1	V0.W.1	agrees	
+V1.M2.AUX.2	V1.M2.AUX.2	agrees	
+V1.M2.EN.2	V1.M2.EN.2	agrees	
+V1.S.1	V1.S.1	agrees	
+V1.S.2	V1.S.2	agrees	
+V1.W.1	V1.W.1	agrees	
+V2.M2.EN.1	V2.M2.EN.1	agrees	
+V2.M3.AUX.2	V2.M3.AUX.2	agrees	
+V2.M3.EN.2	V2.M3.EN.2	agrees	
+V2.S.1	V2.S.1	agrees	
+V2.S.2	V2.S.2	agrees	
+V2.W.1	V2.W.1	agrees	
+V3.M3.EN.1	V3.M3.EN.1	agrees	
+V3.M4.AUX.2	V3.M4.AUX.2	agrees	
+V3.M4.EN.2	V3.M4.EN.2	agrees	
+V3.S.1	V3.S.1	agrees	
+V3.S.2	V3.S.2	agrees	
+V3.W.1	V3.W.1	agrees	
+V4.M4.EN.1	V4.M4.EN.1	agrees	
+V4.M5.AUX.2	V4.M5.AUX.2	agrees	
+V5.M5.EN.1	V5.M5.EN.1	agrees	
+V5.M6.AUX.2	V5.M6.AUX.2	agrees	
+V6.M6.EN.1	V6.M6.EN.1	agrees	
+V6.M7.AUX.2	V6.M7.AUX.2	agrees	
+V7.M7.EN.1	V7.M7.EN.1	agrees	
+V7.M8.AUX.2	V7.M8.AUX.2	agrees	
+V8.M8.EN.1	V8.M8.EN.1	agrees	
+V8.M9.EN.2	V8.M9.EN.2	agrees	
+V9.M9.EN.1	V9.M9.EN.1	agrees	
+V9.PAD.EN.2	V9.PAD.EN.2	agrees	
+VT.AUX.2	VT.AUX.2	agrees	
+WELL.A.1A	WELL.A.1A	agrees	
+WELL.A.1B	WELL.A.1B	agrees	
+WELL.S.1	WELL.S.1	agrees	
+WELL.S.2	WELL.S.2	agrees	
+WELL.W.1	WELL.W.1	agrees	
+WELL.W.2	WELL.W.2	agrees	
+GEOMETRY.NONORTHOGONAL	-	ours_only	
+ir_drop	-	ours_only	
+LVT.ACTIVE.EN.1	-	ours_only	
+LVT.ACTIVE.EN.2	-	ours_only	
+LVT.GATE.EX.1	-	ours_only	
+LVT.W.1	-	ours_only	
+LVT.W.2	-	ours_only	
+M1.S.2	-	ours_only	
+SDT.ACTIVE.AUX.2	-	ours_only	Read where SDT lies over ACTIVE (the cells draw SDT 4 nm wider than ACTIVE)
+SDT.ACTIVE.AUX.3	-	ours_only	
+SDT.ACTIVE.OV.1	-	ours_only	
+SDT.LISD.AUX.4	-	ours_only	
+SDT.LISD.OV.2	-	ours_only	
+SLVT.ACTIVE.EN.1	-	ours_only	
+SLVT.ACTIVE.EN.2	-	ours_only	
+SLVT.GATE.EX.1	-	ours_only	
+SLVT.W.1	-	ours_only	
+SLVT.W.2	-	ours_only	
+SRAM.SDT.ACTIVE.OV.3	-	ours_only	
+SRAM.SDT.LISD.OV.4	-	ours_only	
+SRAMVT.ACTIVE.EN.1	-	ours_only	
+SRAMVT.ACTIVE.EN.2	-	ours_only	
+SRAMVT.GATE.EX.1	-	ours_only	
+SRAMVT.W.1	-	ours_only	
+SRAMVT.W.2	-	ours_only	
+supply_short	-	ours_only	
+V4.M5.EN.2	-	ours_only	
+V5.M6.EN.2	-	ours_only	
+V6.M7.EN.2	-	ours_only	
+V7.M8.EN.2	-	ours_only	
+-	WELL.GATE.EX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	WELL.GATE.EX.2	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	GATE.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	GATE.AUX.2	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	ACTIVE.W.2	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	ACTIVE.S.2A	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	SRAM.ACTIVE.WELL.S.5	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	SRAM.ACTIVE.WELL.EN.2	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	ACTIVE.AUX.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	GCUT.AUX.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	SRAM.NSELECT.ACTIVE.EN.3-4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	SRAM.PSELECT.ACTIVE.EN.3-4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	SDT.W.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	SRAM.LISD.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	LIG.LISD.S.7	theirs_only	Different-net corner spacing needs a net-aware corner_space; KLayout's ignores nets and on TIEHIx1 flags a LIG and a LISD of one net (net7, joined through V0 and M1), so its 4 findings there are not violations
+-	LIG.LISD.S.9A	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	LIG.LISD.S.9B	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	LIG.GCUT.S.11	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	SRAM.LIG.AUX.2	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	LIG.GATE.EX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V0.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V0.S.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V0.LISD.EN.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V0.LIG.EN.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V0.AUX.1-2	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V1.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V1.S.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V1.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V2.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V2.S.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V2.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V3.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V3.S.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V3.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M4.W.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M4.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M4.S.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M4.S.5	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M5.W.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M5.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M5.S.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M5.S.5	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V4.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V5.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M6.W.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M6.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M6.S.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M6.S.5	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M7.W.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M7.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M7.S.4	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M7.S.5	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V6.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V7.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M8.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	M9.S.3	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V8.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason
+-	V9.AUX.1	theirs_only	Not in pdks/asap7.deck: its `needs` and `Not written` lists give the reason

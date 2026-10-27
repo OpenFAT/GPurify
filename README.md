@@ -67,7 +67,8 @@ Against other tools:
 | Tool | Status |
 |---|---|
 | ngspice | Agrees: Liberty delays and transitions within 0.13 %, leakage within 0.0003 % (`-Dngspice-tests=true`) |
-| KLayout, Netgen, Magic, FastCap, FastHenry, OpenROAD, Yosys | Not yet run against this build; the differentials need those tools installed |
+| KLayout | asap7 DRC and ERC against OpenROAD-flow-scripts' `asap7.lydrc` on nine ASAP7 cells, rule by rule against the ledger [docs/xcheck/asap7.tsv](docs/xcheck/asap7.tsv): 193 paired rules, two that differ (`-Dcomparison-tests=true` in `nix develop .#comparison`) |
+| Netgen, Magic, FastCap, FastHenry, OpenROAD, Yosys | Not yet run against this build; the differentials need those tools installed |
 
 ## Decks
 

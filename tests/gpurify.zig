@@ -7,6 +7,7 @@ test {
     _ = @import("gpurify/liberty.zig");
     _ = @import("gpurify/liberty_diffusions.zig");
     if (@import("paths").ngspice_tests) _ = @import("gpurify/liberty_ngspice.zig");
+    if (@import("paths").comparison_tests) _ = @import("gpurify/asap7_klayout.zig");
     _ = @import("gpurify/fixtures.zig");
     _ = @import("gpurify/golden.zig");
     _ = @import("gpurify/test_all.zig");
