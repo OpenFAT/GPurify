@@ -1,0 +1,22 @@
+[book]
+title = "GPurify"
+authors = ["Omar El-Sawy"]
+language = "en"
+src = "src"
+
+[build]
+create-missing = false
+# Keep README.md as README.html: the index preprocessor renames it to
+# index.html but leaves links to README.md pointing at README.html.
+use-default-preprocessors = false
+
+[preprocessor.links]
+
+[output.html]
+mathjax-support = true
+git-repository-url = "https://github.com/OmarSiwy/GPurify"
+edit-url-template = "https://github.com/OmarSiwy/GPurify/edit/main/docs/{path}"
+site-url = "/GPurify/"
+
+[output.html.search]
+enable = true
