@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.18cm,y=0.18cm]
+  % Top view of the example (µm): nwell ring 0-40 (3 µm), ntap ring
+  % 0.5-39.5 (1 µm), ndiff 10-14 on the pad's net.
+  \fill[layer a,even odd rule] (0,0) rectangle (40,40) (3,3) rectangle (37,37);
+  \fill[layer d,even odd rule] (0.5,0.5) rectangle (39.5,39.5) (1.5,1.5) rectangle (38.5,38.5);
+  \fill[layer c] (10,10) rectangle (14,14);
+  \fill[layer b] (11.5,11.5) rectangle (12.5,12.5);
+  \node[caption,anchor=north] at (12,9.5) {ndiff};
+  \draw[->] (12,17) node[caption,anchor=south] {pad} -- (12,12.6);
+  \node[caption,anchor=north] at (20,-0.5) {ntap ring inside nwell ring};
+  % Gap from the target to the ring's inner edge (box to box).
+  \draw[dim] (14,12) -- node[dim label] {\SI{24.5}{\micro\metre} > \SI{15}{\micro\metre}} (38.5,12);
+  \draw[violation] (9.5,9.5) rectangle (14.5,14.5);
+  \node[violation label,anchor=west] at (15,7.5) {IO.1};
+  % Ring width.
+  \draw[violation] (38,20) rectangle (40,30);
+  \node[violation label,anchor=west,align=left] at (41,25) {IO.2: ring\\ \SI{1}{\micro\metre} < \SI{2}{\micro\metre}};
+\end{circuitikz}
+\end{document}

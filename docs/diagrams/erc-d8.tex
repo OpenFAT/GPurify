@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.6cm,y=0.6cm]
+  % Cross-section of the example (µm): nwell 0-10, ntap 1-2 on VDD, pdiff
+  % 4-7 on VDDIO under the diode marker dio 3.5-7.5.
+  \fill[layer a] (-1,-5) rectangle (11,0);
+  \fill[layer b] (0,-3) rectangle (10,0);
+  \fill[layer d] (1,-0.6) rectangle (2,0);
+  \fill[layer c] (4,-0.6) rectangle (7,0);
+  \draw[marker] (3.5,-1.8) rectangle (7.5,0.4);
+  \node[caption,anchor=north west] at (3.6,-0.7) {dio};
+  \draw (1.5,0) -- (1.5,1.5) node[caption,anchor=south] {VDD \SI{1.8}{\volt}};
+  \draw (5.5,0) -- (5.5,1.5) node[caption,anchor=south] {VDDIO \SI{3.3}{\volt}};
+  \node[caption,anchor=north] at (1.5,-0.7) {ntap};
+  \node[caption,anchor=west] at (0.2,-2.5) {nwell (cathode)};
+  \node[caption,anchor=west] at (-0.8,-4.5) {p substrate};
+  \draw (8.5,-0.6) to[D, l=pdiode] (8.5,-2.6);
+  \node[violation label,anchor=west,align=left] at (11.3,-0.5)
+    {forward by \SI{1.5}{\volt},\\ no latchup\_mk over it};
+  \draw[violation] (3.2,-2.1) rectangle (7.8,0.7);
+\end{circuitikz}
+\end{document}

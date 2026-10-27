@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % An inverter whose input is strapped straight to VDD.
+  \node[pmos] (P) at (2,2) {};
+  \node[nmos] (N) at (2,0) {};
+  \draw (P.S) -- ++(0,0.3) coordinate (top) node[vcc] {VDD};
+  \draw (N.S) -- ++(0,-0.3) node[ground] {};
+  \node[right] at ($(N.S)+(0.15,-0.55)$) {VSS};
+  \draw (P.D) -- (N.D);
+  \draw (P.D |- 0,1) node[circ] {} to[short, -o] ++(1,0) node[right] {Y};
+  \draw (P.G) -- ++(-0.4,0) coordinate (gp) -- (gp |- N.G) -- (N.G);
+  \draw (top) node[circ] {};
+  \draw[violation] (gp |- 0,1) -- ++(-0.8,0) |- (top);
+  \draw (gp |- 0,1) node[circ] {};
+  \node[violation label, left] at ($(gp |- 0,1)+(-0.8,0)$) {gate on VDD};
+\end{circuitikz}
+\end{document}

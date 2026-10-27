@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \node[pmos] (P) at (2,2) {};
+  \node[nmos] (N) at (2,0) {};
+  \draw (P.S) -- ++(0,0.3) node[vcc] {VDD};
+  \draw (N.S) -- ++(0,-0.3) node[ground] {};
+  \node[right] at ($(N.S)+(0.15,-0.55)$) {VSS};
+  \draw (P.D) -- (N.D);
+  \draw (P.D |- 0,1) to[short, -o] ++(1.2,0) node[right] {Y};
+  \draw (P.G) -- ++(-0.4,0) coordinate (gp) -- (gp |- N.G) -- (N.G);
+  \draw[violation] (gp |- 0,1) -- ++(-1.4,0) coordinate (end);
+  \draw (gp |- 0,1) node[circ] {};
+  \node[violation label, above] at ($(end)+(0.5,0)$) {gates only};
+  \node[violation label, below] at ($(end)+(0.5,0)$) {no label};
+\end{circuitikz}
+\end{document}

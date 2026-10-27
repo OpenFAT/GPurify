@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Net A feeds three inverters: six gates.
+  \foreach \i/\x in {1/0, 2/2.6, 3/5.2} {
+    \node[pmos] (p\i) at (\x,1.2) {};
+    \node[nmos] (n\i) at (\x,-1.2) {};
+    \draw (p\i.D) -- (n\i.D);
+    \draw (p\i.S) -- (p\i.S |- 0,2.3) node[circ] {};
+    \draw (n\i.S) -- (n\i.S |- 0,-2.3) node[circ] {};
+    \draw (p\i.G) -- (n\i.G);
+    \draw (\x,0) node[circ] {} -- ++(0.5,0) node[right] {Y\i};
+    \draw (p\i.G |- 0,3.0) node[circ] {} -- (p\i.G |- 0,0);
+  }
+  \draw (-1.6,2.3) node[left] {VDD} -- (5.6,2.3);
+  \draw (-1.6,-2.3) node[left] {VSS} -- (5.6,-2.3);
+  \draw (-1.6,3.0) node[left] {A} -- (p3.G |- 0,3.0);
+  \draw[violation] (-1.5,3.15) -- (p3.G |- 0,3.15);
+  \node[violation label,anchor=south] at (2.0,3.25) {A drives 6 gates, max 4};
+\end{circuitikz}
+\end{document}

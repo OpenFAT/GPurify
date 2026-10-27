@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % An inverter whose output feeds its own input.
+  \node[pmos] (P) at (2,2) {};
+  \node[nmos] (N) at (2,0) {};
+  \draw (P.S) -- ++(0,0.3) node[vcc] {VDD};
+  \draw (N.S) -- ++(0,-0.3) node[ground] {};
+  \node[right] at ($(N.S)+(0.15,-0.55)$) {VSS};
+  \draw (P.D) -- (N.D);
+  \draw (P.G) -- ++(-0.4,0) coordinate (gp) -- (gp |- N.G) -- (N.G);
+  \draw (P.D |- 0,1) node[circ] {} -- ++(0.8,0) coordinate (y);
+  \draw[violation] (y) -- ++(0,-3.0) -| ($(gp |- 0,1)+(-0.6,0)$) -- (gp |- 0,1);
+  \draw (gp |- 0,1) node[circ] {};
+  \node[right] at (y) {Y};
+  \node[violation label, below] at ($(y)+(-1.2,-3.0)$) {Y drives its own gate};
+\end{circuitikz}
+\end{document}

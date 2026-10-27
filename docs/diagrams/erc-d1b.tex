@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.4cm,y=0.4cm]
+  % Top view of the example (µm): nwell 0-20, ntap 1-2 with one 0.3 µm
+  % contact, diff 4-18, five 0.5 µm gates.
+  \fill[layer a] (0,0) rectangle (20,10);
+  \fill[layer d] (1,1) rectangle (2,9);
+  \fill[layer b] (4,2) rectangle (18,8);
+  \foreach \x in {5,7.5,10,12.5,15} \fill[layer c] (\x,1.5) rectangle (\x+0.5,8.5);
+  \fill[black] (1.35,4.85) rectangle (1.65,5.15);
+  \node[caption,anchor=north] at (1.5,0) {ntap};
+  \node[caption,anchor=north] at (11,0) {pgate: 5 $\times$ 0.5 $\times$ \SI{6}{\micro\metre}};
+  \draw[->] (-2.5,5) node[caption,anchor=east] {tap\_cont} -- (1.3,5);
+  \node[caption,anchor=north west] at (2.3,9.9) {nwell};
+  \draw[violation] (-0.3,-0.3) rectangle (20.3,10.3);
+  \node[violation label,anchor=west,align=left] at (21,5)
+    {\SI{0.09}{\micro\metre\squared} / \SI{15}{\micro\metre\squared}\\ = 0.006 < 0.01};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.9cm,y=0.9cm]
+  % The group polygon and the diffusion (µm, as in the example).
+  \draw[marker] (-1,-1) rectangle (10.4,3.6);
+  \node[caption,anchor=north west] at (-1,3.6) {group};
+  \fill[layer a] (0,0) rectangle (9.4,2);
+  \node[caption,anchor=south west] at (0,-0.6) {diff};
+  % Four poly fingers: A A B B, the last 0.3 µm long.
+  \foreach \x/\l/\n in {1.0/0.2/A, 3.2/0.2/A, 5.4/0.2/B, 7.6/0.3/B} {
+    \fill[layer c] (\x,-0.5) rectangle (\x+\l,2.6);
+    \node[font=\small] at (\x+\l/2,3.1) {\n};
+  }
+  % Centroids of device A and device B.
+  \draw[thick] (2.2,1) +(-0.15,-0.15) -- +(0.15,0.15) +(-0.15,0.15) -- +(0.15,-0.15);
+  \draw[thick] (6.85,1) +(-0.15,-0.15) -- +(0.15,0.15) +(-0.15,0.15) -- +(0.15,-0.15);
+  \draw[dim] (2.2,1.4) -- node[dim label,above] {4.65 \si{\micro\metre}} (6.85,1.4);
+  \node[dim label] at (2.2,0.55) {A};
+  \node[dim label] at (6.85,0.55) {B};
+  % Findings.
+  \draw[violation] (7.5,-0.7) rectangle (8.0,2.72);
+  \node[violation label,anchor=north,align=center] at (8.2,-1.1) {L 0.3 \si{\micro\metre}, not 0.2};
+  \node[violation label,anchor=north,align=center] at (2.6,-1.1) {centroids 4.65 \si{\micro\metre} apart,\\ tolerance 100 nm};
+\end{circuitikz}
+\end{document}

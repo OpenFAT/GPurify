@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.3cm,y=0.3cm]
+  % Top view of the example (µm): ptap ring 6-18 (1 µm) on VSS, hvdiff
+  % 10-14 under the hv marker 9-15, no ntap ring.
+  \fill[layer d,even odd rule] (6,6) rectangle (18,18) (7,7) rectangle (17,17);
+  \fill[layer c] (10,10) rectangle (14,14);
+  \draw[marker] (9,9) rectangle (15,15);
+  \node[caption,anchor=south] at (12,15) {hv};
+  \draw (14,12) -- (19.5,12) node[caption,anchor=west,fill=white,inner sep=1pt] {hvdiff};
+  \node[caption,anchor=north] at (12,1.5) {ptap ring on VSS: HV.ring.p and HV.bias.p pass};
+  \draw[violation] (2,2) rectangle (22,22);
+  \node[violation label,anchor=south] at (12,22.3) {HV.ring.n: no ntap ring round it};
+\end{circuitikz}
+\end{document}

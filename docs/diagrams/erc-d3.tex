@@ -1,0 +1,27 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.7cm,y=0.6cm]
+  % Cross-section of the example (µm): nwell 0-12, ntap 1-2 on VDD,
+  % PMOS source 4-5.4 on VDDIO, gate 5.4-5.6, drain 5.6-7 on OUT.
+  \fill[layer a] (-1,-5) rectangle (13,0);
+  \fill[layer b] (0,-3) rectangle (12,0);
+  \fill[layer d] (1,-0.6) rectangle (2,0);
+  \fill[layer c] (4,-0.6) rectangle (5.4,0);
+  \fill[layer c] (5.6,-0.6) rectangle (7,0);
+  \draw (1.5,0) -- (1.5,1.2) node[caption,anchor=south] {VDD \SI{1.8}{\volt}};
+  \draw (4.7,0) -- (4.7,2.4) node[caption,anchor=south] {VDDIO \SI{3.3}{\volt}};
+  \draw (6.3,0) -- (6.3,1.2) node[caption,anchor=south west] {OUT};
+  \node[caption,anchor=north] at (1.5,-0.7) {ntap};
+  \node[caption,anchor=north] at (6.3,-0.7) {psd};
+  \node[caption,anchor=west] at (8,-2.4) {nwell (bulk)};
+  \node[caption,anchor=west] at (-0.8,-4.4) {p substrate};
+  % The source junction is forward-biased into the well.
+  \draw[violation] (4.7,-0.3) circle[radius=10pt];
+  \node[violation label,anchor=west] at (8,-1) {well.bias: source \SI{1.5}{\volt} above well};
+  \draw[violation] (1.5,-0.3) circle[radius=8pt];
+  \node[violation label,anchor=west,align=left] at (13.3,-4)
+    {LU.9: ntap at \SI{1.8}{\volt},\\ highest supply \SI{3.3}{\volt}};
+  \draw[violation,-] (1.5,-0.75) -- (1.5,-1.8) -- (13.2,-3.6);
+\end{circuitikz}
+\end{document}

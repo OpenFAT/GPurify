@@ -1,0 +1,30 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The switched inverter X.
+  \node[pmos] (xp) at (0,1.2) {};
+  \node[nmos] (xn) at (0,-1.2) {};
+  \draw (xp.D) -- (xn.D);
+  \draw (xp.S) -- ++(0,0.3) node[above] {VDD\_SW};
+  \draw (xn.S) -- ++(0,-0.3) node[below] {VSS\_SW};
+  \draw (xp.G) -- (xn.G);
+  \draw (xp.G |- 0,0) node[circ] {} -- ++(-0.6,0) node[left] {A};
+  \node[caption] at (0,2.95) {both off in \texttt{sleep}};
+  % Y, floating in sleep.
+  \draw (0,0) node[circ] {} -- (2.6,0);
+  \draw[violation] (0.4,0) -- (2.4,0);
+  \node[violation label,above] at (1.4,0.05) {Y floats};
+  % The always-on inverter Z.
+  \node[pmos] (zp) at (3.6,1.2) {};
+  \node[nmos] (zn) at (3.6,-1.2) {};
+  \draw (zp.G) -- (zn.G);
+  \draw (2.6,0) -- (zp.G |- 0,0) node[circ] {};
+  \draw (zp.D) -- (zn.D);
+  \draw (zp.S) -- ++(0,0.3) node[above] {VDD};
+  \draw (zn.S) -- ++(0,-0.3) node[below] {VSS};
+  \draw (3.6,0) node[circ] {} -- ++(0.8,0) node[right] {Z};
+  \draw[violation] (2.6,1.95) rectangle (4.15,-1.95);
+  \node[violation label,align=left,anchor=west] at (4.4,1.4) {both transistors\\ flagged: a gate\\ floats, a channel\\ powered};
+\end{circuitikz}
+\end{document}

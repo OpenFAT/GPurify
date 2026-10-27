@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The inverter's pfet, its source on VDDH; the source-to-well junction
+  % drawn as the diode it is, the well on VDD.
+  \draw (0,0) node[pmos,anchor=D](p){};
+  \draw (p.S) to[short,-*] ++(0,0.5) coordinate(s) -- ++(0,0.4) node[above]{VDDH, 3.3 V};
+  \draw (p.D) -- ++(0,-0.4) node[below]{Y};
+  \draw (p.G) -- ++(-0.4,0) node[left]{A};
+  \draw (s) -- ++(2,0) coordinate(a) to[D] ($(a)+(0,-2.2)$) -- ++(0,-0.3) node[below]{nwell: VDD, 1.8 V};
+  \node[caption,anchor=west] at ($(a)+(0.4,-1.1)$) {source to well};
+  \draw[violation] ($(a)+(-0.55,-1.75)$) rectangle ($(a)+(0.45,-0.45)$);
+  \node[violation label,anchor=north,align=center] at ($(a)+(0,-3.2)$) {source 1.5 V above its well:\\junction forward-biased};
+\end{circuitikz}
+\end{document}

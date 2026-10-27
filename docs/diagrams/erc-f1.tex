@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The inverter at x = 0 between VDD (y 2.6) and VSS (y -2.6).
+  \draw (0,1) node[pmos,anchor=D](ap){} (0,-1) node[nmos,anchor=D](an){};
+  \draw (ap.D) -- (an.D);
+  \draw (ap.G) -- (an.G) coordinate[pos=0.5](ain);
+  \draw (ap.S) -- (ap.S |- 0,2.6);
+  \draw (an.S) -- (an.S |- 0,-2.6);
+  \draw (-1.6,2.6) -- (1.8,2.6) node[right]{VDD, 1.8 V};
+  \draw (-1.6,-2.6) -- (1.8,-2.6) node[right]{VSS, 0 V};
+  \draw (0,0) to[short,*-] (1.2,0) node[right]{Y: 0 V};
+  % The switch from VDDH to X, gate EN.
+  \draw (-3.4,3.0) node[nmos,anchor=D](s){};
+  \draw (s.D) -- ++(0,0.3) node[above]{VDDH, 3.3 V};
+  \draw (s.G) -- ++(-0.4,0) node[left,align=right]{EN: input,\\may be anything};
+  \draw (s.S) |- (ain);
+  \node[caption,anchor=south] at (-2.3,0.05) {X: 3.3 V};
+  \node[caption,anchor=west] at (-3.3,2.2) {conducts};
+  % The failing devices.
+  \draw[violation] (-1.15,-2.1) rectangle (0.5,2.1);
+  \node[violation label,anchor=north] at (-0.3,-2.75) {3.3 V on a 1.95 V oxide};
+  \node[caption,anchor=north,align=center] at (-0.3,-3.25) {EN tied to VSS instead: the switch is off, X is reached\\by no supply, and the inverter is not examined};
+\end{circuitikz}
+\end{document}

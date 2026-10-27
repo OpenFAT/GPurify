@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Two inverters, inputs A and B, outputs joined on Y.
+  \foreach \x/\in in {0/A, 5/B} {
+    \node[pmos] (P\in) at (\x+2,2) {};
+    \node[nmos] (N\in) at (\x+2,0) {};
+    \draw (P\in.S) -- ++(0,0.3) node[vcc] {VDD};
+    \draw (N\in.S) -- ++(0,-0.3) node[ground] {};
+    \node[right] at ($(N\in.S)+(0.15,-0.55)$) {VSS};
+    \draw (P\in.D) -- (N\in.D);
+    \draw (P\in.G) -- ++(-0.4,0) coordinate (g\in) -- (g\in |- N\in.G) -- (N\in.G);
+    \draw (g\in |- 0,1) node[circ] {} to[short, -o] ++(-0.6,0) node[left] {\in};
+  }
+  \draw (PA.D |- 0,1) node[circ] {} -- ++(1.6,0) -- ++(0,-3);
+  \draw (PB.D |- 0,1) node[circ] {} -- ++(0.8,0) -- ++(0,-3);
+  \draw[violation] ($(PA.D |- 0,1)+(1.6,-3)$) -- ($(PB.D |- 0,1)+(0.8,-3)$);
+  \node[violation label, below] at ($(PA.D |- 0,1)+(4.1,-3)$) {Y: 2 drivers};
+\end{circuitikz}
+\end{document}
