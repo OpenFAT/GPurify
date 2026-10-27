@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % m1_c1 (0,0)-(206,40), m1_c2 (200,0)-(400,40); overlap widened for legibility
+  \draw[layer a] (0,0) rectangle (5.6,1.2);
+  \draw[layer c] (5,0) rectangle (10,1.2);
+  \node[caption] at (2.5,0.6) {m1\_c1};
+  \node[caption,fill=white,inner sep=1pt] at (7.8,0.6) {m1\_c2};
+  \draw[violation] (5,0) rectangle (5.6,1.2);
+  \draw[dim] (5,1.6) -- (5.6,1.6);
+  \node[dim label,anchor=south] at (5.3,1.8) {\SI{6}{\nano\metre}};
+  \node[violation label,anchor=north] at (5.3,-0.2) {\SI{6}{\nano\metre} < \SI{10}{\nano\metre}};
+\end{circuitikz}
+\end{document}

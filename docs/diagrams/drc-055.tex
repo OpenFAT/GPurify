@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=0.8]
+  % diff (0,0)-(1000,500), poly (400,-200)-(550,700), lvtn (700,0)-(1200,500) and (-400,600)-(300,900); 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (10,5);
+  \node[caption] at (1.5,2.5) {diff};
+  \draw[layer b] (4,-2) rectangle (5.5,7);
+  \node[caption,anchor=south] at (4.75,7) {poly};
+  \draw[marker,line width=1pt] (4,0) rectangle (5.5,5);
+  \node[caption,fill=white,inner sep=1pt] at (4.75,2.5) {gate};
+  \draw[layer c] (7,0) rectangle (12,5);
+  \node[caption,fill=white,inner sep=1pt] at (10.5,2.5) {lvtn};
+  \draw[layer c] (-4,6) rectangle (3,9);
+  \node[caption,fill=white,inner sep=1pt] at (-0.5,7.5) {lvtn};
+  \draw[violation] (5.5,0) rectangle (7,5);
+  \draw[dim] (5.5,-0.5) -- (7,-0.5);
+  \node[dim label,anchor=north] at (6.25,-0.7) {\SI{150}{\nano\metre}};
+  \node[violation label,anchor=west] at (7.4,-0.5) {\SI{150}{\nano\metre} < \SI{235}{\nano\metre}};
+  \draw[dashed] (3,6) -- (4,5);
+  \node[caption,anchor=west,align=left] at (6,8) {corner to corner, \SI{141}{\nano\metre}:\\ no facing edges, not measured};
+\end{circuitikz}
+\end{document}

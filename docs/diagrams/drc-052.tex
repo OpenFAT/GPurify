@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=0.55]
+  % poly.11: diff (0,0)-(1000,500), L poly bending at (550,150); 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (10,5);
+  \node[caption] at (2,2.5) {diff};
+  \draw[layer c] (4,-2) -- (5.5,-2) -- (5.5,1.5) -- (12,1.5) -- (12,3) -- (4,3) -- cycle;
+  \node[caption,fill=white,inner sep=1pt] at (11,3.6) {poly};
+  \draw[violation] (5.5,1.5) circle (0.5);
+  \node[violation label,anchor=north] at (5.5,-2.3) {poly.11: bend at (550, 150)\,nm};
+  % poly.10: L diff with inner corner at (2500,500), poly (2400,-200)-(2600,1200)
+  \begin{scope}[shift={(-6,0)}]
+    \draw[layer a] (20,0) -- (30,0) -- (30,5) -- (25,5) -- (25,10) -- (20,10) -- cycle;
+    \node[caption] at (21.5,2) {diff};
+    \draw[layer c] (24,-2) rectangle (26,12);
+    \node[caption,fill=white,inner sep=1pt] at (25,11.2) {poly};
+    \draw[violation] (25,5) circle (0.5);
+    \node[violation label,anchor=north] at (25,-2.3) {poly.10: inner corner at (2500, 500)\,nm};
+  \end{scope}
+\end{circuitikz}
+\end{document}

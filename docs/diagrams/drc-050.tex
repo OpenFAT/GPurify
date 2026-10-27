@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % diff (0,0)-(1000,500), poly (400,-200)-(700,700), licon (450,200)-(620,370); 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (10,5);
+  \node[caption] at (1.5,2.5) {diff};
+  \draw[layer c] (4,-2) rectangle (7,7);
+  \node[caption,fill=white,inner sep=1pt] at (5.5,6.3) {poly};
+  \draw[layer b] (4.5,2) rectangle (6.2,3.7);
+  \node[caption] at (5.35,2.85) {licon};
+  \draw[violation] (4.4,1.9) rectangle (6.3,3.8);
+  \node[violation label,align=left,anchor=west] at (10.3,3.8) {licon\_on\_gate:\\ \SI{28900}{\nano\metre\squared} forbidden};
+\end{circuitikz}
+\end{document}

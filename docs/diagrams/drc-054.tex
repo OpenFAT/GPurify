@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % nwell (3000,0)-(5000,2000), lvtn (3000,300)-(4000,1700); 1 unit = 400 nm
+  \draw[layer a] (0,0) rectangle (5,5);
+  \node[caption] at (4,4.4) {nwell};
+  \draw[layer c] (0,0.75) rectangle (2.5,4.25);
+  \node[caption,fill=white,inner sep=1pt] at (1.25,2.5) {lvtn};
+  \draw[violation] (0,0) rectangle (2.5,0.75);
+  \draw[dim] (2.9,0) -- (2.9,0.75);
+  \node[dim label,anchor=west] at (3.0,0.375) {\SI{300}{\nano\metre}};
+  \node[caption,anchor=east,align=right] at (-0.15,2.5) {coincident\\ edge: exempt};
+  \node[violation label,anchor=north] at (2.5,-0.2) {\SI{300}{\nano\metre} < \SI{380}{\nano\metre}};
+\end{circuitikz}
+\end{document}

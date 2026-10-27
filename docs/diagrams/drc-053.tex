@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % M2 (0,0)-(1000,18); V1 (100,0)-(118,18) and (300,2)-(318,16); gaps widened for legibility
+  \draw[layer a] (0,0) rectangle (9,1.8);
+  \node[caption,anchor=east] at (-0.1,0.9) {M2};
+  \draw[dim] (8.6,0) -- (8.6,1.8);
+  \node[dim label,anchor=west] at (9.1,0.9) {\SI{18}{\nano\metre}};
+  \draw[layer b] (1,0) rectangle (2.8,1.8);
+  \node[caption] at (1.9,0.9) {V1};
+  \draw[layer b] (5,0.4) rectangle (6.8,1.4);
+  \node[caption] at (5.9,0.9) {V1};
+  \draw[violation] (5,0) rectangle (6.8,0.4);
+  \draw[violation] (5,1.4) rectangle (6.8,1.8);
+  \node[caption,anchor=south] at (1.9,1.9) {spans: passes};
+  \node[violation label,anchor=south] at (5.9,1.9) {\SI{2}{\nano\metre} short of each edge};
+\end{circuitikz}
+\end{document}

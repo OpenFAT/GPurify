@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 (0,0)-(400,400) nm, drawn schematically
+  \draw[layer a] (0,0) rectangle (4,4);
+  \node[caption,anchor=south east] at (4,4) {met1};
+  \draw[layer b] (0.6,1) rectangle (2.6,3);
+  \node[caption] at (1.6,2) {mcon};
+  \draw[violation] (0,1) rectangle (0.6,3);
+  \draw[dim] (0,3.4) -- (0.6,3.4);
+  \node[dim label,anchor=west] at (0.7,3.4) {\SI{20}{\nano\metre}};
+  \node[violation label,anchor=north west] at (0,-0.15) {\SI{20}{\nano\metre} < \SI{30}{\nano\metre}};
+  % unhosted mcon at (600,0)
+  \draw[layer b] (5.5,0) rectangle (7.5,2);
+  \node[caption] at (6.5,1) {mcon};
+  \draw[violation] (5.4,-0.1) rectangle (7.6,2.1);
+  \node[violation label,anchor=north] at (6.5,-0.15) {no met1: \SI{0}{\nano\metre}};
+\end{circuitikz}
+\end{document}

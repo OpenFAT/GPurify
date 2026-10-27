@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % res_terminal (0,0)-(350,1000), licons (90,100)-(260,270) and (90,500)-(260,670); 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (3.5,10);
+  \node[caption,anchor=south] at (1.75,10.1) {res\_terminal};
+  \draw[layer b] (0.9,1) rectangle (2.6,2.7);
+  \draw[layer b] (0.9,5) rectangle (2.6,6.7);
+  \node[caption] at (1.75,1.85) {licon};
+  \node[caption] at (1.75,5.85) {licon};
+  \draw[violation] (-0.1,-0.1) rectangle (3.6,10.1);
+  \node[violation label,anchor=west] at (3.8,5) {2 licons > 1};
+\end{circuitikz}
+\end{document}
