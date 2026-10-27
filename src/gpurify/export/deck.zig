@@ -45,7 +45,8 @@
 //!   list's `none` is `value: null`), `value` (a boolean flag), `word` (a
 //!   keyword: `same`/`different`, a corner kind), `layer` (an id),
 //!   `model` (a device model) or `name` (a quoted non-model name). A list
-//!   is one entry per element, in order.
+//!   is one entry per element, in order; a parameter written `none` is
+//!   absent.
 //! - `connectivity`: `conductors`, `vias` (`cut`, `connects: [a, b]`),
 //!   `touch_within_layer`, `global`, `labels` (`layer`, `names`).
 //! - `devices`: `kind` (`mos`, `bjt`, `resistor`, `capacitor`, `diode`,
