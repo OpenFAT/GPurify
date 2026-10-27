@@ -147,7 +147,7 @@ checked. `known_defects` and `blocking_findings` at the top of the file explain
 every case that is expected to fail, and name the file and function to fix.
 
 In the release tier, `tests/klayout` also runs every DRC cell through the
-KLayout mirror deck ([klayout-mirror.md](../../docs/klayout-mirror.md)) and
+KLayout mirror deck (`docs/klayout-mirror.md`, in git history) and
 compares rule by rule.
 
 `manifest.json` stays exactly as it is. It is the historical record and the

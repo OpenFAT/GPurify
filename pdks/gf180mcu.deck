@@ -17,7 +17,7 @@
 #   [PV]  GF180MCU KLayout DRC deck and its unit test structures,
 #         fossi-foundation/globalfoundries-pdk-libs-gf180mcu_fd_pv @ b390a163ab86205006038a4a7eff73b17d54b814
 #         klayout/drc (rule_decks/*.rb, generic_layers.rb; testing/unit/*.gds, whose pass and
-#         fail boxes on 2/222 and 3/222 say what each rule must flag; ledger docs/xcheck/gf180mcu.tsv).
+#         fail boxes on 2/222 and 3/222 say what each rule must flag; ledger tests/xcheck/gf180mcu.tsv).
 #   [SPEC] GF180MCU analog specs, google/gf180mcu-pdk @ df0f549, docs/analog/layout/inter_specs
 #         tables 3 (conductor thickness), 4 (dielectric k), 5 (sheet resistance);
 #         docs/analog/model_parameters/LV tables 03, 06, 07 (model names).

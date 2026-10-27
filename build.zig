@@ -3,10 +3,10 @@ const gompute_build = @import("gompute");
 const Build = std.Build;
 const Import = Build.Module.Import;
 
-/// One owner per row, in dependency order: a module imports only rows above
-/// it, so the graph is a DAG by construction (ARCHITECTURE.md, Modules).
-/// `kernels`: the module root is also a Gompute kernel root, compiled for
-/// CUDA and HIP; its files hold their own specs and `exportKernels` calls.
+/// One owner per row, in dependency order: a module imports only rows above it,
+/// so the graph is a DAG by construction: `build` panics on a back edge.
+/// `kernels`: the module root is also a Gompute kernel root, compiled for CUDA
+/// and HIP; its files hold their own specs and `exportKernels` calls.
 const Owner = struct { name: []const u8, deps: []const []const u8, kernels: bool = false };
 const owners = [_]Owner{
     .{ .name = "geom", .deps = &.{"gompute"}, .kernels = true },

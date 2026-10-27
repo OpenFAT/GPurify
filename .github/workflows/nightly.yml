@@ -1,7 +1,6 @@
 name: nightly
 
-# The slow tier (ARCHITECTURE.md, Tests: tiers): evidence the merge gate
-# cannot afford.
+# The slow tier: evidence the merge gate cannot afford.
 #
 #   slow         every suite in ReleaseSafe with the slow field solves on
 #   fuzz         the ten std.testing.fuzz targets (tests/gpurify/fuzz.zig),
