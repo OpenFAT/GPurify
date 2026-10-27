@@ -162,7 +162,7 @@ The point in a violation line is in nm, rounded down to the database unit.
 | Rule kind | Point |
 |---|---|
 | Spacing, width and notch | Midway across the gap, at the middle of the stretch where the two edges face each other; between corners, midway between them. |
-| Width, notch or spacing on a layer with angled edges | The midpoint of the two nearest points, which on a long parallel run can sit at its end. |
+| Width, notch or spacing on a layer with angled edges | The midpoint of the two nearest points, which on a long parallel run lies near one end of it, not at its middle. |
 | Area and aspect ratio | The centre of the shape's first rectangle. |
 | Hole area | The centre of the hole. |
 | Cut size and cut class | The centre of the cut. |

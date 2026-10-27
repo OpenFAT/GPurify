@@ -213,7 +213,7 @@ CntB.b1; Magic `widespacing` with run length; KLayout `projection`.
 
 **What it catches.** Two shapes closer than the space their two widths ask for together. LEF
 `SPACINGTABLE TWOWIDTHS` sets the space by the widths of both shapes, not only the wider, and a
-width can also ask for a minimum run.
+width also sets a minimum run.
 
 **How GPurify measures it.** The widths head both the rows and the columns. A width applies to a
 shape strictly wider than it, when the pair's run exceeds that width's `prl` (`none` asks for no
