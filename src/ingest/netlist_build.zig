@@ -127,14 +127,14 @@ pub const Build = struct {
             };
             break :blk .{ .name = try b.strings.intern(b.gpa, name), .value = number };
         } else null;
-        // Not stored; interned only because interning order is report order.
-        _ = try b.strings.intern(b.gpa, head.text);
+        const name_id = try b.strings.intern(b.gpa, head.text);
         const model_id = if (model) |m| try b.strings.intern(b.gpa, m.text) else try b.onlyModel(head, kind);
         const o = &b.out;
         try o.device_terminal_start.append(b.gpa, @intCast(o.terminal_net.items.len));
         try o.device_param_start.append(b.gpa, @intCast(o.param.items.len));
         try o.device_model.append(b.gpa, model_id);
         try o.device_kind.append(b.gpa, kind);
+        try o.device_name.append(b.gpa, name_id);
         // Card order is the role, so terminals are pushed as written.
         for (nets) |n| try o.terminal_net.append(b.gpa, try b.net(n.text, subckt));
         const first = o.param.items.len;

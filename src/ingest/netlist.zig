@@ -140,6 +140,10 @@ pub const Netlist = struct {
     /// One row per device: its model, interned.
     device_model: std.ArrayList(StrId) = .empty,
     device_kind: std.ArrayList(DeviceKind) = .empty,
+    /// The card's name as written (`MN1`), interned; a black box's, its
+    /// instance name. Flattened, a device's full name is its innermost
+    /// placement's path, a dot, then this (a black box: the path alone).
+    device_name: std.ArrayList(StrId) = .empty,
     device_terminal_start: std.ArrayList(u32) = .empty,
     /// Terminal nets in the card's order, which is the role: MOS drain,
     /// gate, source, bulk; BJT collector, base, emitter[, substrate]; two-pin
@@ -169,7 +173,7 @@ pub const Netlist = struct {
     black_box_port: std.ArrayList(StrId) = .empty,
 
     pub fn deinit(n: *Netlist, gpa: Allocator) void {
-        inline for (.{ "subckt_name", "subckt_port_start", "port_net", "subckt_device_start", "device_model", "device_kind", "device_terminal_start", "terminal_net", "device_param_start", "param", "instance_of", "instance_subckt", "instance_name", "instance_net_start", "instance_net", "net_name", "net_subckt", "placements", "black_box_cell", "black_box_port_start", "black_box_port" }) |f| @field(n, f).deinit(gpa);
+        inline for (.{ "subckt_name", "subckt_port_start", "port_net", "subckt_device_start", "device_model", "device_kind", "device_name", "device_terminal_start", "terminal_net", "device_param_start", "param", "instance_of", "instance_subckt", "instance_name", "instance_net_start", "instance_net", "net_name", "net_subckt", "placements", "black_box_cell", "black_box_port_start", "black_box_port" }) |f| @field(n, f).deinit(gpa);
     }
 
     pub fn subcktCount(n: *const Netlist) u32 {

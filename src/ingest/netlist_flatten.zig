@@ -236,6 +236,7 @@ fn expand(gpa: Allocator, n: *const Netlist, cell: SubcktId, h: *const Hierarchy
         const d: u32 = @intCast(device);
         try out.device_model.append(gpa, n.device_model.items[d]);
         try out.device_kind.append(gpa, n.device_kind.items[d]);
+        try out.device_name.append(gpa, n.device_name.items[d]);
         for (n.terminalsOf(d)) |net| try out.terminal_net.append(gpa, @fromBackingInt(map[@backingInt(net)]));
         try out.device_terminal_start.append(gpa, @intCast(out.terminal_net.items.len));
         try out.param.appendSlice(gpa, n.paramsOf(d));
@@ -251,7 +252,7 @@ fn expand(gpa: Allocator, n: *const Netlist, cell: SubcktId, h: *const Hierarchy
         if (h.isKept(callee)) {
             const first: u32 = @intCast(out.device_model.items.len);
             try out.placements.append(gpa, .{ .path = try strings.intern(gpa, path.items), .cell = n.subckt_name.items[@backingInt(callee)], .devices = .{ first, first + 1 } });
-            try keepWhole(gpa, n, callee, passed, map, out);
+            try keepWhole(gpa, n, callee, n.instance_name.items[instance], passed, map, out);
             continue;
         }
         // Ports first: each takes the caller's net the instance passes.
@@ -275,10 +276,11 @@ fn expand(gpa: Allocator, n: *const Netlist, cell: SubcktId, h: *const Hierarchy
 
 /// One placement of `cell` kept whole: a `cell` device on the caller's
 /// nets `passed`, and `cell`'s port names recorded the first time.
-fn keepWhole(gpa: Allocator, n: *const Netlist, cell: SubcktId, passed: []const RefNetId, map: []const u32, out: *Netlist) Allocator.Error!void {
+fn keepWhole(gpa: Allocator, n: *const Netlist, cell: SubcktId, instance: StrId, passed: []const RefNetId, map: []const u32, out: *Netlist) Allocator.Error!void {
     const name = n.subckt_name.items[@backingInt(cell)];
     try out.device_model.append(gpa, name);
     try out.device_kind.append(gpa, .cell);
+    try out.device_name.append(gpa, instance);
     for (passed) |net| try out.terminal_net.append(gpa, @fromBackingInt(map[@backingInt(net)]));
     try out.device_terminal_start.append(gpa, @intCast(out.terminal_net.items.len));
     try out.device_param_start.append(gpa, @intCast(out.param.items.len));

@@ -266,6 +266,7 @@ fn emit(gpa: Allocator, g: *const Graph, w: *const Work, start: []const u32, row
             try out.net_name.append(gpa, name);
         }
     }
+    for (g.net_origin.items, 0..) |origin, n| if (new_net[n] != no_net) try out.net_origin.append(gpa, origin);
     for (g.port_net.items) |n| try out.port_net.append(gpa, new_net[n]);
     try out.device_terminal_start.append(gpa, 0);
     try out.device_param_start.append(gpa, 0);
