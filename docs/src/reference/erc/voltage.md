@@ -26,8 +26,12 @@ In the example, EN is a cell input that no supply reaches, so the switch conduct
 When GPurify cannot decide, it says so rather than reporting a clean result:
 
 - Without `--intent`, every rule that reads voltages reports `skipped, no design intent was supplied`, and the run fails.
-- Every supply the intent declares must name a labelled net of the layout. A declared supply that labels no net is an error in the intent, and the rules that read voltages report `refused`.
-- A rule that needs power states (ERC-F7, ERC-F8 and ERC-F14) reports `skipped` when the intent declares none.
+- A supply is matched to the net that carries its name as a label ([nets in the design intent](../design-intent.md#nets)). A declared supply that no label carries is not in the run. When no declared supply is in the layout, the rules report `skipped, no design intent was supplied`, as without `--intent`.
+- A rule that needs power states (ERC-F7, ERC-F8, ERC-F14 and ERC-H1) reports `skipped` when the intent declares none, and says that no power state is declared.
+- A device or a pair of nets that no supply reaches is left out, not passed. Compare the rule's `examined` count with the devices you expect it to judge.
+
+> [!WARNING]
+> A misspelt supply name is not an error: the run goes ahead with the supplies that did match. With `VCC` in the intent and `VDD` on the layout, the buffer of [ERC-F2](#erc-f2-gate-oxide-overstress) reports `ran, examined 2 shapes, found 0 violations` instead of 2 violations. Check that each supply's name matches a label exactly.
 
 **In the deck.**
 

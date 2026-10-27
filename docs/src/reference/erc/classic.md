@@ -222,7 +222,7 @@ every net that holds a shape of the second. A net marked by both is flagged. Wit
 `within`, a first-layer tap counts only when the centre of its bounding box lies in a `within`
 shape. The sky130 deck uses this to count only n-taps in a well that holds a PMOS, so that a
 bipolar transistor's base contact is not a short. Both tap layers must be conductors in the deck's
-`connect` lines: GPurify refuses a deck whose tap layer carries no net.
+`connect` lines, so that their shapes are on nets.
 
 ![An n-tap and a p-tap, each with a contact, joined by one met1 strip labelled VDD, marked as one net holding both tap kinds](../../diagrams/erc-g4.svg)
 
@@ -383,7 +383,7 @@ violations: 1
 The two straps of VSS are 2 pieces against 1 once the p-taps and the substrate are left out.
 
 **Status and limits.** Implemented. The listed layers must be conductors in the deck's `connect`
-lines: GPurify refuses a deck that lists a layer carrying no net. A net joined through the listed
+lines, so that their shapes are on nets. A net joined through the listed
 layers and also through metal is not flagged. A net with no shape on a listed layer is not
 examined, even when only the substrate joins it: list the tap layer, as above.
 

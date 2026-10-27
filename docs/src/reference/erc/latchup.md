@@ -284,10 +284,10 @@ in no ring at all measures 0 rings against 1.
 | `clear` | layer or `none` | The ring's hole must hold no area of this layer outside the target ([ERC-D7](#erc-d7-native-device-guard-ring)). |
 
 **Status and limits.** Implemented. The space is measured box to box, which is exact for
-rectangular targets and holes and reports more for other shapes. A `pad` layer that no `connect`
-statement names puts no polygon on a net, and the row is refused. The shipped `gf180mcu` deck
-writes IO.1 to IO.4 but does not yet connect its `pad` layer. The `esd_latchup` check, on the ESD
-page, combines a pad's clamp path with a ring's width.
+rectangular targets and holes and reports more for other shapes. A `pad` layer must be a conductor, named
+in `connect conductors`, so that its polygons are on nets. The shipped `gf180mcu` deck writes IO.1 to IO.4 but does not yet connect its
+`pad` layer, so those rows check no target until it does. The `esd_latchup` check of the
+[ESD checks](esd.md) combines a pad's clamp path with a ring's width.
 
 **Sources.** [GlobalFoundries GF180MCU design manual](https://gf180mcu-pdk.readthedocs.io/en/latest/physical_verification/design_man.html)
 rules IO.1 to IO.4; [IHP SG13G2 layout rules](https://github.com/IHP-GmbH/IHP-Open-PDK/tree/main/ihp-sg13g2/libs.doc/doc)
@@ -425,7 +425,7 @@ rule <id> esd_path(<pad>, <ring>; clamps: none, current: <current>, clamp_resist
     clamp_voltage: none)
 ```
 
-This is the ESD discharge-path check with a second layer: the current enters at the ring instead of
+This is the discharge-path check of the [ESD checks](esd.md) with a second layer: the current enters at the ring instead of
 at the pad. With `clamps: none` it flows through the ring's own net only.
 
 ```text
@@ -494,7 +494,7 @@ once per segment.
 | `max_voltage` | voltage or `none` | The highest the ring may rise. |
 | `min_width` | length or `none` | The narrowest wire that may carry the injected current. |
 
-The ESD page describes `clamps`, `clamp_it2` and `clamp_voltage`, which a ring injection leaves at
+The [ESD checks](esd.md) describe `clamps`, `clamp_it2` and `clamp_voltage`, which a ring injection leaves at
 `none`.
 
 **Status and limits.** Implemented. The injection is a DC current into the ring's metal, leaving at
@@ -593,7 +593,7 @@ be checked.
 a pad diffusion is selected by `pad` alone. The whole victim polygon is held to `max_distance`,
 not only its part within `within` of the aggressor; the foundry rule does not say which. An
 aggressor or `bias` polygon no supply reaches cannot be judged and is not selected. A row with
-`bias` reports `skipped` without `--intent`. As in ERC-D2, a `pad` layer must be connected.
+`bias` reports `skipped` without `--intent`. As in ERC-D2, a `pad` layer must be a conductor.
 
 **Sources.** [ESDA TR18.0-02-20, latch-up EDA](https://www.esda.org/store/standards/product/307/esd-tr18-0-02-20/)
 section 2.2.3; [GlobalFoundries GF180MCU design manual](https://gf180mcu-pdk.readthedocs.io/en/latest/physical_verification/design_man.html)
