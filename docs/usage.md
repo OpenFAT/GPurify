@@ -101,7 +101,7 @@ rules:
   m1.2: ran, examined 0 shapes, found 0 violations
   tap_distance: skipped, the layer it names holds no geometry, examined 0 shapes, found 0 violations
 violations: 1
-  m1.1 error layer 7 at (40 nm, 500 nm) measured 80 nm against limit 140 nm on shape 0
+  m1.1 error layer met1 at (40 nm, 500 nm) measured 80 nm against limit 140 nm on shape 0
 summary:
   drc: ran
   1 rules skipped
@@ -109,8 +109,11 @@ summary:
   1 violations: 1 errors, 0 warnings
 ```
 
-Each violation gives the rule, the layer, a point on the offending shape, what
-was measured and the limit it broke.
+Each violation gives the rule, the layer by its deck name (JSON has
+`"layer_name"` beside the numeric `"layer"`), a point on the offending shape,
+what was measured, the limit it broke and the shapes involved. An LVS or
+system finding sits on no layer and may name no shape: the text line then
+leaves out that clause, and JSON writes `null` for it.
 
 ## Comparing two layouts
 

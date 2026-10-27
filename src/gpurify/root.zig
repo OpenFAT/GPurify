@@ -21,7 +21,7 @@
 //! - `subckt_build`: `buildInto`, the netlist in the reference's terms (subckt_build.zig)
 //! - `Die`, `loadDie`, `readDie`, `loadDeck` (load.zig)
 //! - `export`: the report writers (export/*.zig)
-//!   - `header`: `Header`, `Error`, `Diagnostic`
+//!   - `header`: `Header`, `Error`, `Diagnostic`; `LayerTable` (ingest), the writers' layer names
 //!   - `json`: `writeReport`, `writeString`
 //!   - `deck`: `writeDeck`, `format`; `deck_answers`: `writeAnswers`, `spacingQueries`
 //!   - `text`: `writeRuns`, `writeViolations`, `writeMerges`, `writeVerdict`, `writeSummary`, `Summary`, `StageStatus`
@@ -108,6 +108,8 @@ pub const @"export" = struct {
     pub const Header = header.Header;
     pub const Error = header.Error;
     pub const Diagnostic = header.Diagnostic;
+    /// The layer names `text.writeViolations` and `json.writeReport` print.
+    pub const LayerTable = @import("ingest").deck.LayerTable;
 };
 
 /// Liberty generation: a `.lib` per corner and a Verilog blackbox.

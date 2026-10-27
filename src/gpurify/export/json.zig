@@ -5,9 +5,10 @@
 //!
 //! Keys in this order: `header` (`tool_version`, `deck_path`,
 //! `layout_path`, `timestamp` or `null`); `violations`, one object per row
-//! (`rule`, `layer`, `severity`, `at`, `measured`, `limit`, `shapes`,
-//! `fix` where the row has a hint, and `load`, the simulated `instance` and
-//! `terminal` loading it most, where the row has one); `waived`, only when non-empty; `runs`
+//! (`rule`, `layer`, `layer_name`, `severity`, `at`, `measured`, `limit`,
+//! `shapes`, `fix` where the row has a hint, and `load`, the simulated
+//! `instance` and `terminal` loading it most, where the row has one);
+//! `waived`, only when non-empty; `runs`
 //! (`rule`, `outcome`, `examined`, `violations`). Units: `nm`, `nm^2`,
 //! `mV`, `uA`, `ohm`; a ratio or count has none. Floats are `{:.6}`
 //! (geom.float). Keys are fixed, never a map's, so the bytes are
@@ -15,28 +16,37 @@
 //!
 //! Contents:
 //! - `pub const Error = error{Unrepresentable} || std.Io.Writer.Error`
-//! - `pub fn writeReport(w: *std.Io.Writer, header: *const Header, strings: *const StrTable, grid: Grid, violations: *const Violations, waived: *const Violations, runs: []const RuleRun) Error!void`
+//! - `pub fn writeReport(w: *std.Io.Writer, header: *const Header, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations, runs: []const RuleRun) Error!void`
 //! - `pub fn writeString(w: *std.Io.Writer, text: []const u8) std.Io.Writer.Error!void`
 
 const std = @import("std");
 const Writer = std.Io.Writer;
 const geom = @import("geom");
 const Grid = geom.Grid;
+const PolyId = geom.PolyId;
 const StrTable = geom.StrTable;
+const LayerTable = @import("ingest").deck.LayerTable;
 const report = @import("check").report;
 const Measurement = report.Measurement;
 const RuleRun = report.RuleRun;
 const Violations = report.Violations;
 const float = geom.float;
 const Header = @import("header.zig").Header;
+const assert = std.debug.assert;
 
 /// `Unrepresentable`: a measured value, limit or fix is NaN or infinite,
 /// which JSON cannot carry (RFC 8259 §6), refused before the first byte.
 pub const Error = error{Unrepresentable} || Writer.Error;
 
 /// The report, rows in their tables' own order: sort them canonically first.
-/// `strings` resolves every rule id; `grid` turns dbu into nm.
-pub fn writeReport(w: *Writer, header: *const Header, strings: *const StrTable, grid: Grid, violations: *const Violations, waived: *const Violations, runs: []const RuleRun) Error!void {
+/// `strings` resolves every rule id; `grid` turns dbu into nm. `layer` is
+/// the row's layer id, kept for older readers; `layer_name` is the name
+/// `layers` (the run's deck's table) gives it, a hidden inner layer's
+/// included (`x#1`, `<rule id>@k`), and `null` on `report.no_layer` (an
+/// LVS or system finding). A run with no one deck (a system) passes an
+/// empty table. A `shapes` entry is `null` for `report.no_shape`. Asserts
+/// that every row's layer is in `layers` or is `report.no_layer`.
+pub fn writeReport(w: *Writer, header: *const Header, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations, runs: []const RuleRun) Error!void {
     if (!allFinite(violations) or !allFinite(waived)) return error.Unrepresentable;
     try w.writeAll("{\"header\":{\"tool_version\":");
     try writeString(w, header.tool_version);
@@ -47,11 +57,11 @@ pub fn writeReport(w: *Writer, header: *const Header, strings: *const StrTable, 
     try w.writeAll(",\"timestamp\":");
     if (header.timestamp) |stamp| try writeString(w, stamp) else try w.writeAll("null");
     try w.writeAll("},\"violations\":[");
-    try writeRows(w, strings, grid, violations);
+    try writeRows(w, strings, layers, grid, violations);
     // Only a deck with waivers has any; a report without them reads as before.
     if (waived.len() > 0) {
         try w.writeAll("],\"waived\":[");
-        try writeRows(w, strings, grid, waived);
+        try writeRows(w, strings, layers, grid, waived);
     }
     try w.writeAll("],\"runs\":[");
     for (runs, 0..) |run, i| {
@@ -105,14 +115,19 @@ fn allFinite(v: *const Violations) bool {
 }
 
 /// Each row of `v` as a JSON object, comma-separated.
-fn writeRows(w: *Writer, strings: *const StrTable, grid: Grid, v: *const Violations) Writer.Error!void {
+fn writeRows(w: *Writer, strings: *const StrTable, layers: *const LayerTable, grid: Grid, v: *const Violations) Writer.Error!void {
+    // The sentinel sits past every table, so it never reads as a name.
+    assert(layers.len() <= @backingInt(report.no_layer));
     for (0..v.len()) |i| {
         const row: u32 = @intCast(i);
         const r = v.get(row);
+        if (r.layer != report.no_layer) assert(@backingInt(r.layer) < layers.len());
         if (row > 0) try w.writeByte(',');
         try w.writeAll("{\"rule\":");
         try writeString(w, strings.resolve(r.rule));
-        try w.print(",\"layer\":{d},\"severity\":\"{s}\",\"at\":{{\"unit\":\"nm\",\"x\":", .{ @backingInt(r.layer), @tagName(r.severity) });
+        try w.print(",\"layer\":{d},\"layer_name\":", .{@backingInt(r.layer)});
+        if (r.layer == report.no_layer) try w.writeAll("null") else try writeString(w, strings.resolve(layers.name(r.layer)));
+        try w.print(",\"severity\":\"{s}\",\"at\":{{\"unit\":\"nm\",\"x\":", .{@tagName(r.severity)});
         try float.fixed6(w, grid.toLength(r.at.x).raw);
         try w.writeAll(",\"y\":");
         try float.fixed6(w, grid.toLength(r.at.y).raw);
@@ -120,8 +135,10 @@ fn writeRows(w: *Writer, strings: *const StrTable, grid: Grid, v: *const Violati
         try writeMeasurement(w, grid, r.measured);
         try w.writeAll(",\"limit\":");
         try writeMeasurement(w, grid, r.limit);
-        try w.print(",\"shapes\":[{d},", .{@backingInt(r.shape_a)});
-        if (r.shape_b == report.no_shape) try w.writeAll("null") else try w.print("{d}", .{@backingInt(r.shape_b)});
+        try w.writeAll(",\"shapes\":[");
+        try writeShape(w, r.shape_a);
+        try w.writeByte(',');
+        try writeShape(w, r.shape_b);
         try w.writeByte(']');
         if (v.fixOf(row)) |fix| {
             try w.writeAll(",\"fix\":");
@@ -136,6 +153,12 @@ fn writeRows(w: *Writer, strings: *const StrTable, grid: Grid, v: *const Violati
         }
         try w.writeByte('}');
     }
+}
+
+/// A shape id, or `null` for `report.no_shape`.
+fn writeShape(w: *Writer, shape: PolyId) Writer.Error!void {
+    if (shape == report.no_shape) return w.writeAll("null");
+    try w.print("{d}", .{@backingInt(shape)});
 }
 
 /// One measurement tagged with its kind and unit; lengths in nm, areas nm^2.

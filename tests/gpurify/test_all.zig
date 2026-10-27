@@ -402,7 +402,7 @@ test "a real extraction and a reference netlist reach a verdict and five run row
     try testing.expectEqual(expected.len, r.outputs.runs.items.len);
     var out: std.Io.Writer.Allocating = .init(a);
     const header: gpurify.@"export".Header = .{ .tool_version = "test", .deck_path = "params.deck", .layout_path = "LVS_CLEAN_MATCH.gds" };
-    try gpurify.@"export".json.writeReport(&out.writer, &header, &r.loaded.strings, r.loaded.grid, &r.outputs.violations, &r.outputs.waived, r.outputs.runs.items);
+    try gpurify.@"export".json.writeReport(&out.writer, &header, &r.loaded.strings, &r.loaded.deck.deck.layers, r.loaded.grid, &r.outputs.violations, &r.outputs.waived, r.outputs.runs.items);
     for (expected) |row| try testing.expect(std.mem.indexOf(u8, out.written(), try std.fmt.allocPrint(a, "\"{s}\"", .{row[0]})) != null);
 }
 

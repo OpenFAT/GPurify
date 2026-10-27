@@ -14,7 +14,7 @@
 //! - `pub const StageStatus = union(enum) { ran, not_selected, skipped: []const u8, refused: []const u8 }`
 //! - `pub const Summary = struct`, `Summary.passed(s: Summary) bool`
 //! - `pub fn writeRuns(w: *std.Io.Writer, strings: *const StrTable, runs: []const RuleRun) std.Io.Writer.Error!void`
-//! - `pub fn writeViolations(w: *std.Io.Writer, strings: *const StrTable, grid: Grid, violations: *const Violations, waived: *const Violations) std.Io.Writer.Error!void`
+//! - `pub fn writeViolations(w: *std.Io.Writer, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations) std.Io.Writer.Error!void`
 //! - `pub fn writeMerges(w: *std.Io.Writer, strings: *const StrTable, placements: []const Placement, unpaired: []const UnpairedInstance, layout_merges: *const Merges, reference_merges: *const Merges) std.Io.Writer.Error!void`
 //! - `pub fn writeVerdict(w: *std.Io.Writer, verdict: ?Verdict, found: []const Discrepancy) std.Io.Writer.Error!void`
 //! - `pub fn writeSummary(w: *std.Io.Writer, summary: Summary) std.Io.Writer.Error!void`
@@ -25,7 +25,9 @@ const geom = @import("geom");
 const Grid = geom.Grid;
 const StrId = geom.StrId;
 const StrTable = geom.StrTable;
-const Placement = @import("ingest").netlist.Placement;
+const ingest = @import("ingest");
+const Placement = ingest.netlist.Placement;
+const LayerTable = ingest.deck.LayerTable;
 const check = @import("check");
 const report = check.report;
 const Measurement = report.Measurement;
@@ -37,6 +39,7 @@ const UnpairedInstance = lvs.UnpairedInstance;
 const Verdict = lvs.verdict.Verdict;
 const Discrepancy = lvs.verdict.Discrepancy;
 const float = geom.float;
+const assert = std.debug.assert;
 
 /// Whether a stage ran; a skip or refusal carries its reason.
 pub const StageStatus = union(enum) {
@@ -95,13 +98,19 @@ pub fn writeRuns(w: *Writer, strings: *const StrTable, runs: []const RuleRun) Wr
 }
 
 /// The violation count and one line per row, then the waived rows only
-/// when there are any.
-pub fn writeViolations(w: *Writer, strings: *const StrTable, grid: Grid, violations: *const Violations, waived: *const Violations) Writer.Error!void {
+/// when there are any. A row's layer prints as `layers` names it, the
+/// deck's name for a drawn or derived layer and the hidden name of an
+/// inner one (`x#1`, `<rule id>@k`). A row on no layer (`report.no_layer`,
+/// an LVS or system finding) has no `layer` clause, and a row on no shape
+/// (`report.no_shape`) no `on shape` clause. `layers` is the run's deck's
+/// table; a run with no one deck (a system) passes an empty one. Asserts
+/// that every row's layer is in `layers` or is `report.no_layer`.
+pub fn writeViolations(w: *Writer, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations) Writer.Error!void {
     try w.print("violations: {d}\n", .{violations.len()});
-    try writeRows(w, strings, grid, violations);
+    try writeRows(w, strings, layers, grid, violations);
     if (waived.len() > 0) {
         try w.print("waived: {d}\n", .{waived.len()});
-        try writeRows(w, strings, grid, waived);
+        try writeRows(w, strings, layers, grid, waived);
     }
 }
 
@@ -164,11 +173,18 @@ pub fn writeSummary(w: *Writer, summary: Summary) Writer.Error!void {
 
 // ---- private ----
 
-fn writeRows(w: *Writer, strings: *const StrTable, grid: Grid, v: *const Violations) Writer.Error!void {
+fn writeRows(w: *Writer, strings: *const StrTable, layers: *const LayerTable, grid: Grid, v: *const Violations) Writer.Error!void {
+    // The sentinel sits past every table, so it never reads as a name.
+    assert(layers.len() <= @backingInt(report.no_layer));
     for (0..v.len()) |i| {
         const row: u32 = @intCast(i);
         const r = v.get(row);
-        try w.print("  {s} {s} layer {d} at (", .{ strings.resolve(r.rule), @tagName(r.severity), @backingInt(r.layer) });
+        if (r.layer != report.no_layer) assert(@backingInt(r.layer) < layers.len());
+        // A second shape is only ever the partner of a first.
+        if (r.shape_a == report.no_shape) assert(r.shape_b == report.no_shape);
+        try w.print("  {s} {s}", .{ strings.resolve(r.rule), @tagName(r.severity) });
+        if (r.layer != report.no_layer) try w.print(" layer {s}", .{strings.resolve(layers.name(r.layer))});
+        try w.writeAll(" at (");
         try float.display(w, grid.toLength(r.at.x).raw);
         try w.writeAll(" nm, ");
         try float.display(w, grid.toLength(r.at.y).raw);
@@ -176,7 +192,7 @@ fn writeRows(w: *Writer, strings: *const StrTable, grid: Grid, v: *const Violati
         try writeMeasurement(w, grid, r.measured);
         try w.writeAll(" against limit ");
         try writeMeasurement(w, grid, r.limit);
-        try w.print(" on shape {d}", .{@backingInt(r.shape_a)});
+        if (r.shape_a != report.no_shape) try w.print(" on shape {d}", .{@backingInt(r.shape_a)});
         if (r.shape_b != report.no_shape) try w.print(" and shape {d}", .{@backingInt(r.shape_b)});
         if (v.loadOf(row)) |load| try w.print(" loaded most by {s} {s}", .{ strings.resolve(load.instance), strings.resolve(load.terminal) });
         if (v.fixOf(row)) |fix| {
@@ -269,10 +285,18 @@ test "a run renders to this exact text" {
     // is (2100 nm, 4300 nm), 4 dbu is 2 nm and 48 dbu^2 is 12 nm^2.
     // Rust's row measured a length against an area, which a Zig row (one
     // kind per row) cannot hold, so the area moved to a waived row with a
-    // fix hint, the two paths Rust's test left out.
+    // fix hint, the two paths Rust's test left out. Layer names: id 3 is
+    // the fourth entry the table was built from, `met1`; the waived row is
+    // on `report.no_layer` and `report.no_shape`, so the doc says its line
+    // has neither a layer nor a shape clause.
     const gpa = std.testing.allocator;
+    var arena: std.heap.ArenaAllocator = .init(gpa);
+    defer arena.deinit();
     var strings: StrTable = .empty;
     defer strings.deinit(gpa);
+    var entries: [4]LayerTable.Entry = undefined;
+    for (&entries, [_][]const u8{ "diff", "poly", "li1", "met1" }, 0..) |*e, name, k| e.* = .{ .name = try strings.intern(gpa, name), .layer = @intCast(k), .datatype = 0 };
+    const layers = try LayerTable.build(arena.allocator(), &entries);
     const width = try strings.intern(gpa, "m1_min_width");
     const antenna = try strings.intern(gpa, "antenna_ratio");
     const runs = [_]RuleRun{
@@ -284,7 +308,7 @@ test "a run renders to this exact text" {
     try violations.push(gpa, .{ .rule = width, .layer = @fromBackingInt(3), .severity = .@"error", .at = .{ .x = 4_200, .y = 8_600 }, .measured = .length(4), .limit = .length(200), .shape_a = @fromBackingInt(7), .shape_b = @fromBackingInt(9) });
     var waived: Violations = .{};
     defer waived.deinit(gpa);
-    try waived.push(gpa, .{ .rule = antenna, .layer = @fromBackingInt(1), .severity = .warning, .at = .{ .x = 1, .y = -3 }, .measured = .area(48), .limit = .area(40), .shape_a = @fromBackingInt(2), .shape_b = report.no_shape });
+    try waived.push(gpa, .{ .rule = antenna, .layer = report.no_layer, .severity = .warning, .at = .{ .x = 1, .y = -3 }, .measured = .area(48), .limit = .area(40), .shape_a = report.no_shape, .shape_b = report.no_shape });
     try waived.setFix(gpa, 0, .area(8));
     const summary: Summary = .{
         .drc = .ran,
@@ -302,7 +326,7 @@ test "a run renders to this exact text" {
     defer out.deinit();
     const no_merges: Merges = .{};
     try writeRuns(&out.writer, &strings, &runs);
-    try writeViolations(&out.writer, &strings, grid, &violations, &waived);
+    try writeViolations(&out.writer, &strings, &layers, grid, &violations, &waived);
     try writeMerges(&out.writer, &strings, &.{}, &.{}, &no_merges, &no_merges);
     try writeVerdict(&out.writer, null, &.{});
     try writeSummary(&out.writer, summary);
@@ -311,9 +335,9 @@ test "a run renders to this exact text" {
         \\  m1_min_width: ran, examined 4231 shapes, found 1 violations
         \\  antenna_ratio: skipped, no design intent was supplied, examined 0 shapes, found 0 violations
         \\violations: 1
-        \\  m1_min_width error layer 3 at (2100 nm, 4300 nm) measured 2 nm against limit 100 nm on shape 7 and shape 9
+        \\  m1_min_width error layer met1 at (2100 nm, 4300 nm) measured 2 nm against limit 100 nm on shape 7 and shape 9
         \\waived: 1
-        \\  antenna_ratio warning layer 1 at (0.5 nm, -1.5 nm) measured 12 nm^2 against limit 10 nm^2 on shape 2 fix 2 nm^2
+        \\  antenna_ratio warning at (0.5 nm, -1.5 nm) measured 12 nm^2 against limit 10 nm^2 fix 2 nm^2
         \\summary:
         \\  drc: ran
         \\  erc: refused, bad grid

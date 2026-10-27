@@ -234,7 +234,7 @@ fn report(a: Allocator, decks: []const gpurify.NamedDeck, deck: []const u8) ![]c
     const r = try customRun(a, decks, deck);
     const header: gpurify.@"export".Header = .{ .tool_version = "test", .deck_path = deck, .layout_path = "" };
     var out: std.Io.Writer.Allocating = .init(a);
-    try gpurify.@"export".json.writeReport(&out.writer, &header, &r.loaded.strings, r.loaded.grid, &r.outputs.violations, &r.outputs.waived, r.outputs.runs.items);
+    try gpurify.@"export".json.writeReport(&out.writer, &header, &r.loaded.strings, &r.loaded.deck.deck.layers, r.loaded.grid, &r.outputs.violations, &r.outputs.waived, r.outputs.runs.items);
     return out.written();
 }
 

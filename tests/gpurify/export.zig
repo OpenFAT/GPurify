@@ -1,8 +1,9 @@
 //! The writers, byte for byte, against one small world whose answer is
 //! known: two disjoint rectangles on one conductor (two nets, labelled by
-//! the test), two violation rows out of canonical order, three rule
-//! records, and a parasitic network of exact binary fractions. Ported from
-//! tests/export/main.rs.
+//! the test, on a deck whose one layer is `met1`), two violation rows out
+//! of canonical order (one on `met1`, one on no layer and no shape), three
+//! rule records, and a parasitic network of exact binary fractions. Ported
+//! from tests/export/main.rs.
 
 const std = @import("std");
 const testing = std.testing;
@@ -27,6 +28,9 @@ const inf = std.math.inf(f64);
 const World = struct {
     header: ex.Header = .{ .tool_version = "gpurify-test", .deck_path = "decks/test.json", .layout_path = "layouts/test.gds", .timestamp = "2020-01-01T00:00:00Z" },
     strings: geom.StrTable = .empty,
+    /// Holds `layers`' lists.
+    arena: std.heap.ArenaAllocator = .init(gpa),
+    layers: ingest.deck.LayerTable = .{},
     store: geom.GeometryStore = .empty,
     ids: testgen.shapes.Ids = .{},
     nets: topology.NetTable = .{},
@@ -57,6 +61,7 @@ const World = struct {
         const lower_net = w.nets.netOf(w.lower);
         w.upper_net = w.nets.netOf(w.upper);
 
+        w.layers = try .build(w.arena.allocator(), &.{.{ .name = try w.strings.intern(gpa, "met1"), .layer = 68, .datatype = 20 }});
         const width = try w.strings.intern(gpa, "m1.width");
         const density = try w.strings.intern(gpa, "m1.density");
         const antenna = try w.strings.intern(gpa, "m1.antenna");
@@ -64,7 +69,7 @@ const World = struct {
         if (upper_name) |name| try w.provenance.label(gpa, w.upper, try w.strings.intern(gpa, name));
         try topology.bindPortsInto(gpa, &w.nets, w.provenance.labels(), &w.ports);
 
-        try w.violations.push(gpa, .{ .rule = density, .layer = conductor, .severity = .warning, .at = .{ .x = 40, .y = 60 }, .measured = .ratio(0.8125), .limit = .ratio(0.75), .shape_a = w.upper, .shape_b = report.no_shape });
+        try w.violations.push(gpa, .{ .rule = density, .layer = report.no_layer, .severity = .warning, .at = .{ .x = 40, .y = 60 }, .measured = .ratio(0.8125), .limit = .ratio(0.75), .shape_a = report.no_shape, .shape_b = report.no_shape });
         try w.violations.push(gpa, .{ .rule = width, .layer = conductor, .severity = .@"error", .at = .{ .x = 10, .y = 20 }, .measured = .length(80), .limit = .length(100), .shape_a = w.lower, .shape_b = w.upper });
         w.runs = .{
             .{ .rule = width, .outcome = .ran, .examined = 1234, .violations = 1 },
@@ -82,6 +87,7 @@ const World = struct {
 
     fn deinit(w: *World) void {
         w.strings.deinit(gpa);
+        w.arena.deinit();
         w.store.deinit(gpa);
         w.ids.deinit(gpa);
         w.nets.deinit(gpa);
@@ -95,7 +101,7 @@ const World = struct {
     fn json(w: *World) ![]const u8 {
         w.out.clearRetainingCapacity();
         const none: report.Violations = .{};
-        try ex.json.writeReport(&w.out.writer, &w.header, &w.strings, try .init(1000), &w.violations, &none, &w.runs);
+        try ex.json.writeReport(&w.out.writer, &w.header, &w.strings, &w.layers, try .init(1000), &w.violations, &none, &w.runs);
         return w.out.written();
     }
 
@@ -164,14 +170,16 @@ const World = struct {
 test "the json report is exactly these bytes" {
     // Oracle: golden, written by hand from the known world (module doc): the
     // violation rows in the table's order, floats at six decimals, the skipped
-    // rule beside the ones that ran; and determinism, two worlds built apart give
-    // the same bytes.
+    // rule beside the ones that ran; `layer_name` the deck's name, `null` for
+    // `report.no_layer`, and a `report.no_shape` shape `null` (json.zig's
+    // `writeReport` doc); and determinism, two
+    // worlds built apart give the same bytes.
     const expected =
         \\{"header":{"tool_version":"gpurify-test","deck_path":"decks/test.json","layout_path":"layouts/test.gds","timestamp":"2020-01-01T00:00:00Z"},
     ++
-        \\"violations":[{"rule":"m1.density","layer":0,"severity":"warning","at":{"unit":"nm","x":40.000000,"y":60.000000},"measured":{"kind":"ratio","unit":"","value":0.812500},"limit":{"kind":"ratio","unit":"","value":0.750000},"shapes":[1,null]},
+        \\"violations":[{"rule":"m1.density","layer":65535,"layer_name":null,"severity":"warning","at":{"unit":"nm","x":40.000000,"y":60.000000},"measured":{"kind":"ratio","unit":"","value":0.812500},"limit":{"kind":"ratio","unit":"","value":0.750000},"shapes":[null,null]},
     ++
-        \\{"rule":"m1.width","layer":0,"severity":"error","at":{"unit":"nm","x":10.000000,"y":20.000000},"measured":{"kind":"length","unit":"nm","value":80.000000},"limit":{"kind":"length","unit":"nm","value":100.000000},"shapes":[0,1]}],
+        \\{"rule":"m1.width","layer":0,"layer_name":"met1","severity":"error","at":{"unit":"nm","x":10.000000,"y":20.000000},"measured":{"kind":"length","unit":"nm","value":80.000000},"limit":{"kind":"length","unit":"nm","value":100.000000},"shapes":[0,1]}],
     ++
         \\"runs":[{"rule":"m1.width","outcome":"ran","examined":1234,"violations":1},{"rule":"m1.density","outcome":"ran","examined":5678,"violations":1},{"rule":"m1.antenna","outcome":"skipped:no_design_intent","examined":0,"violations":0}]}
     ;

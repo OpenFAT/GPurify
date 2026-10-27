@@ -192,16 +192,18 @@ fn system(env: Env, arena: Allocator, cli_: *const args.Cli, path: []const u8, o
     };
     var text: Writer.Allocating = .init(arena);
     const o = &ran.outputs;
+    // No one deck: every system row is on `report.no_layer`.
+    const no_layers: gpurify.@"export".LayerTable = .{};
     switch (cli_.format) {
         .json => {
             const header: gpurify.@"export".Header = .{ .tool_version = tool_version, .deck_path = path, .layout_path = path };
-            gpurify.@"export".json.writeReport(&text.writer, &header, &ran.strings, ran.grid, &o.violations, &o.waived, o.runs.items) catch |e| switch (e) {
+            gpurify.@"export".json.writeReport(&text.writer, &header, &ran.strings, &no_layers, ran.grid, &o.violations, &o.waived, o.runs.items) catch |e| switch (e) {
                 error.Unrepresentable => return fail(err, "json: a value the report cannot represent", .{}),
                 error.WriteFailed => return error.WriteFailed,
             };
         },
         .text, .spef, .dspf, .spice => {
-            try gpurify.@"export".text.writeViolations(&text.writer, &ran.strings, ran.grid, &o.violations, &o.waived);
+            try gpurify.@"export".text.writeViolations(&text.writer, &ran.strings, &no_layers, ran.grid, &o.violations, &o.waived);
             try gpurify.@"export".text.writeSummary(&text.writer, ran.summary);
         },
     }
@@ -250,7 +252,7 @@ fn render(env: Env, arena: Allocator, cli_: *const args.Cli, text: *Writer, err:
                 error.OutOfMemory, error.WriteFailed => |x| return x,
             };
         },
-        .json => gpurify.@"export".json.writeReport(text, &header, strings, ran.loaded.grid, &o.violations, &o.waived, o.runs.items) catch |e| switch (e) {
+        .json => gpurify.@"export".json.writeReport(text, &header, strings, &ran.loaded.deck.deck.layers, ran.loaded.grid, &o.violations, &o.waived, o.runs.items) catch |e| switch (e) {
             error.Unrepresentable => {
                 _ = fail(err, "json: a value the report cannot represent", .{});
                 return error.Reported;
@@ -333,7 +335,7 @@ fn writeText(w: *Writer, ran: Ran) Writer.Error!void {
     const o = ran.outputs;
     const strings = &ran.loaded.strings;
     try text.writeRuns(w, strings, o.runs.items);
-    try text.writeViolations(w, strings, ran.loaded.grid, &o.violations, &o.waived);
+    try text.writeViolations(w, strings, &ran.loaded.deck.deck.layers, ran.loaded.grid, &o.violations, &o.waived);
     const none: @typeInfo(@TypeOf(o.lvs)).optional.child = .{};
     const traced = if (o.lvs) |*t| t else &none;
     const placements = if (ran.loaded.reference) |*r| r.placements.items else &.{};
@@ -539,7 +541,7 @@ test "drc on the shipped sky130 deck passes a 1 um met1 square and fails a 100 n
     const strip = try runIn(arena, tmp.dir, &.{ "drc", "strip.gds", "--deck", "sky130", "--threads", "2" });
     try testing.expectEqual(1, strip[0]);
     try testing.expect(std.mem.indexOf(u8, strip[1], "  m1.1: ran, examined 1 shapes, found 1 violations\n") != null);
-    try testing.expect(std.mem.indexOf(u8, strip[1], "violations: 1\n  m1.1 error layer 35 at (50 nm, 500 nm) measured 100 nm against limit 140 nm on shape 0\n") != null);
+    try testing.expect(std.mem.indexOf(u8, strip[1], "violations: 1\n  m1.1 error layer met1 at (50 nm, 500 nm) measured 100 nm against limit 140 nm on shape 0\n") != null);
 }
 
 test "a refusal exits 1 with one error line and no report" {
