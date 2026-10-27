@@ -225,10 +225,11 @@ fn labelNames(arena: Allocator, loaded: *const Loaded, extracted: *const Extract
 }
 
 /// `n<id>` for every net still unnamed, lengthened with `_` until no other
-/// net has that name, so a schematic net literally `n7` keeps its own.
+/// net has that name in any case, so a schematic net literally `n7` or `N7`
+/// keeps its own: SPICE reads node names case-blind.
 fn fallbackNetNames(arena: Allocator, out: *Subckt) Allocator.Error!void {
     var taken: std.StringHashMapUnmanaged(void) = .empty;
-    for (out.net_name.items) |name| if (name) |text| try taken.put(arena, text, {});
+    for (out.net_name.items) |name| if (name) |text| try taken.put(arena, try std.ascii.allocLowerString(arena, text), {});
     for (out.net_name.items, 0..) |*name, n| if (name.* == null) {
         var text = try std.fmt.allocPrint(arena, "n{d}", .{n});
         while (taken.contains(text)) text = try std.fmt.allocPrint(arena, "{s}_", .{text});
@@ -336,4 +337,19 @@ fn orderU32(want: u32, item: u32) std.math.Order {
 
 fn orderNet(want: topology.NetId, item: topology.NetId) std.math.Order {
     return std.math.order(@backingInt(want), @backingInt(item));
+}
+
+test "a fallback name steps past a label that differs only in case" {
+    // Oracle: SPICE node names are case-blind (ngspice folds them to lower
+    // case), so net 1's fallback cannot be `n1` beside a net labelled `N1`;
+    // net 2's `n2` collides with nothing.
+    var arena_state: std.heap.ArenaAllocator = .init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var out: Subckt = .{};
+    try out.net_name.appendSlice(arena, &.{ "N1", null, null });
+    try fallbackNetNames(arena, &out);
+    try std.testing.expectEqualStrings("N1", out.net_name.items[0].?);
+    try std.testing.expectEqualStrings("n1_", out.net_name.items[1].?);
+    try std.testing.expectEqualStrings("n2", out.net_name.items[2].?);
 }
