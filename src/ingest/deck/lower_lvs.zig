@@ -41,6 +41,7 @@ pub fn buildLvs(c: Ctx, declared: *const LvsSrc, devices: []const DeviceSource, 
     lvs.ignore_shorted = try internAll(c, declared.ignore_shorted.items);
     lvs.ports_by_name = declared.ports_by_name;
     lvs.recognize_gates = declared.recognize_gates;
+    lvs.split_gates = declared.split_gates;
     for (declared.blackbox.items) |pattern| {
         // A model is a device by its recogniser; one also boxed would be two
         // things on the reference side.

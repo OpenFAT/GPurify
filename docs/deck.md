@@ -796,6 +796,7 @@ compares each value a schematic card states under the card's name for it:
 |---|---|---|
 | `w`, `l` | `mos`, `resistor` | The marker's extent across and along the current, which runs toward the first source or drain (a resistor's first end). Exact for a straight rectangle; a bent resistor body reads its bounding box. |
 | `nf` | `mos` | 1: a marker is one channel, and fingers in parallel add up. |
+| `nfin` | `mos` with `fins` | The shapes of the `fins` layer under the marker, pieces that touch counted once; such a transistor measures no `w`. Fingers in parallel add up, `m` multiplies it, and it is compared exactly. |
 | `area`, `perim` | every kind | The marker's area, less any hole in it, and its perimeter, a hole's edge included. A hole is part of its marker, never a device of its own. A resistor, capacitor or diode card may also write them `A` and `P` (KLayout), or the perimeter `pj` (ngspice). |
 | `as`, `ad`, `ps`, `pd` | `mos` | The area and perimeter of the source's and the drain's polygon on its terminal layer, the edge along the channel included. A diffusion between fingers is shared evenly by the transistors it serves, as KLayout shares it, so fingers in parallel add up to it. |
 | `ae`, `pe` | `bjt` | The area and perimeter of the emitter's polygon, the second terminal layer's. |
@@ -812,6 +813,14 @@ the emitter region as a `bjt`'s second, and these are their measures.
 A value the deck does not give is not computed, never taken as zero, so a
 schematic that states it is reported (`lvs.undeclared_param`). Nothing
 measures a capacitor's `w` and `l`.
+
+A FinFET's size is its fin count, not a width. Name the fin layer with
+`fins`, and each transistor of the row is sized by the fins drawn under its
+channel (`nfin`), as the ASAP7 schematics state it:
+
+```
+device mos NMOS_RVT model "nmos_rvt" terminals [GATE_FET, SD, SD] fins FIN
+```
 
 A `mos` may state when it conducts, for the voltage rules:
 
@@ -915,6 +924,7 @@ lvs min_caps 10aF
 lvs same_nets "OUT_PAD" "OUT"
 lvs count "npn13G2" <= 4000
 lvs recognize_gates
+lvs split_gates
 lvs lde "nfet" od diff max 10um well nwell scref 950nm
 lvs blackbox "sram_*"
 lvs filter_unused ae c u
@@ -928,7 +938,7 @@ a `device` statement must declare.
 every parameter without a row of its own may be on the layout and the
 schematic and still agree: `|a - b| <= r × max(|a|, |b|)`, `r` a fraction
 from 0 to 1 or a percentage. Counts (`m`, `nf`) are whole numbers and agree
-only exactly. LVS needs it: a deck that states none is refused at the
+only exactly, as does a fin count (`nfin`). LVS needs it: a deck that states none is refused at the
 comparison, since no tolerance is every foundry's. The shipped decks state
 `2%`.
 
@@ -942,7 +952,7 @@ ohms and nothing relative. `relative` is a fraction from 0 to 1, or a
 percentage. `absolute` is written in the parameter's unit: a length for
 `w`, `l`, `ps`, `pd`, `pe` and `perim`, an area for `area`, `as`, `ad` and
 `ae`, a resistance for `r`, a capacitance (`aF`, `fF`, `pF`) for `c`, a
-bare count for `m` and `nf`; any other parameter takes a relative
+bare count for `m`, `nf` and `nfin`; any other parameter takes a relative
 tolerance only. A parameter has at most one row per model.
 
 **`lvs ignore_parameter "model" param`** leaves a parameter out of the
@@ -999,7 +1009,7 @@ nets nothing else tells apart, and are never compared.
 **`lvs range "model" param >= min <= max`** holds every layout device of
 the model to bounds on what is drawn, as a foundry states each device's
 legal sizes: `w`, `l`, `perim`, `ps`, `pd` and `pe` take lengths, `area`,
-`as`, `ad` and `ae` areas, and `nf` a count, measured as the table in
+`as`, `ad` and `ae` areas, and `nf` and `nfin` counts, measured as the table in
 [Devices](#devices) says. Give `>=`, `<=` or both; a value at a bound is
 legal. A device out of range is reported as `lvs.param_range` on its
 marker; one whose parameter could not be measured (a source drawn in
@@ -1061,6 +1071,19 @@ this way is not merged again, so an AOI's or OAI's groups in another order
 still mismatch, and transistors of different sizes never merge, since
 swapping them would change the circuit. Off by default: in an analog
 circuit a stack's order is part of the design.
+
+**`lvs split_gates`** joins the fingers of a stack drawn with inner nets of
+their own, as KLayout's `split_gates` does: a cell often draws a wide
+transistor of a series stack as several narrower stacks side by side, each
+with its own middle nets, where the schematic has one stack. Before
+reduction, on both sides, a chain is transistors in series from one net to
+another through nets that join exactly two channel ends and nothing else
+(no port); two chains between the same two nets that agree position by
+position in model, gate and bulk nets and `l` are fingers of one stack, and
+their inner nets are joined, so the fingers then merge in parallel. A
+finger whose middle net is strapped to another's (more than two channel
+ends on it) is no chain, and stacks in another order stay apart. Off by
+default.
 
 **`lvs lde "model" od <layer> max <length> well <layer> scref <length>`**
 measures BSIM4's layout-dependent effect parameters on every transistor of
@@ -1163,8 +1186,8 @@ dielectric positive, a temperature coefficient of either sign, the rest zero
 or more. A zero means the deck does not
 state that value, and a layer whose sheet resistance is not stated is refused
 when PEX reads it. A line with no dielectric gives no closed-form coupling and,
-above the substrate, a layer the field solve refuses (how `generic_finfet`
-says it extracts no capacitance). A negative value, or a dielectric of 0, is
+above the substrate, a layer the field solve refuses (how `asap7`
+says it extracts no lateral coupling). A negative value, or a dielectric of 0, is
 an error at the value, rather than a capacitance or gap that drops out.
 
 A layer at height 0 (a well or a diffusion) is a junction in the substrate:

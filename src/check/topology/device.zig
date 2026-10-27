@@ -73,6 +73,10 @@ pub const DeviceParam = enum(u8) {
     area,
     /// `perim`: every ring's length, a diagonal edge rounded down.
     perimeter,
+    /// `nfin`: a finned MOS's size, the shapes of the deck's `fins` layer
+    /// under the marker, touching ones counted once; it then has no `w`. A
+    /// parallel merge sums it.
+    fins,
     /// `nf`: 1 per MOS; a parallel merge sums it.
     fingers,
     /// `as`: the source polygon's area shared evenly by every MOS it serves.
@@ -173,12 +177,14 @@ const no_poly: PolyId = @fromBackingInt(std.math.maxInt(u32));
 /// Which axis a MOS channel's or a resistor body's current flows along.
 const Axis = enum(u8) { unknown, x, y };
 
-/// A bound marker: its polygon, recogniser row, offset into `bound`, axis.
+/// A bound marker: its polygon, recogniser row, offset into `bound`, axis,
+/// and its fin count when the row names a `fins` layer.
 const Match = struct {
     marker: PolyId,
     row: u32,
     at: u32,
     axis: Axis,
+    fins: ?u32,
 
     fn lessThan(_: void, a: Match, b: Match) bool {
         return @backingInt(a.marker) < @backingInt(b.marker);
@@ -199,6 +205,8 @@ const Work = struct {
     bind: std.ArrayList(NetId) = .empty,
     bind_poly: std.ArrayList(PolyId) = .empty,
     sd_axis: std.ArrayList(Axis) = .empty,
+    /// Per marker of the row being bound: the fin shapes under it.
+    fin_count: std.ArrayList(u32) = .empty,
     positions: std.ArrayList(usize) = .empty,
     group: std.ArrayList(usize) = .empty,
     shapes: std.ArrayList(PolyId) = .empty,
@@ -250,6 +258,7 @@ pub fn cardName(kind: DeviceKind, param: DeviceParam) ?[]const u8 {
     return switch (param) {
         .width => "w",
         .length => "l",
+        .fins => "nfin",
         .fingers => "nf",
         .source_area => "as",
         .drain_area => "ad",
@@ -264,8 +273,10 @@ pub fn cardName(kind: DeviceKind, param: DeviceParam) ?[]const u8 {
 /// Recognises every device the deck describes into `out` (cleared and
 /// refilled). Each polygon on a marker layer is a candidate (a hole row is
 /// part of its polygon, never a marker). A terminal polygon is under the
-/// marker when they share a point. Polygons under it that touch are one
-/// shape; each position needs a shape of its own, positions naming one
+/// marker when they share a point; so is a fin, and a `mos` row naming a
+/// `fins` layer is sized by its fin shapes under the marker (`nfin`),
+/// touching ones counted once, and measures no `w`. Polygons under it that
+/// touch are one shape; each position needs a shape of its own, positions naming one
 /// layer taking its shapes in ascending row order. More shapes than
 /// positions are terminals drawn apart when their nets are exactly as many
 /// as the positions (one net each, in order of each net's lowest shape) or
@@ -385,6 +396,8 @@ fn bindRow(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable, r
             try fillPositions(gpa, nets, pieced, w, w.bind.items[offset * width ..][0..width], w.bind_poly.items[offset * width ..][0..width]);
         }
     }
+    const fin_layer: ?LayerId = if (kind == .mos and row < recognition.fins.len) recognition.fins[row] else null;
+    if (fin_layer) |fin| try countFins(gpa, store, nets, recognition.marker[row], fin, markers.start, markers.len(), w);
     for (0..markers.len()) |offset| {
         const marker: PolyId = @fromBackingInt(@intCast(markers.start + offset));
         const slots = w.bind.items[offset * width ..][0..width];
@@ -398,7 +411,13 @@ fn bindRow(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable, r
             try out.refused_listed.append(gpa, @intCast(width));
             continue;
         }
-        try w.matched.append(gpa, .{ .marker = marker, .row = @intCast(row), .at = @intCast(w.bound.items.len), .axis = w.sd_axis.items[offset] });
+        try w.matched.append(gpa, .{
+            .marker = marker,
+            .row = @intCast(row),
+            .at = @intCast(w.bound.items.len),
+            .axis = w.sd_axis.items[offset],
+            .fins = if (fin_layer != null) w.fin_count.items[offset] else null,
+        });
         try w.bound.appendSlice(gpa, slots);
         try w.bound_poly.appendSlice(gpa, w.bind_poly.items[offset * width ..][0..width]);
     }
@@ -493,6 +512,27 @@ fn root(group: []const usize, at: usize) usize {
     return i;
 }
 
+/// The fin shapes under each of one row's `count` markers, rows from
+/// `first`, into `w.fin_count`: the `fin` polygons sharing a point with the
+/// marker, touching ones one shape, as a terminal's shapes are grouped.
+fn countFins(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable, marker_layer: LayerId, fin: LayerId, first: u32, count: usize, w: *Work) Allocator.Error!void {
+    try w.fin_count.resize(gpa, count);
+    @memset(w.fin_count.items, 0);
+    const ti = try terminalIndex(gpa, store, nets, fin, false, w);
+    try geom.index.crossLayerPairsInto(gpa, store, marker_layer, &ti.index, 0, &w.pairs);
+    try net.retainIntersectingInto(gpa, store, &nets.holes, w.pairs.items, &w.exact);
+    // `exact` ascends by `(marker, fin)`: one run per marker.
+    var from: usize = 0;
+    while (from < w.exact.items.len) {
+        const marker = w.exact.items[from].a;
+        var to = from;
+        while (to < w.exact.items.len and w.exact.items[to].a == marker) to += 1;
+        try groupShapes(gpa, store, nets, w.exact.items[from..to], w);
+        w.fin_count.items[@backingInt(marker) - first] = @intCast(w.shapes.items.len);
+        from = to;
+    }
+}
+
 fn dedupMatches(matched: *std.ArrayList(Match)) void {
     var kept: usize = 0;
     for (matched.items) |m| {
@@ -552,6 +592,7 @@ fn emitDevice(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable
     try out.terminal_role.appendSlice(gpa, w.role.items[span_from..][0..span_len]);
     try out.terminal_start.append(gpa, @intCast(out.terminal_net.items.len));
     // W and L from the marker's box: L along the channel or body, W across.
+    // A finned MOS is sized by its fins and has no W.
     // ponytail: a bent resistor reads its bounding box; KLayout's W from the
     // edges shared with its terminals, L = area / W, would fit it.
     if ((kind == .mos or kind == .resistor) and m.axis != .unknown) {
@@ -559,9 +600,10 @@ fn emitDevice(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable
         const ex = b.xhi - b.xlo;
         const ey = b.yhi - b.ylo;
         const along_x = m.axis == .x;
-        try pushParam(gpa, out, .width, .{ .length = if (along_x) ey else ex });
+        if (m.fins == null) try pushParam(gpa, out, .width, .{ .length = if (along_x) ey else ex });
         try pushParam(gpa, out, .length, .{ .length = if (along_x) ex else ey });
     }
+    if (m.fins) |count| try pushParam(gpa, out, .fins, .{ .count = count });
     if (kind == .mos) try pushParam(gpa, out, .fingers, .{ .count = 1 });
     const own = areaAndPerimeter(store, &nets.holes, m.marker);
     try pushParam(gpa, out, .area, .{ .area = own.area });

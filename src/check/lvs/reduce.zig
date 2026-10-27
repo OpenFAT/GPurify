@@ -10,8 +10,8 @@
 //!
 //! | Kind | Parallel | Series | `m` |
 //! |---|---|---|---|
-//! | MOS stating `W` | sums `W`, `nf`, `as`, `ad`, `ps`, `pd` (each to its channel end); the rest, `L` included, agrees | sums `L`, which both state; never with a diffusion stated | folded into `W` and the diffusions |
-//! | MOS stating no `W` | sums the count `m`; the rest agrees | as above | kept |
+//! | MOS stating `W` or `nfin` | sums `W`, `nf`, `nfin`, `as`, `ad`, `ps`, `pd` (each to its channel end); the rest, `L` included, agrees | sums `L`, which both state; never with a diffusion stated | folded into `W`, `nfin` and the diffusions |
+//! | MOS stating neither | sums the count `m`; the rest agrees | as above | kept |
 //! | resistor, capacitor, diode, bipolar, inductor | sums `m`; the rest agrees | never | kept |
 //! | a black box | never | never | kept |
 //! | the same under `relaxed`, stating its value | combines the value by its law (`r`, `ind` harmonically; `c`, `area`, `ae` adding) and adds `w`, `area`, `perim`, `pe` | resistor, capacitor, inductor only: the opposite law, adding `area`, `perim`, a resistor's `l`; `w` agrees | folded in |
@@ -117,20 +117,20 @@ const FoldCtx = struct {
     names: ParamNames,
     multiplier: StrId,
 
-    /// Each MOS's `m` folded into its `W` and diffusions; a relaxed
+    /// Each MOS's `m` folded into its `W`, `nfin` and diffusions; a relaxed
     /// passive's into its value and what adds; every other `m` kept as the
     /// count, except an `m` of 1, which every card has.
     pub fn rewrite(c: FoldCtx, gpa: Allocator, g: *const Graph, device: u32, out: *std.ArrayList(Param)) Allocator.Error!void {
         const params = g.paramsOf(device);
         const m = law.countOf(params, c.multiplier);
         const kind = g.device_kind.items[device];
-        const into: ?StrId = if (law.sumsWidth(kind, params, c.names)) c.names.width else null;
+        const wide = law.sumsWidth(kind, params, c.names);
         const device_law = Law.of(kind, params, c.names);
         for (params) |p| {
             if (p.name == c.multiplier) {
                 // Folded, or a count of one: nothing left to say.
-                if (into == null and device_law == null and m != 1.0) try out.append(gpa, p);
-            } else if (into != null and (law.is(into, p.name) or isDiffusion(c.names, p.name))) {
+                if (!wide and device_law == null and m != 1.0) try out.append(gpa, p);
+            } else if (wide and (law.is(c.names.width, p.name) or law.is(c.names.fins, p.name) or isDiffusion(c.names, p.name))) {
                 try out.append(gpa, .{ .name = p.name, .value = p.value * m });
             } else if (device_law != null and device_law.?.combines(p.name)) {
                 try out.append(gpa, .{ .name = p.name, .value = device_law.?.times(p.name, p.value, m) });
@@ -221,7 +221,7 @@ fn isDiffusion(names: ParamNames, name: StrId) bool {
     return false;
 }
 
-/// `m` devices in parallel are one of `m` times the width and diffusion.
+/// `m` devices in parallel are one of `m` times the width, fins and diffusion.
 /// Untouched without the `m` name.
 fn foldMultiplier(gpa: Allocator, g: *Graph, names: ParamNames) Allocator.Error!void {
     const multiplier = names.multiplier orelse return;

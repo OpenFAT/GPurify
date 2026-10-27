@@ -18,6 +18,11 @@ const io = testing.io;
 
 const DeckFile = struct { name: []const u8, text: []const u8 };
 
+/// The layers asap7.deck's header names as conducting with no public
+/// resistance (its known blocker), sorted: the one exception to a sheet
+/// resistance on every current-carrying layer.
+const asap7_unsourced = [_][]const u8{ "GATE_C", "GATE_FET", "LIG", "LIG_LISD", "LISD", "NTAP", "PTAP", "SD", "SDT", "V0" };
+
 const Parsed = struct {
     deck: Deck,
     strings: geom.StrTable,
@@ -50,6 +55,10 @@ fn lessFile(_: void, x: DeckFile, y: DeckFile) bool {
     return std.mem.order(u8, x.name, y.name) == .lt;
 }
 
+fn lessName(_: void, x: []const u8, y: []const u8) bool {
+    return std.mem.order(u8, x, y) == .lt;
+}
+
 fn parse(a: Allocator, text: []const u8) !Parsed {
     var p: Parsed = .{ .deck = undefined, .strings = .empty };
     var diag: ingest.deck.Diag = .{};
@@ -77,11 +86,16 @@ test "every deck file is a shipped constant byte for byte" {
 test "every shipped constant compiles" {
     // Oracle: construct-from-answer. Each shipped constant compiles as a
     // consumer compiling it would and configures rules; each named deck
-    // builds its own constant (another deck has another rule count).
+    // builds its own constant (another deck has another rule count), and
+    // the one alias past them, `generic_finfet`, builds asap7's.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     const a = arena.allocator();
-    for (gpurify.pdks.all, gpurify.pdks.decks) |shipped, named| {
+    const alias = gpurify.pdks.decks[gpurify.pdks.all.len];
+    try testing.expectEqualStrings("generic_finfet", alias.name);
+    try testing.expectEqual(gpurify.pdks.all.len + 1, gpurify.pdks.decks.len);
+    try testing.expectEqual(@intFromPtr(gpurify.pdks.decks[0].build), @intFromPtr(alias.build));
+    for (gpurify.pdks.all, gpurify.pdks.decks[0..gpurify.pdks.all.len]) |shipped, named| {
         try testing.expectEqualStrings(shipped.name, named.name);
         var strings: geom.StrTable = .empty;
         var diag: check.deck.compile.Diag = .{};
@@ -97,22 +111,27 @@ test "every current-carrying layer has a sheet resistance" {
     // Oracle: construct-from-answer, against the power grid's stated refusal:
     // a conductor, or a cut between two non-global layers, with no positive
     // finite sheet resistance refuses the whole IR-drop family; and a deck
-    // with no conductor extracts every polygon as its own net.
+    // with no conductor extracts every polygon as its own net. The one
+    // exception is asap7's middle of line, which no public source gives a
+    // resistance: those layers, and no others, carry current unsourced.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
+    const a = arena.allocator();
     for (gpurify.pdks.all) |shipped| {
-        const d = try parse(arena.allocator(), shipped.text);
+        const d = try parse(a, shipped.text);
         const conn = d.deck.connectivity;
         var carrying: std.ArrayList(LayerId) = .empty;
-        try carrying.appendSlice(arena.allocator(), conn.conductors);
-        for (conn.via_cut, conn.via_connects) |cut, pair| if (!isIn(conn.global, pair[0]) and !isIn(conn.global, pair[1])) try carrying.append(arena.allocator(), cut);
+        try carrying.appendSlice(a, conn.conductors);
+        for (conn.via_cut, conn.via_connects) |cut, pair| if (!isIn(conn.global, pair[0]) and !isIn(conn.global, pair[1])) try carrying.append(a, cut);
+        var unsourced: std.ArrayList([]const u8) = .empty;
         for (carrying.items) |layer| {
             const ohms = if (@backingInt(layer) < d.deck.stack.sheet_res_ohm_sq.len) d.deck.stack.sheet_res_ohm_sq[@backingInt(layer)] else std.math.nan(f64);
-            if (!(ohms > 0 and std.math.isFinite(ohms))) {
-                std.debug.print("{s}: {s} carries current with {d} ohms per square\n", .{ shipped.name, d.name(layer), ohms });
-                return error.TestNoSheetResistance;
-            }
+            if (ohms > 0 and std.math.isFinite(ohms)) continue;
+            for (unsourced.items) |n| (if (std.mem.eql(u8, n, d.name(layer))) break) else try unsourced.append(a, d.name(layer));
         }
+        std.mem.sort([]const u8, unsourced.items, {}, lessName);
+        const allowed: []const []const u8 = if (std.mem.eql(u8, shipped.name, "asap7")) &asap7_unsourced else &.{};
+        try testing.expectEqualDeep(allowed, @as([]const []const u8, unsourced.items));
         try testing.expect(conn.conductors.len != 0);
     }
 }

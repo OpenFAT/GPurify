@@ -238,11 +238,21 @@ None has been compared against foundry signoff results.
   least 0.16 µm² as a protection diode (Ant.e/f), where IHP's own KLayout
   deck sums a net's diode area and counts it above 0.16 µm², so a net
   protected only by several small pieces is held to the no-diode limit here.
-- `generic_finfet` is ASAP7, a predictive process no fab builds. It
-  recognises no transistors and extracts no capacitance: the manual gives no
-  resistance for the gate and local-interconnect layers and no capacitance at
-  all. Its metal heights are stacked from the manual's widths and the 2:1
-  aspect ratio, not from a published cross-section.
+- `asap7` (also shipped as `generic_finfet`) is ASAP7, a predictive process
+  no fab builds. Its gate, LIG, LISD, source/drain and tap diffusions, and the
+  SDT, V0 and LIG-overlap contacts that join them conduct, but no public
+  source gives any of them a resistance, so PEX on a layout drawing them is
+  refused naming the layer, and the IR-drop solve is refused on every
+  layout (its sheet resistances are read deck-wide). Its metal capacitance
+  is one width's isolated-wire value from OpenROAD's `rcx_patterns.rules`,
+  all as fringe, with no dielectric and so no lateral coupling. Its metal
+  heights are stacked from the manual's widths and the 2:1 aspect ratio,
+  not from a published cross-section. Of the 836 ORFS standard cells with
+  a CDL (four threshold libraries), 800 LVS-match; AOI211xp5 and SDFLx1-3
+  match with `lvs recognize_gates` added, and A2O1A1O1Ixp25, NAND3x2,
+  NOR3x2, OAI21x1 and OAI221xp5 are drawn with a stack in another order,
+  or with fingers' middle nets strapped together, than their CDL states,
+  which only complex-gate recognition would equate.
 
 ## Liberty generation
 

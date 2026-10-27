@@ -132,7 +132,7 @@ test "every shipped deck parses, prints, and reads back to the same deck" {
     // parser's inverse, so the printed text parses to an equal source, which
     // lowers to the same deck in a fresh table.
     const gpa = testing.allocator;
-    const decks = [_][]const u8{ "sky130", "gf180mcu", "ihp_sg13g2", "generic_finfet" };
+    const decks = [_][]const u8{ "sky130", "gf180mcu", "ihp_sg13g2", "asap7" };
     for (decks) |name| {
         var arena: std.heap.ArenaAllocator = .init(gpa);
         defer arena.deinit();

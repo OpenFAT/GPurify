@@ -1,6 +1,6 @@
-//! The Zig twin of `pdks/generic_finfet.deck`, part 1 of 1 (rules `GEOMETRY.NONORTHOGONAL` to `M9.W.4`, in
+//! The Zig twin of `pdks/asap7.deck`, part 1 of 1 (rules `GEOMETRY.NONORTHOGONAL` to `M9.W.4`, in
 //! statement order). Translated mechanically from
-//! crates/check/tests/deck/twins/generic_finfet.rs, itself translated from the deck
+//! crates/check/tests/deck/twins/generic_finfet.rs (the deck's old name), itself translated from the deck
 //! text by a reader independent of the parser; its `for` loops unrolled
 //! and its `let` bindings substituted. tests/check/deck/twins.zig holds
 //! it to the parsed text.
@@ -64,6 +64,17 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.layer("M7_LABEL", .{ 70, 2 });
     try b.layer("M8_LABEL", .{ 80, 2 });
     try b.layer("M9_LABEL", .{ 90, 2 });
+    try b.layer("M1_PIN", .{ 19, 251 });
+    try b.layer("M2_PIN", .{ 20, 251 });
+    try b.layer("M3_PIN", .{ 30, 251 });
+    try b.layer("M4_PIN", .{ 40, 251 });
+    try b.layer("M5_PIN", .{ 50, 251 });
+    try b.layer("M6_PIN", .{ 60, 251 });
+    try b.layer("M7_PIN", .{ 70, 251 });
+    try b.layer("M8_PIN", .{ 80, 251 });
+    try b.layer("M9_PIN", .{ 90, 251 });
+    try b.ignore(.{ 1, 251 });
+    try b.ignore(.{ 3, 251 });
     try b.derived("GATE_UNCUT", l("GATE").not(l("GCUT")));
     try b.derived("CHANNEL", l("GATE_UNCUT").@"and"(l("ACTIVE")));
     try b.derived("GATE_FIELD", l("GATE_UNCUT").notInteracting(l("ACTIVE")));
@@ -92,6 +103,21 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.derived("PTAP", l("ACTIVE").@"and"(l("PSELECT")).group().not(l("WELL")).group().notInteracting(l("GATE")));
     try b.derived("PMOS_ACTIVE", l("ACTIVE").@"and"(l("PSELECT")).@"and"(l("WELL")).group().interacting(l("GATE")));
     try b.derived("NMOS_ACTIVE", l("ACTIVE").@"and"(l("NSELECT")).group().not(l("WELL")).group().interacting(l("GATE")));
+    try b.derived("SD", l("ACTIVE").interacting(l("GATE")).not(l("GATE")));
+    try b.derived("GATE_FET", l("GATE_UNCUT").interacting(l("ACTIVE")));
+    try b.derived("GATE_C", l("LIG").@"and"(l("GATE_FET")));
+    try b.derived("VT_MARKED", l("SLVT").@"or"(l("LVT")).@"or"(l("SRAMVT")));
+    try b.derived("NCHANNEL", l("CHANNEL").@"and"(l("NSELECT")));
+    try b.derived("PCHANNEL", l("CHANNEL").@"and"(l("PSELECT")));
+    try b.derived("NMOS_RVT", l("NCHANNEL").not(l("VT_MARKED")));
+    try b.derived("NMOS_LVT", l("NCHANNEL").@"and"(l("LVT")));
+    try b.derived("NMOS_SLVT", l("NCHANNEL").@"and"(l("SLVT")));
+    try b.derived("NMOS_SRAM", l("NCHANNEL").@"and"(l("SRAMVT")));
+    try b.derived("PMOS_RVT", l("PCHANNEL").not(l("VT_MARKED")));
+    try b.derived("PMOS_LVT", l("PCHANNEL").@"and"(l("LVT")));
+    try b.derived("PMOS_SLVT", l("PCHANNEL").@"and"(l("SLVT")));
+    try b.derived("PMOS_SRAM", l("PCHANNEL").@"and"(l("SRAMVT")));
+    try b.derived("SDT_NET", l("SDT").@"and"(l("LISD")));
     try b.rule("GEOMETRY.NONORTHOGONAL", row(.angle, .{}, .{ .angle = &.{ 0, 90 } }));
     try b.rule("WELL.W.2", row(.min_width, .{ .layer = l("WELL") }, .{ .limit = 54 }));
     try b.rule("WELL.S.2", row(.min_spacing, .{ .layer = l("WELL") }, .{ .limit = 54 }));
@@ -264,8 +290,15 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.rule("V9.M9.EN.1", row(.asymmetric_enclosure, .{ .inner = l("V9"), .outer = l("M9") }, .{ .min_one_side = 20 }));
     try b.rule("V9.PAD.EN.2", row(.asymmetric_enclosure, .{ .inner = l("V9"), .outer = l("PAD") }, .{ .min_one_side = 20 }));
     try b.rule("ir_drop", row(.ir_drop, .{}, .{}));
-    try b.doc.connectivity.conductors.appendSlice(a, &.{ "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9" });
+    try b.doc.connectivity.conductors.appendSlice(a, &.{ "SD", "NTAP", "PTAP", "GATE_FET", "LISD", "LIG", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9" });
     b.doc.connectivity.intra_layer_touch = true;
+    try b.doc.connectivity.vias.append(a, .{ .layer = "SDT", .connects = .{ "SD", "LISD" } });
+    try b.doc.connectivity.vias.append(a, .{ .layer = "SDT", .connects = .{ "NTAP", "LISD" } });
+    try b.doc.connectivity.vias.append(a, .{ .layer = "SDT", .connects = .{ "PTAP", "LISD" } });
+    try b.doc.connectivity.vias.append(a, .{ .layer = "GATE_C", .connects = .{ "GATE_FET", "LIG" } });
+    try b.doc.connectivity.vias.append(a, .{ .layer = "LIG_LISD", .connects = .{ "LIG", "LISD" } });
+    try b.doc.connectivity.vias.append(a, .{ .layer = "V0", .connects = .{ "LISD", "M1" } });
+    try b.doc.connectivity.vias.append(a, .{ .layer = "V0", .connects = .{ "LIG", "M1" } });
     try b.doc.connectivity.vias.append(a, .{ .layer = "V1", .connects = .{ "M1", "M2" } });
     try b.doc.connectivity.vias.append(a, .{ .layer = "V2", .connects = .{ "M2", "M3" } });
     try b.doc.connectivity.vias.append(a, .{ .layer = "V3", .connects = .{ "M3", "M4" } });
@@ -283,23 +316,43 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.doc.connectivity.labels.append(a, .{ .layer = "M7_LABEL", .names = "M7" });
     try b.doc.connectivity.labels.append(a, .{ .layer = "M8_LABEL", .names = "M8" });
     try b.doc.connectivity.labels.append(a, .{ .layer = "M9_LABEL", .names = "M9" });
-    try b.doc.pex.append(a, .{ .layer = "M1", .row = .{ .thickness_nm = 36.0, .height_nm = 0.0, .sheet_res_ohm_sq = 1.2675, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M1_PIN", .names = "M1" });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M2_PIN", .names = "M2" });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M3_PIN", .names = "M3" });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M4_PIN", .names = "M4" });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M5_PIN", .names = "M5" });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M6_PIN", .names = "M6" });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M7_PIN", .names = "M7" });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M8_PIN", .names = "M8" });
+    try b.doc.connectivity.labels.append(a, .{ .layer = "M9_PIN", .names = "M9" });
+    try b.doc.devices.append(a, .{ .kind = .mos, .marker = "NMOS_RVT", .model = "nmos_rvt", .terminals = &.{ "GATE_FET", "SD", "SD" }, .fins = "FIN" });
+    try b.doc.devices.append(a, .{ .kind = .mos, .marker = "NMOS_LVT", .model = "nmos_lvt", .terminals = &.{ "GATE_FET", "SD", "SD" }, .fins = "FIN" });
+    try b.doc.devices.append(a, .{ .kind = .mos, .marker = "NMOS_SLVT", .model = "nmos_slvt", .terminals = &.{ "GATE_FET", "SD", "SD" }, .fins = "FIN" });
+    try b.doc.devices.append(a, .{ .kind = .mos, .marker = "NMOS_SRAM", .model = "nmos_sram", .terminals = &.{ "GATE_FET", "SD", "SD" }, .fins = "FIN" });
+    try b.doc.devices.append(a, .{ .kind = .mos, .marker = "PMOS_RVT", .model = "pmos_rvt", .terminals = &.{ "GATE_FET", "SD", "SD" }, .fins = "FIN" });
+    try b.doc.devices.append(a, .{ .kind = .mos, .marker = "PMOS_LVT", .model = "pmos_lvt", .terminals = &.{ "GATE_FET", "SD", "SD" }, .fins = "FIN" });
+    try b.doc.devices.append(a, .{ .kind = .mos, .marker = "PMOS_SLVT", .model = "pmos_slvt", .terminals = &.{ "GATE_FET", "SD", "SD" }, .fins = "FIN" });
+    try b.doc.devices.append(a, .{ .kind = .mos, .marker = "PMOS_SRAM", .model = "pmos_sram", .terminals = &.{ "GATE_FET", "SD", "SD" }, .fins = "FIN" });
+    try b.rule("supply_short", row(.supply_short, .{ .tap_a = l("NTAP"), .tap_b = l("PTAP") }, .{}));
+    try b.rule("LIG.LISD.S.6", row(.net_spacing, .{ .layer = l("LIG"), .other = l("LISD") }, .{ .same_net = false, .limit = 14 }));
+    try b.rule("LIG.SDT.S.8", row(.net_spacing, .{ .layer = l("LIG"), .other = l("SDT_NET") }, .{ .same_net = false, .limit = 14 }));
+    try b.doc.pex.append(a, .{ .layer = "M1", .row = .{ .thickness_nm = 36.0, .height_nm = 0.0, .sheet_res_ohm_sq = 1.2675, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 24.96355, .dielectric_k = 0.0 } });
     try b.doc.pex.append(a, .{ .layer = "V1", .row = .{ .thickness_nm = 36.0, .height_nm = 36.0, .sheet_res_ohm_sq = 17.2, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
-    try b.doc.pex.append(a, .{ .layer = "M2", .row = .{ .thickness_nm = 36.0, .height_nm = 72.0, .sheet_res_ohm_sq = 0.534829, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.pex.append(a, .{ .layer = "M2", .row = .{ .thickness_nm = 36.0, .height_nm = 72.0, .sheet_res_ohm_sq = 0.534829, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 15.658, .dielectric_k = 0.0 } });
     try b.doc.pex.append(a, .{ .layer = "V2", .row = .{ .thickness_nm = 36.0, .height_nm = 108.0, .sheet_res_ohm_sq = 17.2, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
-    try b.doc.pex.append(a, .{ .layer = "M3", .row = .{ .thickness_nm = 36.0, .height_nm = 144.0, .sheet_res_ohm_sq = 0.563166, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.pex.append(a, .{ .layer = "M3", .row = .{ .thickness_nm = 36.0, .height_nm = 144.0, .sheet_res_ohm_sq = 0.563166, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 16.0081, .dielectric_k = 0.0 } });
     try b.doc.pex.append(a, .{ .layer = "V3", .row = .{ .thickness_nm = 36.0, .height_nm = 180.0, .sheet_res_ohm_sq = 17.2, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
-    try b.doc.pex.append(a, .{ .layer = "M4", .row = .{ .thickness_nm = 48.0, .height_nm = 216.0, .sheet_res_ohm_sq = 0.432876, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.pex.append(a, .{ .layer = "M4", .row = .{ .thickness_nm = 48.0, .height_nm = 216.0, .sheet_res_ohm_sq = 0.432876, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 16.72145, .dielectric_k = 0.0 } });
     try b.doc.pex.append(a, .{ .layer = "V4", .row = .{ .thickness_nm = 48.0, .height_nm = 264.0, .sheet_res_ohm_sq = 11.8, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
-    try b.doc.pex.append(a, .{ .layer = "M5", .row = .{ .thickness_nm = 48.0, .height_nm = 312.0, .sheet_res_ohm_sq = 0.455844, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.pex.append(a, .{ .layer = "M5", .row = .{ .thickness_nm = 48.0, .height_nm = 312.0, .sheet_res_ohm_sq = 0.455844, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 16.6888, .dielectric_k = 0.0 } });
     try b.doc.pex.append(a, .{ .layer = "V5", .row = .{ .thickness_nm = 48.0, .height_nm = 360.0, .sheet_res_ohm_sq = 11.8, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
-    try b.doc.pex.append(a, .{ .layer = "M6", .row = .{ .thickness_nm = 64.0, .height_nm = 408.0, .sheet_res_ohm_sq = 0.380147, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.pex.append(a, .{ .layer = "M6", .row = .{ .thickness_nm = 64.0, .height_nm = 408.0, .sheet_res_ohm_sq = 0.380147, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 23.77785, .dielectric_k = 0.0 } });
     try b.doc.pex.append(a, .{ .layer = "V6", .row = .{ .thickness_nm = 64.0, .height_nm = 472.0, .sheet_res_ohm_sq = 8.2, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
-    try b.doc.pex.append(a, .{ .layer = "M7", .row = .{ .thickness_nm = 64.0, .height_nm = 536.0, .sheet_res_ohm_sq = 0.400307, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.pex.append(a, .{ .layer = "M7", .row = .{ .thickness_nm = 64.0, .height_nm = 536.0, .sheet_res_ohm_sq = 0.400307, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 20.8266, .dielectric_k = 0.0 } });
     try b.doc.pex.append(a, .{ .layer = "V7", .row = .{ .thickness_nm = 64.0, .height_nm = 600.0, .sheet_res_ohm_sq = 8.2, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
-    try b.doc.pex.append(a, .{ .layer = "M8", .row = .{ .thickness_nm = 80.0, .height_nm = 664.0, .sheet_res_ohm_sq = 0.337906, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.pex.append(a, .{ .layer = "M8", .row = .{ .thickness_nm = 80.0, .height_nm = 664.0, .sheet_res_ohm_sq = 0.337906, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 15.5023, .dielectric_k = 0.0 } });
     try b.doc.pex.append(a, .{ .layer = "V8", .row = .{ .thickness_nm = 80.0, .height_nm = 744.0, .sheet_res_ohm_sq = 6.3, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
-    try b.doc.pex.append(a, .{ .layer = "M9", .row = .{ .thickness_nm = 80.0, .height_nm = 824.0, .sheet_res_ohm_sq = 0.355822, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 0.0 } });
+    try b.doc.pex.append(a, .{ .layer = "M9", .row = .{ .thickness_nm = 80.0, .height_nm = 824.0, .sheet_res_ohm_sq = 0.355822, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 13.08565, .dielectric_k = 0.0 } });
     try b.rule("GCUT.AUX.1", row(.forbidden, .{ .layer = l("GCUT").notInteracting(l("GATE")) }, .{}));
     try b.rule("NSELECT.PSELECT.AUX.1", row(.forbidden, .{ .layer = l("NSELECT").@"and"(l("PSELECT")) }, .{}));
     try b.rule("VT.AUX.2", row(.forbidden, .{ .layer = l("SLVT").@"and"(l("LVT")).group().@"or"(l("SLVT").@"and"(l("SRAMVT")).group()).@"or"(l("LVT").@"and"(l("SRAMVT")).group()) }, .{}));
@@ -335,7 +388,7 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.rule("SDT.LISD.OV.2", row(.edge_width, .{ .edges = l("SDT_LOGIC").@"and"(l("LISD")).group().edges().horizontal() }, .{ .limit = 27 }));
     try b.rule("SRAM.SDT.ACTIVE.OV.3", row(.edge_width, .{ .edges = l("SDT_SRAM").@"and"(l("ACTIVE")).group().edges().horizontal() }, .{ .limit = 17 }));
     try b.rule("SRAM.SDT.LISD.OV.4", row(.edge_width, .{ .edges = l("SDT_SRAM").@"and"(l("LISD")).group().edges().horizontal() }, .{ .limit = 17 }));
-    try b.rule("SDT.ACTIVE.AUX.2", row(.forbidden, .{ .layer = l("SDT_LOGIC").edges().horizontal().not(l("ACTIVE").edges().horizontal()) }, .{}));
+    try b.rule("SDT.ACTIVE.AUX.2", row(.forbidden, .{ .layer = l("SDT_LOGIC").@"and"(l("ACTIVE")).group().edges().horizontal().not(l("ACTIVE").edges().horizontal()) }, .{}));
     try b.rule("LISD.S.3", row(.tip_spacing_table, .{ .layer = l("LISD").outside(l("SRAMDRC")) }, .{ .length = &.{ 0, 24, 37 }, .space = &.{ 18, 18, 25, 18, 27, 25, 25, 25, 18 } }));
     try b.rule("SRAM.LISD.S.4", row(.tip_spacing_table, .{ .layer = l("LISD").interacting(l("SRAMDRC")) }, .{ .length = &.{ 0, 37 }, .space = &.{ 27, 25, 25, 18 } }));
     try b.rule("LIG.S.3", row(.tip_spacing_table, .{ .layer = l("LIG_LOGIC") }, .{ .length = &.{ 0, 24, 37 }, .space = &.{ 31, 31, 25, 31, 27, 25, 25, 25, 18 } }));
@@ -369,5 +422,14 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.rule("M9.W.4", row(.min_width, .{ .layer = l("M9").withBboxMax(&.{.{ .at_least = 1800 }}) }, .{ .limit = 120 }));
     b.doc.boundary = "BOUNDARY";
     _ = b.doc.lvs.defaultTolerance(0.02);
+    try b.doc.lvs.ignore_parameter.append(a, .{ .a = "nmos_rvt", .b = "w" });
+    try b.doc.lvs.ignore_parameter.append(a, .{ .a = "nmos_lvt", .b = "w" });
+    try b.doc.lvs.ignore_parameter.append(a, .{ .a = "nmos_slvt", .b = "w" });
+    try b.doc.lvs.ignore_parameter.append(a, .{ .a = "nmos_sram", .b = "w" });
+    try b.doc.lvs.ignore_parameter.append(a, .{ .a = "pmos_rvt", .b = "w" });
+    try b.doc.lvs.ignore_parameter.append(a, .{ .a = "pmos_lvt", .b = "w" });
+    try b.doc.lvs.ignore_parameter.append(a, .{ .a = "pmos_slvt", .b = "w" });
+    try b.doc.lvs.ignore_parameter.append(a, .{ .a = "pmos_sram", .b = "w" });
+    b.doc.lvs.split_gates = true;
     b.doc.extraction = .{ .coupling_halo = 10.0 };
 }

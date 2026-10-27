@@ -164,6 +164,7 @@ pub fn devices(b: *Builder, out: *Circuit) Allocator.Error!void {
                 .drain_perimeter => "pd",
                 .width => "w",
                 .length => "l",
+                .fins => "nfin",
                 .fingers => "nf",
             };
             const um = b.um;

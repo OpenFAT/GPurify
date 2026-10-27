@@ -28,6 +28,7 @@ const Discrepancy = verdict.Discrepancy;
 const prepare = @import("prepare.zig");
 const retain = @import("retain.zig");
 const controls_mod = @import("controls.zig");
+const split = @import("split.zig");
 const reduce = @import("reduce.zig");
 const ParamNames = reduce.ParamNames;
 const Merges = reduce.Merges;
@@ -146,6 +147,10 @@ pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Gra
     try retain.dropIgnoredParams(gpa, &w.declared, controls);
     try controls_mod.assignRoles(gpa, &w.measured, controls);
     try controls_mod.assignRoles(gpa, &w.declared, controls);
+    if (controls.split_gates) {
+        try split.joinSplitGates(gpa, &w.measured, names.length);
+        try split.joinSplitGates(gpa, &w.declared, names.length);
+    }
     try reduce.reduceWith(gpa, &w.measured, names, &w.layout, &out.layout_merges);
     try reduce.reduceWith(gpa, &w.declared, names, &w.reference, &out.reference_merges);
     // Merge rows back to the rows given: through the ignore drop, then the filter.

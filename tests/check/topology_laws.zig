@@ -295,7 +295,7 @@ fn expectDeviceColumnsAgree(base: *const DeviceTable, other: *const DeviceTable,
                     break :blk .{ .length = extents[1] };
                 },
                 .perimeter => .{ .length = 2 * (extents[0] + extents[1]) },
-                .area, .fingers, .source_area, .drain_area, .source_perimeter, .drain_perimeter, .emitter_area, .emitter_perimeter => m,
+                .area, .fins, .fingers, .source_area, .drain_area, .source_perimeter, .drain_perimeter, .emitter_area, .emitter_perimeter => m,
             },
             .area_share => |s| .{ .area_share = .{ .area = s.area * area_scale, .ways = s.ways } },
             .length_share => |s| .{ .length_share = .{ .length = 2 * (110 * wl[1] + 100 * wl[0]), .ways = s.ways } },

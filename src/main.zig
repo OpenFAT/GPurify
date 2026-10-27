@@ -7,7 +7,7 @@
 //! `xor <layout> <other>`, `<fill|enhance> <layout> <output.gds>`,
 //! `system <system.json> --reference <netlist>` or `compare <reference>
 //! <candidate>` (cli/args.zig, cli/compare.zig). `--deck` names a deck file
-//! or a shipped deck (`sky130`, `gf180mcu`, `ihp_sg13g2`, `generic_finfet`).
+//! or a shipped deck (`sky130`, `gf180mcu`, `ihp_sg13g2`, `asap7`, or `generic_finfet`, asap7's old name).
 //! A run's whole report is rendered before the first byte is printed, so an
 //! error leaves stdout empty.
 //!

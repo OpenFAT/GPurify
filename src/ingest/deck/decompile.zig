@@ -56,6 +56,7 @@ pub fn fromTables(arena: Allocator, layers: *const LayerTable, connectivity: tab
             .model = strings.resolve(devices.model[row]),
             .terminals = try names(arena, layers, span, strings),
             .value = if (row < devices.value.len) devices.value[row] else .{},
+            .fins = if (row < devices.fins.len) if (devices.fins[row]) |f| name(layers, f, strings) else null else null,
         });
     }
     doc.netlist_scale_nm = devices.netlist_scale_nm;
@@ -95,6 +96,7 @@ pub fn fromControls(arena: Allocator, controls: tables.LvsControls, devices: []c
     for (controls.ignore_shorted) |id| try s.ignore_shorted.append(arena, strings.resolve(id));
     s.ports_by_name = controls.ports_by_name;
     s.recognize_gates = controls.recognize_gates;
+    s.split_gates = controls.split_gates;
     try s.blackbox.appendSlice(arena, controls.blackbox);
     try s.filter_unused.appendSlice(arena, controls.filter_unused);
     for (controls.supply) |id| try s.supply.append(arena, strings.resolve(id));

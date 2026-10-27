@@ -331,6 +331,10 @@ pub const DeviceRecognition = struct {
     model: []const StrId = &.{},
     /// One row per recogniser; a table built by hand may leave it short.
     value: []const DeviceValue = &.{},
+    /// A `mos` row's `fins` layer: its size is the count of that layer's
+    /// shapes under the marker (`nfin`), never a width. One row per
+    /// recogniser, null for none; a table built by hand may leave it short.
+    fins: []const ?LayerId = &.{},
     /// The `netlist_scale` statement, nm.
     netlist_scale_nm: ?f64 = null,
 };
@@ -403,6 +407,9 @@ pub const LvsControls = struct {
     count: []const LvsCount = &.{},
     lde: []const LvsLde = &.{},
     recognize_gates: bool = false,
+    /// `lvs split_gates`: the inner nets of transistor chains drawn as split
+    /// fingers are joined before reduction (KLayout's `split_gates`).
+    split_gates: bool = false,
     blackbox: []const []const u8 = &.{},
     filter_unused: []const UnusedFilter = &.{},
     supply: []const StrId = &.{},
@@ -492,7 +499,7 @@ pub fn absoluteUnit(param: []const u8) ?AbsoluteUnit {
         .{ &.{"r"}, .{ .unit = "ohm", .to_si = 1.0 } },
         .{ &.{"c"}, .{ .unit = "aF", .to_si = 1e-18 } },
         .{ &.{"ind"}, .{ .unit = "nH", .to_si = 1e-9 } },
-        .{ &.{ "m", "nf" }, .{ .unit = "", .to_si = 1.0 } },
+        .{ &.{ "m", "nf", "nfin" }, .{ .unit = "", .to_si = 1.0 } },
     };
     for (table) |row| for (row[0]) |p| if (std.mem.eql(u8, p, param)) return row[1];
     return null;

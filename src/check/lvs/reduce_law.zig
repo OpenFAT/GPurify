@@ -36,8 +36,11 @@ pub const ParamNames = struct {
     width: ?StrId = null,
     /// `L`: summed by a series merge, which needs it on both devices.
     length: ?StrId = null,
-    /// `nf`: summed by a parallel merge of MOS stating `W`.
+    /// `nf`: summed by a parallel merge of MOS stating `W` or `nfin`.
     fingers: ?StrId = null,
+    /// `nfin`: a finned MOS's size, which a parallel merge sums and `m`
+    /// multiplies as it does `W`; a count, compared exactly.
+    fins: ?StrId = null,
     /// `m`: folded into a MOS's `W` when `width` is named; any other
     /// device's count in parallel, which a parallel merge sums.
     multiplier: ?StrId = null,
@@ -63,9 +66,10 @@ pub const ParamNames = struct {
     }
 
     /// The run's relative tolerance for `name`: `default`, except a count
-    /// (`m`, `nf`), a whole number that agrees only exactly (testing-plan F99).
+    /// (`m`, `nf`, `nfin`), a whole number that agrees only exactly
+    /// (testing-plan F99).
     pub fn tolerance(n: ParamNames, name: StrId, default: f64) f64 {
-        return if (is(n.multiplier, name) or is(n.fingers, name)) 0.0 else default;
+        return if (is(n.multiplier, name) or is(n.fingers, name) or is(n.fins, name)) 0.0 else default;
     }
 
     /// How many of the four diffusion names `params` states.
@@ -76,8 +80,8 @@ pub const ParamNames = struct {
     }
 };
 
-/// Up to six names a merge combines; null slots are none.
-pub const Sums = [6]?StrId;
+/// Up to seven names a merge combines; null slots are none.
+pub const Sums = [7]?StrId;
 
 /// One parameter of a merge signature: name and value bits (zero for a
 /// summed one, which must be stated by both or neither).
@@ -119,7 +123,7 @@ pub const Law = struct {
 
     /// The names a parallel merge under this law combines.
     pub fn sums(law: Law) Sums {
-        return .{ law.value, law.adds[0], law.adds[1], law.adds[2], null, null };
+        return .{ law.value, law.adds[0], law.adds[1], law.adds[2], null, null, null };
     }
 
     /// The names a series merge of `kind` combines: the value by the
@@ -130,9 +134,9 @@ pub const Law = struct {
         const area = names.values[2];
         const perim = names.values[3];
         return switch (kind) {
-            .resistor => .{ law.value, names.length, area, perim, null, null },
-            .capacitor => .{ law.value, area, perim, null, null, null },
-            .inductor => .{ law.value, null, null, null, null, null },
+            .resistor => .{ law.value, names.length, area, perim, null, null, null },
+            .capacitor => .{ law.value, area, perim, null, null, null, null },
+            .inductor => .{ law.value, null, null, null, null, null, null },
             .mos, .bjt, .diode, .cell => null,
         };
     }
@@ -150,19 +154,20 @@ pub fn states(params: []const Param, name: ?StrId) bool {
     return false;
 }
 
-/// Whether a parallel merge sums this device's `W`: a MOS stating one.
-/// Every other device, a MOS with no `W` included, keeps its count in `m`
-/// (testing-plan F83).
+/// Whether a parallel merge sums this device's size: a MOS stating `W` or
+/// `nfin`. Every other device, a MOS with neither included, keeps its count
+/// in `m` (testing-plan F83).
 pub fn sumsWidth(kind: DeviceKind, params: []const Param, names: ParamNames) bool {
-    return kind == .mos and states(params, names.width);
+    return kind == .mos and (states(params, names.width) or states(params, names.fins));
 }
 
-/// The parameters a parallel merge of MOS stating `W` sums: `W`, `nf` and
-/// the four diffusions. Any other device sums its count instead.
+/// The parameters a parallel merge of MOS stating `W` or `nfin` sums: `W`,
+/// `nf`, `nfin` and the four diffusions. Any other device sums its count
+/// instead.
 pub fn parallelSums(wide: bool, names: ParamNames) Sums {
     if (!wide) return @splat(null);
     const d = names.diffusion;
-    return .{ names.width, names.fingers, d[0], d[1], d[2], d[3] };
+    return .{ names.width, names.fingers, names.fins, d[0], d[1], d[2], d[3] };
 }
 
 /// A device's count: its `m`, or 1 when it states none.

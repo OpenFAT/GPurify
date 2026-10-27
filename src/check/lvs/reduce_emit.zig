@@ -96,7 +96,7 @@ fn mergeParams(gpa: Allocator, src: *const Graph, plan: *const Plan, names: Para
     // A relaxed passive's series law, where this group is one.
     const series_sums: ?law.Sums = if (plan.mode == .series) (if (head_law) |l| l.seriesSums(kind, names) else null) else null;
     const summed: law.Sums = switch (plan.mode) {
-        .series => series_sums orelse .{ names.length, null, null, null, null, null },
+        .series => series_sums orelse .{ names.length, null, null, null, null, null, null },
         .parallel => if (parallel_law) |l| l.sums() else law.parallelSums(wide, names),
     };
     // Combined harmonically: a resistance in parallel, a capacitance in series.
