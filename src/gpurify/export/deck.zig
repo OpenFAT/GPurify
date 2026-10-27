@@ -592,29 +592,6 @@ fn strs(w: *Writer, list: []const []const u8) Writer.Error!void {
     try w.writeByte(']');
 }
 
-const small_deck =
-    \\grid 5nm
-    \\layer met1 = gds(68, 20)
-    \\layer poly = gds(66, 20)
-    \\layer via = gds(68, 44)
-    \\layer met1_big = met1.sized(10nm)
-    \\rule m1.1 width(met1) >= 140nm
-    \\rule m1.2 warning space(met1) >= 140nm
-    \\rule m1.6 area(met1) >= 0.083um2
-    \\rule m1.d density(met1; window: 700um, step: 70um) <= 77%
-    \\rule via.e enclosure(via, met1) >= 30nm
-    \\rule GOX gate_oxide(; models: ["nfet"], max: 1.8V)
-    \\connect conductors [poly, met1]
-    \\connect via via [poly, met1]
-    \\device mos met1_big model "nfet" terminals [poly, met1, met1]
-    \\matching "nfet" pair avt 5mV·um
-    \\lvs tolerance default relative 2%
-    \\lvs range "nfet" w >= 420nm
-    \\pex met1 thickness 360nm height 1000nm sheet 0.125ohm dielectric 4 area_cap 25aF/um2 fringe_cap 40aF/um
-    \\corner slow met1 sheet 0.15ohm
-    \\
-;
-
 test "a small deck dumps to the bytes worked out by hand from its text" {
     // Oracle: hand-worked from `small_deck` and the language (docs/deck.md):
     // drawn ids ascend by name (met1 0, poly 1, via 2), the derived layer
@@ -627,6 +604,28 @@ test "a small deck dumps to the bytes worked out by hand from its text" {
     // spacing 140 at either query, its density row a maximum; via in met1
     // 30 on all sides; nfet's oxide limit 1800 mV and its pair coefficient
     // as stated. Every other answer is null or empty.
+    const small_deck =
+        \\grid 5nm
+        \\layer met1 = gds(68, 20)
+        \\layer poly = gds(66, 20)
+        \\layer via = gds(68, 44)
+        \\layer met1_big = met1.sized(10nm)
+        \\rule m1.1 width(met1) >= 140nm
+        \\rule m1.2 warning space(met1) >= 140nm
+        \\rule m1.6 area(met1) >= 0.083um2
+        \\rule m1.d density(met1; window: 700um, step: 70um) <= 77%
+        \\rule via.e enclosure(via, met1) >= 30nm
+        \\rule GOX gate_oxide(; models: ["nfet"], max: 1.8V)
+        \\connect conductors [poly, met1]
+        \\connect via via [poly, met1]
+        \\device mos met1_big model "nfet" terminals [poly, met1, met1]
+        \\matching "nfet" pair avt 5mV·um
+        \\lvs tolerance default relative 2%
+        \\lvs range "nfet" w >= 420nm
+        \\pex met1 thickness 360nm height 1000nm sheet 0.125ohm dielectric 4 area_cap 25aF/um2 fringe_cap 40aF/um
+        \\corner slow met1 sheet 0.15ohm
+        \\
+    ;
     const testing = std.testing;
     var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena_state.deinit();

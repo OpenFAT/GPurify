@@ -14,46 +14,6 @@ const query = check.deck.query;
 const CompiledDeck = check.deck.CompiledDeck;
 const gpurify = @import("gpurify");
 
-test "every answer in each shipped deck's dump is its query's return value" {
-    // Oracle: the query layer (check/deck/query.zig), called again per value
-    // and compared with the dump's value after a JSON round trip; the pairs
-    // the dump answers for are checked against the dump's own rule rows,
-    // and the two spacing queries are rebuilt from their documentation.
-    for (gpurify.pdks.all) |pdk| {
-        var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
-        defer arena_state.deinit();
-        const arena = arena_state.allocator();
-        var strings: geom.StrTable = .empty;
-        var diag: check.deck.compile.Diag = .{};
-        const cd = try check.deck.compile.compile(arena, arena, pdk.text, .{ .dbu_per_um = 1000 }, &strings, &diag);
-        var out: std.Io.Writer.Allocating = .init(arena);
-        try gpurify.@"export".deck.writeDeck(&out.writer, arena, &cd, &strings, pdk.name);
-        const root = try std.json.parseFromSliceLeaky(Value, arena, out.written(), .{});
-        const answers = root.object.get("answers").?.object;
-        try layerAnswers(arena, &cd, &strings, answers.get("layers").?.array.items);
-        try pairAnswers(&cd, root.object.get("rules").?.array.items, answers);
-        try modelAnswers(&cd, &strings, root.object.get("devices").?.array.items, answers.get("models").?.array.items);
-    }
-}
-
-test "a dump is the same bytes every time" {
-    // Oracle: determinism (ARCHITECTURE.md, Data): two compiles of one deck
-    // into fresh tables dump identically.
-    var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
-    defer arena_state.deinit();
-    const arena = arena_state.allocator();
-    var dumps: [2][]const u8 = undefined;
-    for (&dumps) |*d| {
-        var strings: geom.StrTable = .empty;
-        var diag: check.deck.compile.Diag = .{};
-        const cd = try check.deck.compile.compile(arena, arena, gpurify.pdks.sky130, .{ .dbu_per_um = 1000 }, &strings, &diag);
-        var out: std.Io.Writer.Allocating = .init(arena);
-        try gpurify.@"export".deck.writeDeck(&out.writer, arena, &cd, &strings, "sky130");
-        d.* = out.written();
-    }
-    try testing.expectEqualStrings(dumps[0], dumps[1]);
-}
-
 // ---- private ----
 
 fn layerAnswers(arena: Allocator, cd: *const CompiledDeck, strings: *const geom.StrTable, entries: []const Value) !void {
@@ -232,4 +192,44 @@ fn expectInts(got: Value, want: ?[]const i64) !void {
     try testing.expect(got == .array);
     try testing.expectEqual(w.len, got.array.items.len);
     for (w, got.array.items) |a, b| try testing.expectEqual(a, b.integer);
+}
+
+test "every answer in each shipped deck's dump is its query's return value" {
+    // Oracle: the query layer (check/deck/query.zig), called again per value
+    // and compared with the dump's value after a JSON round trip; the pairs
+    // the dump answers for are checked against the dump's own rule rows,
+    // and the two spacing queries are rebuilt from their documentation.
+    for (gpurify.pdks.all) |pdk| {
+        var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
+        defer arena_state.deinit();
+        const arena = arena_state.allocator();
+        var strings: geom.StrTable = .empty;
+        var diag: check.deck.compile.Diag = .{};
+        const cd = try check.deck.compile.compile(arena, arena, pdk.text, .{ .dbu_per_um = 1000 }, &strings, &diag);
+        var out: std.Io.Writer.Allocating = .init(arena);
+        try gpurify.@"export".deck.writeDeck(&out.writer, arena, &cd, &strings, pdk.name);
+        const root = try std.json.parseFromSliceLeaky(Value, arena, out.written(), .{});
+        const answers = root.object.get("answers").?.object;
+        try layerAnswers(arena, &cd, &strings, answers.get("layers").?.array.items);
+        try pairAnswers(&cd, root.object.get("rules").?.array.items, answers);
+        try modelAnswers(&cd, &strings, root.object.get("devices").?.array.items, answers.get("models").?.array.items);
+    }
+}
+
+test "a dump is the same bytes every time" {
+    // Oracle: determinism (ARCHITECTURE.md, Data): two compiles of one deck
+    // into fresh tables dump identically.
+    var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var dumps: [2][]const u8 = undefined;
+    for (&dumps) |*d| {
+        var strings: geom.StrTable = .empty;
+        var diag: check.deck.compile.Diag = .{};
+        const cd = try check.deck.compile.compile(arena, arena, gpurify.pdks.sky130, .{ .dbu_per_um = 1000 }, &strings, &diag);
+        var out: std.Io.Writer.Allocating = .init(arena);
+        try gpurify.@"export".deck.writeDeck(&out.writer, arena, &cd, &strings, "sky130");
+        d.* = out.written();
+    }
+    try testing.expectEqualStrings(dumps[0], dumps[1]);
 }
