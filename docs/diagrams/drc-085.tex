@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % nwell (0,0)-(2000,2000) holding tap (500,500)-(900,900); nwell (3000,0)-(5000,2000) with none; 1 unit = 500 nm
+  \draw[layer a] (0,0) rectangle (4,4);
+  \draw[layer a] (6,0) rectangle (10,4);
+  \node[caption,anchor=south] at (2,4.05) {nwell};
+  \node[caption,anchor=south] at (8,4.3) {nwell};
+  \draw[layer d] (1,1) rectangle (1.8,1.8);
+  \node[caption,anchor=west] at (1.9,1.4) {ntap};
+  \node[caption] at (2,3) {tapped: passes};
+  \draw[violation] (5.85,-0.15) rectangle (10.15,4.15);
+  \node[violation label] at (8,2) {no ntap: floating};
+\end{circuitikz}
+\end{document}

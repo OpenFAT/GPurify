@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 (0,0)-(100,2000) and (1000,0)-(1100,2000); areaid_sc (800,-200)-(1300,2200) nm; 1 unit = 100 nm, y: 1 unit = 400 nm
+  \draw[layer c] (8,-0.5) rectangle (13,5.5);
+  \node[caption,anchor=south] at (10.5,5.55) {areaid\_sc};
+  \draw[layer a] (0,0) rectangle (1,5);
+  \draw[layer a] (10,0) rectangle (11,5);
+  \node[caption,anchor=south] at (0.5,5.3) {met1};
+  \node[caption,anchor=west,fill=white,align=left] at (11.2,2.5) {met1:\\exempt};
+  \draw[violation] (-0.15,-0.15) rectangle (1.15,5.15);
+  \node[violation label,anchor=west,align=left] at (1.4,2.5) {width \SI{0.10}{\micro\metre}\\$<$ \SI{0.14}{\micro\metre}};
+\end{circuitikz}
+\end{document}

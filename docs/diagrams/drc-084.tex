@@ -1,0 +1,13 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 (0,0)-(200,4000) nm, on a net with no device terminal; x: 1 unit = 100 nm, y shortened
+  \draw[layer a] (0,0) rectangle (2,6);
+  \node[caption,anchor=south] at (1,6.3) {met1};
+  \draw[violation] (-0.15,-0.15) rectangle (2.15,6.15);
+  \node[violation label,anchor=west,align=left] at (2.5,3) {net reaches no device:\\0 terminals $<$ 1};
+  \fill (0,0) circle (1.5pt);
+  \node[caption,anchor=north east] at (0,-0.2) {reported here};
+\end{circuitikz}
+\end{document}

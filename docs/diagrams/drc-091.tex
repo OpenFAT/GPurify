@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % three emitter shapes 70 nm by 900 nm at x = 0, 1000 and 2000 nm; 1 unit = 250 nm
+  \draw[layer a] (0,0) rectangle (0.28,3.6);
+  \draw[layer a] (4,0) rectangle (4.28,3.6);
+  \draw[layer a] (8,0) rectangle (8.28,3.6);
+  \node[caption,anchor=north] at (0.14,-0.05) {1};
+  \node[caption,anchor=north] at (4.14,-0.05) {2};
+  \node[caption,anchor=north] at (8.14,-0.05) {3};
+  \node[caption,anchor=south] at (4.14,3.65) {emitter};
+  \draw[violation] (-0.3,-0.6) rectangle (8.58,4.3);
+  \node[violation label,anchor=west] at (8.8,1.8) {3 emitters $>$ 2 per chip};
+\end{circuitikz}
+\end{document}

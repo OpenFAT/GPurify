@@ -1,0 +1,13 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 (0,0)-(200,4000) on VDD5; hvtag (-500,-500)-(700,2000) nm; x: 1 unit = 200 nm, y: 1 unit = 500 nm
+  \draw[layer c] (-2.5,-1) rectangle (3.5,4);
+  \node[caption,anchor=north] at (0.5,-1.05) {hvtag};
+  \draw[layer a] (0,0) rectangle (1,8);
+  \node[caption,anchor=south,align=center] at (0.5,8.05) {met1, net VDD5 (\SI{5}{\volt})};
+  \draw[violation] (0,4) rectangle (1,8);
+  \node[violation label,anchor=west,align=left] at (1.3,6) {outside hvtag:\\\SI{0.4}{\micro\metre\squared}};
+\end{circuitikz}
+\end{document}

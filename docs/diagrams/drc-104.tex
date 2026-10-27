@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % window (0,0)-(2000,2000); m1_c1 (0,0)-(1000,2000); m1_c2 (1500,0)-(1700,2000) nm; 1 unit = 250 nm
+  \draw[layer a] (0,0) rectangle (4,8);
+  \draw[layer c] (6,0) rectangle (6.8,8);
+  \node[caption,align=center,fill=gray!20] at (2,4) {m1\_c1\\\SI{2}{\micro\metre\squared}};
+  \node[caption,anchor=west,align=left] at (8.3,6) {m1\_c2\\\SI{0.4}{\micro\metre\squared}};
+  \draw[-{Latex[length=2mm]}] (8.3,6) -- (6.9,6);
+  \draw[marker] (0,0) rectangle (8,8);
+  \node[caption,anchor=south] at (4,8.05) {\SI{2}{\micro\metre} window};
+  \node[violation label,anchor=west,align=left] at (8.3,3) {balance 0.4 / 2 = 0.2\\$<$ 0.8};
+\end{circuitikz}
+\end{document}
