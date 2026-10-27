@@ -1,0 +1,39 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % The last two stages of an inverter chain, drawn as gates. In the
+  % reference the last pfet's gate is on n6; in the layout on n7.
+  \node[font=\bfseries] at (2.4,4.0) {Reference netlist};
+  \draw (0,1.5) node[left] {n6} -- (0.6,1.5) node[not port,anchor=in] (r7) {};
+  \draw (r7.out) -- (2.2,1.5) node[above] {n7};
+  \draw (2.2,1.5) -- (2.8,1.5);
+  \node[pmos,anchor=G] (rp) at (3.4,2.3) {};
+  \node[nmos,anchor=G] (rn) at (3.4,0.7) {};
+  \draw (rp.S) node[vcc] {};
+  \draw (rn.S) node[ground] {};
+  \draw (2.8,1.5) |- (rn.G);
+  \draw (0.3,1.5) |- (2.95,2.9) |- (rp.G);
+  \draw (rp.D) -- (rn.D);
+  \draw (rp.D) ++(0,-0.15) -- ++(0.7,0) node[right] {Y};
+  \node[right=1pt,font=\footnotesize] at (rp.east) {M16};
+  \draw[violation] (-0.6,1.15) rectangle (0.5,1.85);
+  \draw[violation] (1.85,1.15) rectangle (2.55,2.05);
+
+  \node[font=\bfseries] at (9.8,4.0) {Layout, extracted};
+  \draw (7.4,1.5) node[left] {n6} -- (8.0,1.5) node[not port,anchor=in] (l7) {};
+  \draw (l7.out) -- (9.6,1.5) node[above] {n7};
+  \draw (9.6,1.5) -- (10.2,1.5);
+  \node[pmos,anchor=G] (lp) at (10.8,2.3) {};
+  \node[nmos,anchor=G] (ln) at (10.8,0.7) {};
+  \draw (lp.S) node[vcc] {};
+  \draw (ln.S) node[ground] {};
+  \draw (10.2,1.5) |- (ln.G);
+  \draw (10.2,1.5) |- (lp.G);
+  \draw (lp.D) -- (ln.D);
+  \draw (lp.D) ++(0,-0.15) -- ++(0.7,0) node[right] {Y};
+  \draw[violation] (6.8,1.15) rectangle (7.9,1.85);
+  \draw[violation] (9.25,1.15) rectangle (9.95,2.05);
+  \node[violation label,align=center] at (6.0,-0.9) {n6 and n7 differ in fanout: reported unpaired on each side};
+\end{circuitikz}
+\end{document}

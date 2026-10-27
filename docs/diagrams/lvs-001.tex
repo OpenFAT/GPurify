@@ -1,0 +1,33 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Layout from above: the inverter's output strap in two met1 pieces,
+  % each labelled Y. Extracted: two nets that both carry the label Y.
+  \node[font=\bfseries] at (2.5,4.3) {Layout};
+  \draw[layer a] (0,0) rectangle (1.6,1.0);
+  \node at (0.8,0.5) {nfet};
+  \draw[layer a] (3.2,0) rectangle (4.8,1.6);
+  \node at (4.0,0.8) {pfet};
+  \draw[layer b] (0.4,2.4) rectangle (1.8,2.8);
+  \draw[layer b] (3.4,3.0) rectangle (4.8,3.4);
+  \draw (0.8,1.0) -- (0.8,2.4);
+  \draw (3.8,1.6) -- (3.8,3.0);
+  \node[right,font=\footnotesize] at (1.8,2.6) {met1};
+  \node[right,font=\footnotesize] at (4.8,3.2) {met1};
+  \node[font=\bfseries\footnotesize] at (1.1,2.6) {Y};
+  \node[font=\bfseries\footnotesize] at (4.1,3.2) {Y};
+  \draw[violation] (0.25,2.25) rectangle (1.95,2.95);
+  \draw[violation] (3.25,2.85) rectangle (4.95,3.55);
+  \node[violation label] at (2.6,1.95) {open};
+
+  \node[font=\bfseries] at (9.2,4.3) {Extracted nets};
+  \node[draw,circle,minimum size=1.0cm] (y1) at (8.0,2.6) {Y};
+  \node[draw,circle,minimum size=1.0cm] (y2) at (10.4,2.6) {Y};
+  \node[draw,rectangle,fill=gray!20] (n) at (8.0,0.8) {nfet};
+  \node[draw,rectangle,fill=gray!20] (p) at (10.4,0.8) {pfet};
+  \draw (n) -- node[right,font=\footnotesize] {drain} (y1);
+  \draw (p) -- node[right,font=\footnotesize] {drain} (y2);
+  \node[violation label,align=center] at (9.2,3.75) {one label, two nets:\\ \texttt{lvs.label\_conflict}};
+\end{circuitikz}
+\end{document}

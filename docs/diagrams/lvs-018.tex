@@ -1,0 +1,46 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2, pfet text #3, nfet text #4.
+\newcommand{\inv}[4]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {#3};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt] at (#2n.east) {#4};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2p.D) ++(0,-0.35) -- ++(1.6,0) node[right] {Y};
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (2.8,5.1) {Reference netlist};
+  \node[font=\bfseries] at (10.6,5.1) {Layout, extracted};
+
+  \node[nmos] (a) at (0.8,2.0) {};
+  \node[nmos] (b) at (5.0,2.0) {};
+  \node[right=2pt] at (a.east) {M2, \SI{1.5}{\micro\metre}};
+  \node[right=2pt] at (b.east) {M1, \SI{2}{\micro\metre}};
+  \draw (a.S) |- (2.9,1.1) coordinate (t) -| (b.S);
+  \draw (t) -- ++(0,-0.3) node[below] {T};
+  \draw (a.D) -- ++(0,0.3) node[above] {X};
+  \draw (b.D) -- ++(0,0.3) node[above] {Z};
+  \draw (a.G) -- ++(-0.2,0) node[left] {P};
+  \draw (b.G) -- ++(-0.2,0) node[left] {N};
+  \node[nmos] (la) at (9.0,2.0) {};
+  \node[nmos] (lb) at (12.0,2.0) {};
+  \node[right=2pt] at (la.east) {\SI{1}{\micro\metre}};
+  \node[right=2pt] at (lb.east) {\SI{2}{\micro\metre}};
+  \draw (la.S) |- (10.5,1.1) coordinate (lt) -| (lb.S);
+  \draw (lt) -- ++(0,-0.3) node[below] {T};
+  \draw (la.D) -- ++(0,0.3) node[above] {OUTP};
+  \draw (lb.D) -- ++(0,0.3) node[above] {OUTN};
+  \draw (la.G) -- ++(-0.2,0) node[left] {INP};
+  \draw (lb.G) -- ++(-0.2,0) node[left] {INN};
+  \draw[dashed,-{Latex[length=2mm]}] (a.east) ++(0.2,-0.6) to[out=-30,in=-150] node[below,caption] {closest: paired} (8.9,1.4);
+  \draw[violation] (0.0,1.45) rectangle (1.75,2.55);
+  \draw[violation] (8.2,1.45) rectangle (9.6,2.55);
+  \node[violation label] at (6.0,-0.6) {w: 1 against \SI{1.5}{\micro\metre}};
+\end{circuitikz}
+\end{document}

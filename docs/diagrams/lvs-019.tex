@@ -1,0 +1,27 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2, pfet text #3, nfet text #4.
+\newcommand{\inv}[4]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {#3};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt] at (#2n.east) {#4};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2p.D) ++(0,-0.35) -- ++(1.6,0) node[right] {Y};
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+
+  \node[draw,align=center] (c) at (-0.6,0) {compare\\ reference and layout};
+  \node[draw,align=center] (m) at (5,1.4) {Match\\ exit 0};
+  \node[draw,align=center] (x) at (5,0) {Mismatch\\ one row per difference, exit 1};
+  \node[draw,align=center] (i) at (5,-1.6) {Inconclusive\\ LVS refused, exit 1};
+  \draw[-{Latex[length=2mm]}] (c) -- node[above,caption,sloped] {all paired, all agree} (m);
+  \draw[-{Latex[length=2mm]}] (c) -- node[above,caption,pos=0.45] {a difference} (x);
+  \draw[-{Latex[length=2mm]}] (c) -- node[below,caption,sloped] {no unique top} (i);
+\end{circuitikz}
+\end{document}

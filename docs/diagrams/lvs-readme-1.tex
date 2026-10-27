@@ -1,0 +1,38 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference netlist, an inverter whose n-channel side is two
+  % cards in parallel (M1, M3). Right: the layout, one n-channel transistor.
+  \node[font=\bfseries] at (1.5,5.0) {Reference netlist};
+  \node[pmos] (p) at (1.5,2.8) {};
+  \node[right=2pt] at (p.east) {M2 pfet, \SI{2}{\micro\metre}};
+  \draw (p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (n1) at (0.9,0.6) {};
+  \node[nmos] (n3) at (2.4,0.6) {};
+  \draw (p.D) -- ++(0,-0.35) coordinate (y);
+  \draw (n1.D) |- (y) -| (n3.D);
+  \draw (y) -- ++(1.9,0) node[right] {Y};
+  \draw (n1.S) -- ++(0,-0.25) coordinate (s1) -- (s1 -| n3.S) -- (n3.S);
+  \draw (s1 -| n3.S) node[ground] {};
+  \draw (p.G) -- ++(-0.6,0) coordinate (a) -- (a |- n1.G) -- (n1.G);
+  \draw (n3.G) -- ++(-0.25,0) -- ++(0,0.75) coordinate (g3) -- (g3 -| a);
+  \draw (a |- p.G) node[left] {A};
+  \node at (0.75,-0.6) {M1, M3: \SI{1}{\micro\metre} each};
+  \draw[violation] (-0.6,-0.9) rectangle (3.3,1.5);
+
+  \node[font=\bfseries] at (7.5,5.0) {Layout, extracted};
+  \node[pmos] (lp) at (7.5,2.8) {};
+  \node[right=2pt] at (lp.east) {pfet, \SI{2}{\micro\metre}};
+  \draw (lp.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (ln) at (7.5,0.6) {};
+  \node[right=2pt] at (ln.east) {nfet, \SI{1}{\micro\metre}};
+  \draw (lp.D) -- (ln.D);
+  \draw (lp.D) ++(0,-0.35) coordinate (ly) -- ++(1.4,0) node[right] {Y};
+  \draw (ln.S) node[ground] {};
+  \draw (lp.G) -- ++(-0.6,0) coordinate (la) -- (la |- ln.G) -- (ln.G);
+  \draw (la |- lp.G) node[left] {A};
+  \draw[violation] (6.3,-0.9) rectangle (9.6,1.5);
+  \node[violation label, align=center] at (4.8,-1.4) {w after merging: \SI{2}{\micro\metre} against \SI{1}{\micro\metre}};
+\end{circuitikz}
+\end{document}

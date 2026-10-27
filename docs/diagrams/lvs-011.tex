@@ -1,0 +1,35 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2, pfet text #3, nfet text #4.
+\newcommand{\inv}[4]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {#3};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt] at (#2n.east) {#4};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2p.D) ++(0,-0.35) -- ++(1.6,0) node[right] {Y};
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (2.0,5.1) {Reference netlist};
+  \node[font=\bfseries] at (8.5,5.1) {Layout, extracted};
+
+  \node[nmos] (n) at (1.0,1.6) {};
+  \node[right=2pt] at (n.east) {M1 nfet};
+  \draw (n.D) -- ++(0,0.3) node[above] {D};
+  \draw (n.S) -- ++(0,-0.3) node[below] {S};
+  \draw (n.G) -- ++(-0.3,0) node[left] {G};
+  \draw (3.6,2.6) node[left] {P} to[C, l=C1 cmim] (3.6,0.6) node[left] {Q};
+  \draw[violation] (2.8,0.2) rectangle (5.3,3.0);
+  \node[violation label] at (3.8,-0.3) {cmim: no layout device};
+  \node[nmos] (ln) at (8.0,1.6) {};
+  \node[right=2pt] at (ln.east) {nfet};
+  \draw (ln.D) -- ++(0,0.3) node[above] {D};
+  \draw (ln.S) -- ++(0,-0.3) node[below] {S};
+  \draw (ln.G) -- ++(-0.3,0) node[left] {G};
+\end{circuitikz}
+\end{document}
