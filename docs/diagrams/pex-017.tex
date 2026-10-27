@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Reference card: XM1 outp inp tail vss.
+  \node[caption,font=\small\bfseries] at (0.5,3.6) {reference: XM1};
+  \draw (1,0) node[nmos,bulk,anchor=center](m){};
+  \draw (m.D) -- ++(0,0.6) node[circ,label=right:{outp (d)}]{};
+  \draw (m.G) -- ++(-0.6,0) node[circ,label=left:{inp (g)}]{};
+  \draw (m.S) -- ++(0,-0.6) node[circ,label=right:{tail (s)}]{};
+  \draw (m.bulk) -- ++(0.6,0) node[circ,label=right:{vss}]{};
+  % Extracted: the same card on the extracted nodes, wiring resistance to each pin.
+  \begin{scope}[xshift=8cm]
+  \node[caption,font=\small\bfseries] at (-0.5,3.6) {extracted: XM1};
+  \draw (0,0) node[nmos,bulk,anchor=center](n){};
+  \draw (n.D) -- ++(0,0.3) node[circ,label=left:{outp\#1}]{} to[R, l=wiring] ++(0,1.8) node[circ,label=right:{outp}]{};
+  \draw (n.G) -- ++(-0.3,0) node[circ,label=below:{inp\#1}]{} to[R, l=wiring] ++(-2.2,0) node[circ,label=left:{inp}]{};
+  \draw (n.S) -- ++(0,-0.3) node[circ,label=left:{tail\#1}]{} to[R, l_=wiring] ++(0,-1.8) node[circ,label=right:{tail}]{};
+  \draw (n.bulk) -- ++(0.6,0) node[circ,label=right:{vss}]{};
+  \end{scope}
+\end{circuitikz}
+\end{document}

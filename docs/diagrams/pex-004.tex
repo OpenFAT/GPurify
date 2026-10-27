@@ -1,0 +1,24 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Layout from above: two parallel met1 wires, 10 um long.
+  \fill[layer a] (0,0) rectangle (6,0.3);
+  \fill[layer a] (0,0.6) rectangle (6,0.9);
+  \node[caption] at (0.3,0.15) {a};
+  \node[caption] at (0.3,0.75) {b};
+  \node[caption,anchor=east] at (-0.1,0.45) {met1};
+  \draw[dim] (0,-0.3) -- (6,-0.3) node[dim label,midway] {\SI{10}{\micro\metre}};
+  \draw (6.2,0.3) -- (6.3999999999999995,0.3); \draw (6.2,0.6) -- (6.3999999999999995,0.6); \draw (6.3,0.3) -- (6.3,0.6);
+  \node[caption,anchor=west] at (6.45,0.45) {\SI{0.14}{\micro\metre}};
+  % Each net: R then L in series; the two L coupled by K.
+  \draw (0,-1.5) node[circ,label=left:{a}]{}
+    to[R, l=\SI{8.93}{\ohm}] (2.5,-1.5) node[circ,label=above:{a\#1}]{}
+    to[L, l=\SI{8.40}{\pico\henry}, name=La] (5,-1.5) node[circ,label=right:{a\#2}]{};
+  \draw (0,-3.3) node[circ,label=left:{b}]{}
+    to[R, l_=\SI{8.93}{\ohm}] (2.5,-3.3) node[circ,label=below:{b\#1}]{}
+    to[L, l_=\SI{8.40}{\pico\henry}, name=Lb] (5,-3.3) node[circ,label=right:{b\#2}]{};
+  \draw[<->,dashed] (3.75,-1.85) -- (3.75,-2.95);
+  \node[caption,anchor=west] at (3.85,-2.4) {K1 = 0.763};
+\end{circuitikz}
+\end{document}

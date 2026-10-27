@@ -1,0 +1,32 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Left: net s, a 1 um met1 and met2 pad, one via cut and the cut enhance adds (x=3 cm per um).
+  \begin{scope}[x=3cm,y=3cm]
+    \fill[layer a] (0,0) rectangle (1,1);
+    \fill[layer c] (0.175,0.425) rectangle (0.325,0.575);
+    \fill[layer c] (0.495,0.425) rectangle (0.645,0.575);
+    \draw[marker,line width=1pt] (0.48,0.41) rectangle (0.66,0.59);
+    \node[caption,anchor=south] at (0.25,0.6) {via};
+    \node[caption,anchor=north] at (0.57,0.4) {added via};
+    \node[caption,anchor=north west] at (0.02,0.98) {met1, met2 (net s)};
+    \draw[dim] (0.25,0.2) -- (0.57,0.2) node[dim label,midway,below=2pt] {pitch \SI{320}{\nano\metre}};
+    \draw[dim] (0,-0.12) -- (1,-0.12) node[dim label,midway] {\SI{1}{\micro\metre}};
+  \end{scope}
+  % Right: the VPWR met2 strap, 1 um wide, widened 0.5 um on each long side (x=1.2 cm, y=0.15 cm per um).
+  \begin{scope}[xshift=-0.5cm,x=1.2cm,y=0.15cm]
+    \fill[layer b] (5,0) rectangle (6,20);
+    \fill[layer b] (4.5,0) rectangle (5,20);
+    \fill[layer b] (6,0) rectangle (6.5,20);
+    \draw[marker,line width=1pt] (4.5,0) rectangle (5,20);
+    \draw[marker,line width=1pt] (6,0) rectangle (6.5,20);
+    \node[caption,anchor=south] at (5.5,20.3) {met2 (net VPWR)};
+    \node[caption,anchor=west] at (6.8,14) {added strip};
+    \draw[-{Latex[length=2mm]}] (6.85,13.3) -- (6.3,11.5);
+    \draw[dim] (5,-1.5) -- (6,-1.5) node[dim label,midway,below=2pt] {\SI{1}{\micro\metre}};
+    \draw[dim] (6,-1.5) -- (6.5,-1.5) node[dim label,right=3pt] {\SI{0.5}{\micro\metre}};
+    \draw[dim] (4,0) -- (4,20) node[dim label,midway,fill=white] {\SI{20}{\micro\metre}};
+  \end{scope}
+\end{circuitikz}
+\end{document}

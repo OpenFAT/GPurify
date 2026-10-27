@@ -1,0 +1,29 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.2cm,y=0.2cm]
+  % The 40 um die after `gpurify fill`: met1 bars, the nofill box and the 80 fill squares.
+  \draw[line width=0.6pt] (0,0) rectangle (40,40);
+  \fill[layer b] (0,0) rectangle (40,2);
+  \fill[layer b] (0,38) rectangle (40,40);
+  \fill[layer c] (15,15) rectangle (25,25);
+  \foreach \y/\xs in {3/{0,3,...,36}, 6/{0,3,...,36}, 9/{0,3,...,15,21,24,...,36}, 12/{21,24},
+                      21/{0,3,...,12,27,30,33,36}, 24/{0,3,...,12,27,30,33,36},
+                      27/{0,3,...,36}, 30/{0,3,6,21,24,...,36}}
+    \foreach \x in \xs \fill[layer a] (\x,\y) rectangle ++(2,2);
+  % The four density windows.
+  \draw[marker] (20,0) -- (20,40);
+  \draw[marker] (0,20) -- (40,20);
+  % Labels.
+  \node[caption,anchor=west] at (41,1) {met1};
+  \node[caption,anchor=west] at (41,39) {met1};
+  \node[caption,anchor=west] at (41,4) {met1\_fill};
+  \node[caption,fill=white,inner sep=1pt] at (20,20) {nofill};
+  \node[caption,anchor=west] at (41,20) {window edge};
+  \draw[dim] (0,-2) -- (20,-2) node[dim label,midway] {window \SI{20}{\micro\metre}};
+  \draw[dim] (20,-2) -- (40,-2) node[dim label,midway] {window \SI{20}{\micro\metre}};
+  \node[caption,anchor=north west,align=left] at (0,-4)
+    {Squares \SI{2}{\micro\metre} on a \SI{3}{\micro\metre} pitch, at least \SI{1}{\micro\metre} from met1 and nofill.\\
+     Each window is filled from 0.1 up to its 0.3 minimum: 20 squares each, 80 in all.};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,25 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Layout from above: net a (met1, via, met2) beside net b on met1.
+  \fill[layer a] (0,0) rectangle (6,0.3);
+  \fill[layer a] (5.75,-0.15) rectangle (6.25,0.45);
+  \fill[layer a] (0,0.6) rectangle (4.8,0.9);
+  \fill[layer b,opacity=0.85] (5.75,-0.15) rectangle (6.25,2.2);
+  \fill[layer c] (5.88,0.02) rectangle (6.12,0.28);
+  \node[caption] at (0.3,0.15) {a};
+  \node[caption] at (0.3,0.75) {b};
+  \node[caption,anchor=east] at (-0.1,0.45) {met1};
+  \node[caption,anchor=west] at (6.35,1.6) {met2};
+  \node[caption,anchor=west] at (6.35,0.15) {via};
+  % The *D_NET a network, nodes named as SPEF names them.
+  \draw (0,-1.8) node[circ,label=above:{a (*P)}]{}
+    to[R, l=\SI{8.878}{\ohm}] (3,-1.8) node[circ,label=above:{a:1}]{}
+    to[R, l=\SI{4.5}{\ohm}] (6,-1.8) node[circ,label=above:{a:2}]{}
+    to[R, l=\SI{1.283}{\ohm}] (9,-1.8) node[circ,label=above:{a:3}]{};
+  \draw (0,-1.8) -- (-1.6,-1.8) to[C, l_=\SI{0.873}{\femto\farad}] (-1.6,-3.4) node[ground]{};
+  \draw (0,-1.8) to[C, l=\SI{0.820}{\femto\farad}] (0,-3.4) node[circ,label=below:{b}]{};
+  \draw (6,-1.8) to[C, l=\SI{0.271}{\femto\farad}] (6,-3.4) node[ground]{};
+\end{circuitikz}
+\end{document}

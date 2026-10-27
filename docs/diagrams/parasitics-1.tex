@@ -1,0 +1,24 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Net a as drawn: three regions, met1, the via, met2.
+  \fill[layer a] (0,0) rectangle (6,0.35);
+  \fill[layer a] (5.75,-0.15) rectangle (6.25,0.5);
+  \fill[layer b,opacity=0.85] (5.75,-0.15) rectangle (6.25,2.4);
+  \fill[layer c] (5.88,0.03) rectangle (6.12,0.32);
+  \node[caption,anchor=east] at (-0.1,0.17) {met1};
+  \node[caption,anchor=west] at (6.35,1.6) {met2};
+  \node[caption,anchor=west] at (6.35,0.17) {via};
+  \node[caption] at (0.3,0.17) {a};
+  \node[caption,anchor=west] at (0,0.75) {region 1: 71.03 squares};
+  \node[caption,anchor=west] at (6.35,2.2) {region 2: 10.27 squares};
+  \node[caption,anchor=west] at (6.35,-0.35) {1 cut};
+  % The series network: each region from its node to its far node, the via between them.
+  \draw (0,-1.6) node[circ,label=below:{a}]{}
+    to[R, l=\SI{8.878}{\ohm}, a=met1] (3,-1.6) node[circ,label=below:{a:1}]{}
+    to[R, l=\SI{4.5}{\ohm}, a=via] (6,-1.6) node[circ,label=below:{a:2}]{}
+    to[R, l=\SI{1.283}{\ohm}, a=met2] (9,-1.6) node[circ,label=below:{a:3}]{};
+  \draw[dim] (0,-2.9) -- (9,-2.9) node[dim label,midway] {$8.878 + 4.5 + 1.283 = \SI{14.66}{\ohm}$};
+\end{circuitikz}
+\end{document}

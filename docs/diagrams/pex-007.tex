@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Layout from above: net a, a met1 wire 10 um by 0.14 um.
+  \fill[layer a] (0,2.4) rectangle (8,2.75);
+  \node[caption] at (0.3,2.57) {a};
+  \node[caption,anchor=west] at (8.1,2.57) {met1};
+  \draw[dim] (0,2.1) -- (8,2.1) node[dim label,midway] {\SI{10}{\micro\metre}, 71.4 squares};
+  % The same resistor at the nominal and the operating temperature.
+  \draw (0,1.0) node[circ,label=left:{a}]{}
+    to[R, l=\SI{8.929}{\ohm} at \SI{30}{\degreeCelsius}, a=\SI{10.498}{\ohm} at \SI{85}{\degreeCelsius}] (8,1.0) node[circ,label=right:{a:1}]{};
+  \node[caption] at (4,-0.4) {$\times\,(1 + \mathrm{tc1}\cdot\SI{55}{\kelvin} + \mathrm{tc2}\cdot(\SI{55}{\kelvin})^2) = \times\,1.1758$};
+\end{circuitikz}
+\end{document}

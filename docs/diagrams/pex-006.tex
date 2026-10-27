@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Layout from above: net a, a met1 wire 10 um by 0.14 um.
+  \fill[layer a] (0,2.6) rectangle (8,2.95);
+  \node[caption] at (0.3,2.77) {a};
+  \node[caption,anchor=west] at (8.1,2.77) {met1};
+  \draw[dim] (0,2.3) -- (8,2.3) node[dim label,midway] {\SI{10}{\micro\metre}};
+  % The network, each value min:typ:max over the corners.
+  \draw (0,1.2) node[circ,label=above:{a}]{}
+    to[R, l=\SI{7.857}{}:\SI{8.929}{}:\SI{10.000}{\ohm}] (8,1.2) node[circ,label=above:{a:1}]{};
+  \draw (0,1.2) to[C, l_={\SI{0.859}{}:\SI{0.859}{}:\SI{0.944}{\femto\farad}}] (0,-0.6) node[ground]{};
+  \node[caption,align=left,anchor=west] at (2,0) {min: corner \texttt{cmax} (\SI{0.11}{\ohm} per square)\\ typ: the nominal stack\\ max: corner \texttt{cmin} (\SI{0.14}{\ohm} per square)};
+\end{circuitikz}
+\end{document}

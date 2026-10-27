@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % rcc: the coupling kept between a and b.
+  \node[caption,font=\small\bfseries,anchor=west] at (-2,1) {extraction rcc};
+  \draw (0,0) node[circ,label=above:{a}]{} to[R, l=\SI{8.93}{\ohm}] (2.5,0) node[circ,label=above:{a\#1}]{};
+  \draw (0,-4) node[circ,label=above right:{b}]{} to[R, l=\SI{8.93}{\ohm}] (2.5,-4) node[circ,label=above:{b\#1}]{};
+  \draw (0,0) to[C, l=\SI{1.025}{\femto\farad}] (0,-4);
+  \draw (0,0) -- (-1.5,0) to[C, l_=\SI{0.859}{\femto\farad}] (-1.5,-1.4) node[ground]{};
+  \draw (0,-4) -- (-1.5,-4) to[C, l_=\SI{0.859}{\femto\farad}] (-1.5,-5.4) node[ground]{};
+  % rc: the same coupling grounded on both nets.
+  \begin{scope}[xshift=7.5cm]
+  \node[caption,font=\small\bfseries,anchor=west] at (-2,1) {extraction rc};
+  \draw (0,0) node[circ,label=above:{a}]{} to[R, l=\SI{8.93}{\ohm}] (2.5,0) node[circ,label=above:{a\#1}]{};
+  \draw (0,-4) node[circ,label=above:{b}]{} to[R, l=\SI{8.93}{\ohm}] (2.5,-4) node[circ,label=above:{b\#1}]{};
+  \draw (0,0) to[C, l=\SI{1.025}{\femto\farad}] (0,-1.4) node[ground]{};
+  \draw (0,-4) to[C, l=\SI{1.025}{\femto\farad}] (0,-5.4) node[ground]{};
+  \draw (0,0) -- (-1.5,0) to[C, l_=\SI{0.859}{\femto\farad}] (-1.5,-1.4) node[ground]{};
+  \draw (0,-4) -- (-1.5,-4) to[C, l_=\SI{0.859}{\femto\farad}] (-1.5,-5.4) node[ground]{};
+  \end{scope}
+\end{circuitikz}
+\end{document}
