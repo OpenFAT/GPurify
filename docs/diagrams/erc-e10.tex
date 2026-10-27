@@ -1,0 +1,28 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % the grid of the E8 example, each segment and cut with its current
+  \coordinate (F) at (0,0);
+  \coordinate (T2) at (0,2.5);  \coordinate (B2) at (0,-2.5);
+  \coordinate (T1) at (3.5,2.5);  \coordinate (B1) at (3.5,-2.5);
+  \coordinate (T25) at (7.5,2.5); \coordinate (B25) at (7.5,-2.5);
+  \coordinate (T48) at (11.5,2.5); \coordinate (B48) at (11.5,-2.5);
+  \draw (F) -- ++(-0.8,0) node[vcc, rotate=90]{} node[left=14pt, caption] {feed};
+  \draw (F) to[R, l=met2, i>_=\SI{1000}{\micro\ampere}] (T2) to[R, l=via1, i>_=\SI{1000}{\micro\ampere}] (T1)
+        to[R, l=met1, i>_=\SI{1000}{\micro\ampere}] (T25) to[R, l=met1, i>_=\SI{1000}{\micro\ampere}] (T48);
+  \draw (F) to[R, l_=met2, i>^=\SI{2000}{\micro\ampere}] (B2) to[R, l_=via1, i>^=\SI{2000}{\micro\ampere}] (B1)
+        to[R, l_=met1, i>^=\SI{2000}{\micro\ampere}] (B25) to[R, l_=met1, i>^=\SI{1000}{\micro\ampere}] (B48);
+  \draw (T48) to[american current source, l=\SI{1}{\milli\ampere}] ++(0,-1.8) node[ground]{};
+  \draw (B25) to[american current source, l=\SI{1}{\milli\ampere}] ++(0,-1.8) node[ground]{};
+  \draw (B48) to[american current source, l=\SI{1}{\milli\ampere}] ++(0,-1.8) node[ground]{};
+  \foreach \p in {F,T2,B2,T1,B1,T25,B25,T48,B48} \fill (\p) circle (1.5pt);
+  % the bottom cut and the first bottom met1 segment fail
+  \draw[violation] (-0.15,-3.6) rectangle (3.3,-1.75);
+  \draw[violation] (3.5,-3.6) rectangle (7.3,-1.75);
+  \node[violation label, anchor=north] at (1.85,-3.7) {cut: $>$ \SI{1500}{\micro\ampere}};
+  \node[violation label, anchor=north] at (5.5,-3.7) {segment: $>$ \SI{1500}{\micro\ampere}};
+  \node[caption, anchor=north] at (5.75,-5.0) {limits: \SI[per-mode=symbol]{1.5}{\milli\ampere\per\micro\metre} $\times$ \SI{1}{\micro\metre} per met1 segment,
+    \SI{1.5}{\milli\ampere} per cut};
+\end{circuitikz}
+\end{document}

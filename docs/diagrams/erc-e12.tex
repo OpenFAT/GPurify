@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.08cm, y=0.08cm]
+  % two 40 um x 40 um met1 plates from above, the right one slotted
+  \draw[layer a] (0,0) rectangle (40,40);
+  \draw[layer a, even odd rule] (60,0) rectangle (100,40) (78,5) rectangle (82,35);
+  \node[caption] at (20,20) {met1};
+  \node[caption] at (70,20) {met1};
+  \draw[dim] (0,-4) -- (40,-4);
+  \node[dim label, below] at (20,-5) {\SI{40}{\micro\metre}};
+  \draw[dim] (60,-4) -- (100,-4);
+  \node[dim label, below] at (80,-5) {\SI{40}{\micro\metre}};
+  \draw[violation] (-2,-2) rectangle (42,42);
+  \node[violation label, align=center, anchor=south] at (20,44) {\SI{1600}{\micro\metre\squared}, no slot\\ $>$ \SI{1000}{\micro\metre\squared}};
+  \node[caption, align=center, anchor=south] at (80,44) {\SI{1480}{\micro\metre\squared} with a slot\\ passes};
+\end{circuitikz}
+\end{document}

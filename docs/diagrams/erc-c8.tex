@@ -1,0 +1,13 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \node[draw,fill=gray!20,minimum width=1.1cm,minimum height=0.8cm] (pad) at (0,0) {IO};
+  \draw (pad.east) -- (0.9,0) to[short,i=\SI{1.33}{\ampere}] (2.2,0)
+    to[R,l={$R$ = \SI{3.18}{\ohm}}] (5,0)
+    to[battery1,l={$V_\text{clamp}$ = \SI{0.7}{\volt}}] (8,0) -- (8.6,0) node[right] {VDD, \SI{0}{\volt}};
+  \node[violation label,anchor=south] at (0,0.6) {\SI{4.93}{\volt} $>$ \SI{4.5}{\volt}};
+  \draw[violation] (-0.7,-0.5) rectangle (0.7,0.5);
+  \node[caption,anchor=north] at (4.5,-1.0) {$V_\text{pin} = V_\text{clamp} + I R = 0.7 + 1.33 \times 3.18 = \SI{4.93}{\volt}$};
+\end{circuitikz}
+\end{document}

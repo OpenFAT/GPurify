@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \begin{scope}[x=0.09cm,y=0.09cm]
+    \draw[layer a] (0,0) rectangle (20,20);
+    \node at (10,10) {pad};
+    \draw[layer a] (20,9) rectangle (120,11);
+    \draw[layer a] (119,8) rectangle (123.8,12);
+    \draw[marker] (122,8) rectangle (126,12);
+    \draw[layer a] (124.2,8) rectangle (130,12);
+    \draw[layer a] (130,-6) rectangle (134,26);
+    \node[caption,anchor=west] at (135,10) {VDD};
+    \node[caption,anchor=south] at (124,12.5) {dio};
+    \draw[dim] (20,16) -- (120,16);
+    \node[dim label,anchor=south] at (70,16.5) {\SI{100}{\micro\metre}, met1 \SI{2}{\micro\metre} wide};
+    \draw[violation] (20,8) rectangle (120,12);
+    \node[violation label,anchor=north,align=center] at (70,7) {pad to clamp \SI{7.15}{\ohm} $>$ \SI{1}{\ohm}\\width \SI{2}{\micro\metre} $<$ \SI{5}{\micro\metre}};
+  \end{scope}
+\end{circuitikz}
+\end{document}

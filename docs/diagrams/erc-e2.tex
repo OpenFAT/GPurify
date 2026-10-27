@@ -1,0 +1,24 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met2 pad (feed) -> one via1 cut -> met1 rail, one load at 18 um
+  \coordinate (P) at (0,3.0);
+  \coordinate (M) at (0,0);
+  \coordinate (C) at (4,0);
+  \coordinate (L) at (8,0);
+  \draw (P) -- ++(0,0.5) node[vcc]{feed: met2 pad, \SI{1.8}{\volt}};
+  \draw (P) to[R, l_=via1 \SI{4.5}{\ohm}, i>^=\SI{1000}{\micro\ampere}] (M);
+  \draw (M) to[R, l=\SI{1.125}{\ohm}, i>_=\SI{1000}{\micro\ampere}] (C);
+  \draw (C) to[R, l=\SI{1}{\ohm}, i>_=\SI{1000}{\micro\ampere}] (L);
+  \draw (L) to[american current source, l=\SI{1}{\milli\ampere}] ++(0,-2.2) node[ground]{};
+  \foreach \p in {P,M,C,L} \fill (\p) circle (1.5pt);
+  \node[caption, below left] at (M) {met1, \SI{1}{\micro\metre}};
+  \node[caption, above left] at (C) {\SI{10}{\micro\metre}};
+  \node[caption, above] at (L) {\SI{18}{\micro\metre}};
+  % the cut fails, the met1 segments pass
+  \draw[violation] (-2.25,0.75) rectangle (1.7,2.3);
+  \node[violation label, anchor=west] at (1.85,1.5) {one cut: \SI{1000}{\micro\ampere} $>$ \SI{290}{\micro\ampere}};
+  \node[caption] at (4,-1.1) {met1: \SI{1000}{\micro\ampere} $\le$ \SI{2800}{\micro\ampere}, passes};
+\end{circuitikz}
+\end{document}

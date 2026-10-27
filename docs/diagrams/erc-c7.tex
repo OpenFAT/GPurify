@@ -1,0 +1,24 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % layout from above, µm: pad 0..20, IO finger 20..23.8, diode 22..26, VDD finger 24.2..40
+  \begin{scope}[x=0.3cm,y=0.3cm]
+    \draw[layer a] (0,0) rectangle (20,20);
+    \node at (10,10) {pad (IO)};
+    \draw[layer a] (20,8) rectangle (23.8,12);
+    \draw[layer a] (24.2,8) rectangle (40,12);
+    \draw[layer b] (22,8) rectangle (24,12);
+    \draw[layer c] (24,8) rectangle (26,12);
+    \draw[marker] (22,8) rectangle (26,12);
+    \foreach \y in {8.9,10,11.1} {\draw[fill=black] (22.7,\y-0.3) rectangle (23.3,\y+0.3); \draw[fill=black] (24.7,\y-0.3) rectangle (25.3,\y+0.3);}
+    \node[caption,anchor=south] at (24,12.2) {dio};
+    \node[caption,anchor=west] at (40.5,10) {VDD};
+    % violations
+    \draw[violation] (22.4,9.4) rectangle (23.6,10.6);
+    \node[violation label,anchor=north west,align=left] at (22.2,7.3) {cont: \SI{1.02}{\ampere} $>$ \SI{200}{\milli\ampere}};
+    \draw[violation] (27,7.6) rectangle (39.6,12.4);
+    \node[violation label,anchor=south,align=center] at (33,14.6) {met1, \SI{4}{\micro\metre} wide: \SI{1.33}{\ampere} $>$ \SI{1.2}{\ampere}};
+  \end{scope}
+\end{circuitikz}
+\end{document}

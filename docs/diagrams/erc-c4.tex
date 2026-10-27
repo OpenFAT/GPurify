@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % domain A driver
+  \draw (0,3) node[left] {VDDA} -- (3,3);
+  \draw (0,0) node[left] {VSSA} -- (3,0);
+  \node[not port] (inv) at (1.5,1.5) {};
+  \draw (inv.out) -- (4.6,1.5) node[above,midway] {X};
+  \node[caption] at (1.5,2.4) {driver, domain A};
+  % domain B receiver
+  \draw (5.5,3) -- (8.5,3) node[right] {VDDB};
+  \draw (5.5,0) -- (8.5,0) node[right] {VSSB};
+  \node[nmos,anchor=G] (m) at (4.6,1.5) {};
+  \draw (m.D) -- (m.D |- 0,3);
+  \draw (m.S) -- (m.S |- 0,0);
+  \node[caption,anchor=west] at (5.6,1.5) {receiver, domain B};
+  % the missing coupling
+  \draw[violation] (3,0) -- (5.5,0);
+  \node[violation label,anchor=north,align=center] at (4.25,-0.15) {VSSA and VSSB not coupled\\measured 0 against 1};
+\end{circuitikz}
+\end{document}

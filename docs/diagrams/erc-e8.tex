@@ -1,0 +1,34 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met2 strap (feed at its centre) -> via1 -> two met1 rails, drops in mV
+  \coordinate (F) at (0,0);
+  \coordinate (T2) at (0,2.5);  \coordinate (B2) at (0,-2.5);
+  \coordinate (T1) at (3,2.5);  \coordinate (B1) at (3,-2.5);
+  \coordinate (T25) at (7,2.5); \coordinate (B25) at (7,-2.5);
+  \coordinate (T48) at (11,2.5); \coordinate (B48) at (11,-2.5);
+  \draw (F) -- ++(-0.8,0) node[vcc, rotate=90]{} node[left=14pt, caption] {feed};
+  \draw (F) to[R, l=met2 \SI{0.59}{\ohm}] (T2) to[R, l=via1 \SI{4.5}{\ohm}] (T1)
+        to[R, l=\SI{3}{\ohm}] (T25) to[R, l=\SI{2.875}{\ohm}] (T48);
+  \draw (F) to[R, l_=met2 \SI{0.59}{\ohm}] (B2) to[R, l_=via1 \SI{4.5}{\ohm}] (B1)
+        to[R, l_=\SI{3}{\ohm}] (B25) to[R, l_=\SI{2.875}{\ohm}] (B48);
+  \draw (T48) to[american current source, l=\SI{1}{\milli\ampere}] ++(0,-1.8) node[ground]{};
+  \draw (B25) to[american current source, l=\SI{1}{\milli\ampere}] ++(0,-1.8) node[ground]{};
+  \draw (B48) to[american current source, l=\SI{1}{\milli\ampere}] ++(0,-1.8) node[ground]{};
+  \foreach \p in {F,T2,B2,T1,B1,T25,B25,T48,B48} \fill (\p) circle (1.5pt);
+  \node[caption, right] at (F) {\SI{0}{\milli\volt}};
+  \node[caption, above left] at (T2) {0.59};
+  \node[caption, below left] at (B2) {1.19};
+  \node[caption, above] at (T1) {5.09};
+  \node[caption, above] at (T25) {8.09};
+  \foreach \p in {B1,B25,B48,T48} \draw[violation] (\p) circle (5pt);
+  \node[violation label, above] at ($(T48)+(0,0.15)$) {10.97};
+  \node[violation label, above] at ($(B1)+(-0.6,0.15)$) {10.19};
+  \node[violation label, above] at ($(B25)+(-0.6,0.15)$) {16.19};
+  \node[violation label, above] at ($(B48)+(-0.6,0.15)$) {19.06};
+  \node[caption, anchor=north] at (5.5,-5.3) {node drops in \si{\milli\volt} below the feed; circled: over the \SI{10}{\milli\volt} limit};
+  \node[caption, anchor=west] at (11.4,2.5) {met1 rail, top};
+  \node[caption, anchor=west] at (11.4,-2.5) {met1 rail, bottom};
+\end{circuitikz}
+\end{document}
