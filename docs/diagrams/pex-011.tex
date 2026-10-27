@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Layout from above: one nfet, its poly gate across the diffusion.
+  \fill[layer a] (0,0) rectangle (4,2.4);
+  \fill[layer b] (1.6,-0.6) rectangle (2.4,3.0);
+  \fill[layer c] (0.4,0.9) rectangle (1.0,1.5);
+  \fill[layer c] (3.0,0.9) rectangle (3.6,1.5);
+  \node[caption,anchor=north] at (0.7,0.8) {source};
+  \node[caption,anchor=north] at (0.7,0.4) {tail};
+  \node[caption,anchor=north] at (3.3,0.8) {drain};
+  \node[caption,anchor=north] at (3.3,0.4) {outp};
+  \node[caption,anchor=south] at (2,3.05) {poly gate, inp};
+  \node[caption,anchor=east] at (-0.1,1.2) {diff};
+  \draw[dim] (4.3,0) -- (4.3,2.4) node[dim label,midway,right=2pt] {$W = \SI{2}{\micro\metre}$};
+  % The two capacitors pex_device adds: (0.3 + 0.2) aF/um times W on each side.
+  \draw (9,2.6) node[circ,label=above:{inp}]{} to[C, l_=\SI{1}{\atto\farad}] (7.4,0.2) node[circ,label=below:{tail}]{};
+  \draw (9,2.6) to[C, l=\SI{1}{\atto\farad}] (10.6,0.2) node[circ,label=below:{outp}]{};
+\end{circuitikz}
+\end{document}
