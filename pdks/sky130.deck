@@ -307,7 +307,7 @@ rule lvtn.9 space(lvtn, hvtp) >= 380nm
 # (exclude coincident edges)", as [S11] Include/lvtn.drc.pvl lines 40-44
 # selects the wells; an lvtn off every such well is not measured.
 layer nwell_novar = nwell.outside(var_channel)
-rule lvtn.10 enclosure(lvtn, nwell_novar, noncoincident) >= 380nm
+rule lvtn.10 enclosure(lvtn.interacting(nwell_novar), nwell_novar, noncoincident) >= 380nm
 rule lvtn.12 space(lvtn, nwell_ce) >= 380nm
 rule lvtn.13 area(lvtn) >= 0.265um2
 rule lvtn.14 hole_area(lvtn) >= 0.265um2
