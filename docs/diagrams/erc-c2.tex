@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \node[draw,fill=gray!20,minimum width=1.1cm,minimum height=0.8cm] (pad) at (0,0) {IO};
+  \draw (pad.east) to[short,i=\SI{1.33}{\ampere}] (2.5,0);
+  \draw (2.5,0) -- (2.5,1.2) to[D] (6.5,1.2) -- (6.5,0);
+  \draw (2.5,0) -- (2.5,-1.2) to[D] (6.5,-1.2) -- (6.5,0);
+  \draw (6.5,0) -- (7.5,0) node[right] {VDD};
+  \fill (2.5,0) circle (1.5pt) (6.5,0) circle (1.5pt);
+  \draw[violation] (3.9,0.7) rectangle (5.1,1.7);
+  \node[caption,anchor=south] at (4.5,1.75) {D1, 4 $\times$ \SI{4}{\micro\metre}: \SI{665}{\milli\ampere}};
+  \draw[violation] (3.9,-0.7) rectangle (5.1,-1.7);
+  \node[caption,anchor=north] at (4.5,-1.75) {D2, 4 $\times$ \SI{4}{\micro\metre}: \SI{665}{\milli\ampere}};
+  \node[violation label,align=center,anchor=north] at (4.5,-2.3) {each clamp: \SI{665}{\milli\ampere} $>$ \SI{30}{\milli\ampere/\micro\metre} $\times$ \SI{16}{\micro\metre} = \SI{480}{\milli\ampere}};
+\end{circuitikz}
+\end{document}

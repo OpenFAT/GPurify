@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % from above, µm (x stretched): comp 0..4.05, gate 2..2.25, drain contact at 3.05
+  \begin{scope}[x=1.6cm,y=0.5cm]
+    \draw[marker] (-1,-1.6) rectangle (5.05,8);
+    \node[caption,anchor=south west] at (-1,8) {esd\_mk};
+    \draw[layer a] (0,0) rectangle (4.05,7);
+    \draw[layer b] (2,-0.5) rectangle (2.25,7.5);
+    \draw[fill=black] (1.48,3.4) rectangle (1.7,3.62);
+    \draw[fill=black] (3.05,3.4) rectangle (3.27,3.62);
+    \node[caption] at (1.0,6) {source};
+    \node[caption] at (3.3,6) {drain};
+    \node[caption,anchor=west] at (2.3,7.3) {poly2};
+    \draw[dim] (2.25,4.6) -- (3.05,4.6);
+    \node[dim label,anchor=south] at (2.65,4.7) {\SI{0.8}{\micro\metre}};
+    \draw[dim] (2,-0.25) -- (2.25,-0.25);
+    \node[dim label,anchor=north] at (2.125,-0.4) {\SI{0.25}{\micro\metre}};
+    \node[violation label,anchor=west,align=left] at (5.2,4.6) {LVESD.8b:\\\SI{0.8}{\micro\metre} $<$ \SI{1}{\micro\metre}};
+    \draw[violation] (2.25,4.3) -- (3.05,4.3);
+    \node[violation label,anchor=west,align=left] at (5.2,1.0) {LVESD.3a:\\\SI{0.25}{\micro\metre} $<$ \SI{0.3}{\micro\metre}};
+    \draw[violation] (2,0) rectangle (2.25,7);
+  \end{scope}
+\end{circuitikz}
+\end{document}

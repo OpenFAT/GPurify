@@ -1,0 +1,30 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % base die
+  \draw[marker] (-1.3,-0.6) rectangle (8.6,3.4);
+  \node[caption,anchor=north west] at (-1.3,-0.6) {die Xbase};
+  \draw (0,3) node[left] {VDD} -- (6,3);
+  \draw (0,0) node[left] {VSS} -- (6,0);
+  \draw (1.5,1.5) to[D] (1.5,3);
+  \draw (1.5,0) to[D] (1.5,1.5);
+  \draw (0.3,1.5) -- (3.5,1.5);
+  \fill (1.5,1.5) circle (1.5pt);
+  \node[draw,fill=gray!20,minimum size=5mm] at (0.3,1.5) {};
+  \node[caption,anchor=south] at (0.3,1.8) {PAD};
+  \draw (3.5,1.5) -- (3.5,3.9);
+  \node[draw,fill=gray!45,minimum width=6mm,minimum height=3mm] (ub) at (3.5,3.9) {};
+  % top die
+  \draw[marker] (-1.3,4.4) rectangle (8.6,8.4);
+  \node[caption,anchor=south west] at (-1.3,8.4) {die Xtop};
+  \draw (0,8) node[left] {VDD} -- (6,8);
+  \draw (0,5) node[left] {VSS} -- (6,5);
+  \node[draw,fill=gray!45,minimum width=6mm,minimum height=3mm] at (3.5,4.6) {};
+  \draw (3.5,4.6) -- (3.5,6.5); \node[anchor=south east] at (3.2,6.55) {A};
+  \draw (2,5) to[D,l={sense\_diode}] (2,6.5) -- (3.5,6.5);
+  \node[caption,anchor=west] at (3.9,4.25) {ubump bond};
+  \draw[violation] (3.25,4.35) rectangle (3.75,6.8);
+  \node[violation label,anchor=west,align=left] at (4.0,6.6) {A on its own die:\\0 rails of 2};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \node[draw,fill=gray!20,minimum width=1.1cm,minimum height=0.8cm] (a) at (0,0) {IO1};
+  \node[draw,fill=gray!20,minimum width=1.1cm,minimum height=0.8cm] (b) at (11,0) {IO2};
+  \draw (a.east) to[R,l={wiring}] (2.8,0) to[D,l={\SI{1}{\ohm}}] (5.5,0);
+  \draw (11,0) ++(-0.55,0) to[R,l_={wiring}] (8.2,0) to[D,l_={\SI{1}{\ohm}}] (5.5,0);
+  \fill (5.5,0) circle (1.5pt);
+  \draw (5.5,0) -- (5.5,1) node[above] {VDD};
+  \draw[violation] (0.6,-0.9) -- (10.4,-0.9);
+  \node[violation label,anchor=north,align=center] at (5.5,-1.0) {IO1 to IO2: \SI{6.36}{\ohm} $>$ \SI{2}{\ohm}\\IO1 to VDD: \SI{3.18}{\ohm} $>$ \SI{2}{\ohm}};
+\end{circuitikz}
+\end{document}

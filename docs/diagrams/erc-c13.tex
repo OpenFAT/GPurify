@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \draw (-1.5,3) node[left] {VDD} -- (6,3);
+  \draw (-1.5,0) node[left] {VSS} -- (6,0);
+  \node[draw,fill=gray!20,minimum width=1.1cm,minimum height=0.8cm] (pad) at (0,1.5) {PAD};
+  \node[caption,anchor=north] at (0,1.05) {system pin};
+  \draw (pad.east) -- (2,1.5);
+  \draw (2,1.5) to[D,l_={esd\_diode}] (2,3);
+  \draw (2,0) to[D,l_={esd\_diode}] (2,1.5);
+  \fill (2,1.5) circle (1.5pt);
+  \draw[violation] (2,1.5) -- (4,1.5);
+  \node[violation label,anchor=west,align=left] at (4.1,1.5) {no iec\_scr:\\0 rails of 2};
+  \node[caption,anchor=north,align=center] at (2.2,-0.2) {esd\_diode protects the package pin,\\but is not rated for system-level stress};
+\end{circuitikz}
+\end{document}

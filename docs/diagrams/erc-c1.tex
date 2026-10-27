@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % rails
+  \draw (-1.5,3) node[left] {VDD} -- (6,3);
+  \draw (-1.5,0) node[left] {VSS} -- (6,0);
+  % pad
+  \node[draw,fill=gray!20,minimum width=1.1cm,minimum height=0.8cm] (pad) at (0,1.5) {IO};
+  \node[caption,anchor=north] at (0,1.05) {pad};
+  % the one clamp: IO up to VDD
+  \draw (pad.east) -- (2,1.5) to[D,l_={esd\_diode}] (2,3);
+  \fill (2,1.5) circle (1.5pt);
+  % missing path to VSS
+  \draw[violation] (2,1.5) -- (4,1.5) -- (4,0);
+  \node[violation label,anchor=west,align=left] at (4.15,0.85) {no clamp to VSS\\reaches 1 rail of 2};
+\end{circuitikz}
+\end{document}

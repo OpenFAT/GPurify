@@ -1,0 +1,25 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \draw (-1.5,3) node[left] {VDD} -- (8.5,3);
+  \draw (-1.5,-1) node[left] {VSS} -- (8.5,-1);
+  \node[draw,fill=gray!20,minimum width=1.1cm,minimum height=0.8cm] (pad) at (0,1) {IO};
+  % primary clamps at the pad
+  \draw (pad.east) -- (1.8,1);
+  \draw (1.8,1) to[D,l_={up}] (1.8,3);
+  \draw (1.8,-1) to[D,l={down}] (1.8,1);
+  \fill (1.8,1) circle (1.5pt);
+  % series resistor to IN
+  \draw (1.8,1) to[R,l={rpoly \SI{200}{\ohm}}] (5,1);
+  \fill (5,1) circle (1.5pt); \node[anchor=south] at (5,1.5) {IN};
+  % protected NMOS
+  \draw (5,1) -- (6.1,1);
+  \node[nmos,anchor=G] (m) at (6.1,1) {};
+  \draw (m.D) -- (m.D |- 0,3);
+  \draw (m.S) -- (m.S |- 0,-1);
+  % violations at IN
+  \draw[violation] (4.6,0.55) rectangle (6.25,1.45);
+  \node[violation label,anchor=north,align=center] at (5.4,0.4) {no clamp at IN: 0 rails of 2\\series \SI{200}{\ohm} $<$ \SI{500}{\ohm}};
+\end{circuitikz}
+\end{document}
