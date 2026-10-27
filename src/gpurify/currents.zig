@@ -17,7 +17,7 @@
 //! evenly over them (a reduced parallel or series group shares it).
 //!
 //! Refused, each naming the cause: no reference; a comparison that could
-//! not be made or did not conclude; a file instance in the scope that is
+//! not be made, did not conclude, or found the layout does not match; a file instance in the scope that is
 //! no reference device, a reference device the file has no current for,
 //! or one listed as several devices (the file is another netlist's); a
 //! terminal count that is not the card's; an instance or a net LVS left
@@ -119,7 +119,14 @@ pub fn placeCurrents(scratch: Allocator, run_arena: Allocator, loaded: *const Lo
     var ref_graph: lvs.Graph = .{};
     var traced: lvs.Traced = .{};
     if (try checks_lvs.compareInto(scratch, run_arena, loaded, extracted, options, &layout, &ref_graph, &traced)) |cause| return refuse(run_arena, why, "--currents: LVS made no comparison to place them through: {s}", .{cause});
-    if (traced.verdict == .inconclusive) return refuse(run_arena, why, "--currents: LVS did not conclude, so no device pairing places them", .{});
+    switch (traced.verdict) {
+        .match => {},
+        // A pairing of the devices that did match still puts a current on
+        // wiring the reference never had; EM read from it would pass a
+        // layout nobody checked.
+        .mismatch => return refuse(run_arena, why, "--currents: the layout does not match its reference (LVS found {d} discrepancies), so no device pairing places them", .{traced.found.items.len}),
+        .inconclusive => return refuse(run_arena, why, "--currents: LVS did not conclude, so no device pairing places them", .{}),
+    }
     const first = reference.devicesOf((try reference.top(scratch)).?)[0];
     const names = try deviceNames(scratch, reference, first, ref_graph.deviceCount(), strings);
 
@@ -131,7 +138,6 @@ pub fn placeCurrents(scratch: Allocator, run_arena: Allocator, loaded: *const Lo
     // `reference_mate` numbers each side's nets after its devices.
     const reduced_devices: u32 = @intCast(traced.reference_row_start.items.len - 1);
     const layout_devices: u32 = @intCast(traced.layout_row_start.items.len - 1);
-    const mismatch = if (traced.verdict == .mismatch) " (the layout does not match the reference)" else "";
     const device_of = try inverse(scratch, ref_graph.deviceCount(), traced.reference_row_start.items, traced.reference_row.items);
     const net_of = try inverseOrigin(scratch, ref_graph.netCount(), traced.reference_net_origin.items);
 
@@ -144,13 +150,13 @@ pub fn placeCurrents(scratch: Allocator, run_arena: Allocator, loaded: *const Lo
         // `lvs ignore` left it out: nothing in the layout to carry it.
         const reduced = device_of[d] orelse continue;
         const mate = traced.reference_mate.items[reduced];
-        if (mate == unpaired) return refuse(run_arena, why, "--currents: {s} ({s}) is a reference device LVS left unmatched{s}, so its current has no layout device", .{ strings.resolve(instance), name, mismatch });
+        if (mate == unpaired) return refuse(run_arena, why, "--currents: {s} ({s}) is a reference device LVS left unmatched, so its current has no layout device", .{ strings.resolve(instance), name });
         for (group, card) |row, ref_net| {
             // Consumed by reduction: a series stack's inner node.
             const reduced_net = net_of[ref_net] orelse continue;
             const layout_net = traced.reference_mate.items[reduced_devices + reduced_net];
             const terminal = file.terminal[row];
-            if (layout_net == unpaired) return refuse(run_arena, why, "--currents: {s} {s} is on a net LVS left unmatched{s}", .{ strings.resolve(instance), strings.resolve(terminal), mismatch });
+            if (layout_net == unpaired) return refuse(run_arena, why, "--currents: {s} {s} is on a net LVS left unmatched", .{ strings.resolve(instance), strings.resolve(terminal) });
             const on = traced.layout_net_origin.items[layout_net - layout_devices];
             // The layout terminals on that net, of every device the mate stands for.
             const start = rows.net.items.len;

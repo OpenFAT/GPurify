@@ -438,8 +438,10 @@ RMS and peak current at one corner (catalog ERC-E14).
   names may sit under one testbench instance (`xdut.x1.mn1`); instances
   outside it are the testbench's and are left out.
 - Refused, each naming the cause: `--currents` without `--reference`; a
-  comparison that could not be made or did not conclude; a terminal whose
-  instance or net LVS left unmatched; a current file whose instance set does
+  comparison that could not be made or did not conclude; a layout that does
+  not match its reference (LVS found any discrepancy: a pairing of the
+  devices that did match would still load wiring the reference never had);
+  a terminal whose instance or net LVS left unmatched; a current file whose instance set does
   not match the reference (an instance that is no reference device, a
   reference device with no current, one device listed as several, a
   terminal count that is not the card's: another netlist); an instance LVS

@@ -172,16 +172,16 @@ test "simulated currents placed through LVS load each segment with the currents 
     try testing.expectEqual(3, dropped);
 }
 
-test "a reference device LVS left unmatched refuses the currents" {
-    // Oracle: the refusal contract (catalog ERC-E14): the layout draws no
-    // load at 18 µm, so VDD carries two loads against the reference's three
-    // and LVS pairs none of the loads (R12, first, is named); a current
-    // with no layout device to load refuses the stage.
+test "a layout that does not match its reference refuses the currents" {
+    // Oracle: the refusal contract (catalog ERC-E14, docs/usage.md): the
+    // layout draws no load at 18 µm, so VDD carries two loads against the
+    // reference's three and LVS reports a mismatch; any mismatch refuses,
+    // before a current is placed on the loads LVS could still pair.
     var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     const ran = try ercWith(arena, try rail(arena, &.{ 12_000, 14_000 }, null), try currents(arena, .{ 1000.0, 1500.0, 500.0 }, null), reference(true));
-    try expectRefused(&ran, "xdut.r12 (r12) is a reference device LVS left unmatched (the layout does not match the reference)");
+    try expectRefused(&ran, "--currents: the layout does not match its reference (LVS found");
 }
 
 test "a current file of another netlist is refused" {
