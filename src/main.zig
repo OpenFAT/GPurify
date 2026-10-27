@@ -197,7 +197,7 @@ fn system(env: Env, arena: Allocator, cli_: *const args.Cli, path: []const u8, o
     switch (cli_.format) {
         .json => {
             const header: gpurify.@"export".Header = .{ .tool_version = tool_version, .deck_path = path, .layout_path = path };
-            gpurify.@"export".json.writeReport(&text.writer, &header, &ran.strings, &no_layers, ran.grid, &o.violations, &o.waived, o.runs.items) catch |e| switch (e) {
+            gpurify.@"export".json.writeReport(&text.writer, &header, &ran.strings, &no_layers, ran.grid, &o.violations, &o.waived, o.runs.items, o.run_domain.items, ran.summary) catch |e| switch (e) {
                 error.Unrepresentable => return fail(err, "json: a value the report cannot represent", .{}),
                 error.WriteFailed => return error.WriteFailed,
             };
@@ -252,7 +252,7 @@ fn render(env: Env, arena: Allocator, cli_: *const args.Cli, text: *Writer, err:
                 error.OutOfMemory, error.WriteFailed => |x| return x,
             };
         },
-        .json => gpurify.@"export".json.writeReport(text, &header, strings, &ran.loaded.deck.deck.layers, ran.loaded.grid, &o.violations, &o.waived, o.runs.items) catch |e| switch (e) {
+        .json => gpurify.@"export".json.writeReport(text, &header, strings, &ran.loaded.deck.deck.layers, ran.loaded.grid, &o.violations, &o.waived, o.runs.items, o.run_domain.items, ran.summary) catch |e| switch (e) {
             error.Unrepresentable => {
                 _ = fail(err, "json: a value the report cannot represent", .{});
                 return error.Reported;
@@ -456,9 +456,10 @@ fn fail(err: *Writer, comptime fmt: []const u8, a: anytype) u8 {
     return 1;
 }
 
-/// A GDSII library on a 1 nm grid holding one `w` × `h` nm met1 rectangle
-/// (sky130's `gds(68, 20)`) at the origin, in cell `top`.
-fn met1Gds(arena: Allocator, w: i32, h: i32) ![]const u8 {
+/// A GDSII library on a 1 nm grid holding, in cell `top`, one rectangle
+/// per entry: GDS layer, datatype, and `w` × `h` nm at the origin (sky130's
+/// met1 is `gds(68, 20)`).
+fn rectsGds(arena: Allocator, rects: []const struct { u16, u16, i32, i32 }) ![]const u8 {
     var b: std.ArrayList(u8) = .empty;
     const Rec = struct {
         fn put(list: *std.ArrayList(u8), a: Allocator, kind: u16, data: []const u8) !void {
@@ -472,19 +473,22 @@ fn met1Gds(arena: Allocator, w: i32, h: i32) ![]const u8 {
     const dates: [24]u8 = @splat(0);
     // UNITS: 1e-3 user units and 1e-9 m per database unit, GDSII reals.
     const units = [_]u8{ 0x3e, 0x41, 0x89, 0x37, 0x4b, 0xc6, 0xa7, 0xf0, 0x39, 0x44, 0xb8, 0x2f, 0xa0, 0x9b, 0x5a, 0x54 };
-    var xy: [40]u8 = undefined;
-    for ([_]i32{ 0, 0, w, 0, w, h, 0, h, 0, 0 }, 0..) |v, k| std.mem.writeInt(i32, xy[4 * k ..][0..4], v, .big);
     try Rec.put(&b, arena, 0x0002, &.{ 0x02, 0x58 });
     try Rec.put(&b, arena, 0x0102, &dates);
     try Rec.put(&b, arena, 0x0206, "lib\x00");
     try Rec.put(&b, arena, 0x0305, &units);
     try Rec.put(&b, arena, 0x0502, &dates);
     try Rec.put(&b, arena, 0x0606, "top\x00");
-    try Rec.put(&b, arena, 0x0800, "");
-    try Rec.put(&b, arena, 0x0D02, &.{ 0, 68 });
-    try Rec.put(&b, arena, 0x0E02, &.{ 0, 20 });
-    try Rec.put(&b, arena, 0x1003, &xy);
-    try Rec.put(&b, arena, 0x1100, "");
+    for (rects) |r| {
+        const layer, const datatype, const w, const h = r;
+        var xy: [40]u8 = undefined;
+        for ([_]i32{ 0, 0, w, 0, w, h, 0, h, 0, 0 }, 0..) |v, k| std.mem.writeInt(i32, xy[4 * k ..][0..4], v, .big);
+        try Rec.put(&b, arena, 0x0800, "");
+        try Rec.put(&b, arena, 0x0D02, std.mem.asBytes(&std.mem.nativeToBig(u16, layer)));
+        try Rec.put(&b, arena, 0x0E02, std.mem.asBytes(&std.mem.nativeToBig(u16, datatype)));
+        try Rec.put(&b, arena, 0x1003, &xy);
+        try Rec.put(&b, arena, 0x1100, "");
+    }
     try Rec.put(&b, arena, 0x0700, "");
     try Rec.put(&b, arena, 0x0400, "");
     return b.items;
@@ -529,8 +533,8 @@ test "drc on the shipped sky130 deck passes a 1 um met1 square and fails a 100 n
     const arena = arena_state.allocator();
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
-    try tmp.dir.writeFile(testing.io, .{ .sub_path = "square.gds", .data = try met1Gds(arena, 1000, 1000) });
-    try tmp.dir.writeFile(testing.io, .{ .sub_path = "strip.gds", .data = try met1Gds(arena, 100, 1000) });
+    try tmp.dir.writeFile(testing.io, .{ .sub_path = "square.gds", .data = try rectsGds(arena, &.{.{ 68, 20, 1000, 1000 }}) });
+    try tmp.dir.writeFile(testing.io, .{ .sub_path = "strip.gds", .data = try rectsGds(arena, &.{.{ 68, 20, 100, 1000 }}) });
 
     const square = try runIn(arena, tmp.dir, &.{ "drc", "square.gds", "--deck", "sky130", "--backend", "auto" });
     try testing.expectEqualStrings("", square[2]);
@@ -580,7 +584,7 @@ test "deck refuses a deck that does not compile with drc's own diagnostics" {
     const arena = arena_state.allocator();
     var tmp = testing.tmpDir(.{});
     defer tmp.cleanup();
-    try tmp.dir.writeFile(testing.io, .{ .sub_path = "t.gds", .data = try met1Gds(arena, 1000, 1000) });
+    try tmp.dir.writeFile(testing.io, .{ .sub_path = "t.gds", .data = try rectsGds(arena, &.{.{ 68, 20, 1000, 1000 }}) });
     try tmp.dir.writeFile(testing.io, .{ .sub_path = "layer.deck", .data = "grid 5nm\nlayer met1 = gds(68, 20)\nrule m1.1 width(met9) >= 140nm\n" });
     try tmp.dir.writeFile(testing.io, .{ .sub_path = "grid.deck", .data = "grid 5nm\nlayer met1 = gds(68, 20)\nrule m1.1 width(met1) >= 142nm\n" });
     for ([_][]const u8{ "layer.deck", "grid.deck", "missing.deck" }) |deck| {
@@ -617,4 +621,35 @@ test "deck dumps a shipped deck by name on stdout and exits 0" {
     try testing.expect(std.mem.indexOf(u8, r[1], "{\"id\":\"m1.1\",\"kind\":\"min_width\",\"keyword\":\"width\",\"domain\":\"drc\",\"severity\":\"error\",\"layers\":[") != null);
     try testing.expect(std.mem.indexOf(u8, r[1], "\"params\":[{\"name\":\"limit\",\"value\":140,\"unit\":\"nm\"}]},\n") != null);
     try testing.expect(std.mem.endsWith(u8, r[1], "]}}\n"));
+}
+
+test "all on asap7 in json carries the text summary and each run's domain" {
+    // Oracle: the text report of the same run, whose `summary:` block the
+    // JSON summary restates field for field (here PEX refuses LISD, which
+    // asap7 gives no sheet resistance, and LVS skips with no reference); and
+    // `deck asap7`, whose dump gives every rule's domain, which each run's
+    // `domain` must match. One LISD (17/0) and one M1 (19/0) rectangle.
+    const testing = std.testing;
+    var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var tmp = testing.tmpDir(.{});
+    defer tmp.cleanup();
+    try tmp.dir.writeFile(testing.io, .{ .sub_path = "a7.gds", .data = try rectsGds(arena, &.{ .{ 17, 0, 1000, 1000 }, .{ 19, 0, 1000, 1000 } }) });
+    const text = try runIn(arena, tmp.dir, &.{ "all", "a7.gds", "--deck", "asap7" });
+    const json = try runIn(arena, tmp.dir, &.{ "all", "a7.gds", "--deck", "asap7", "--format", "json" });
+    try testing.expectEqual(text[0], json[0]);
+    const lvs_why = "no reference netlist was supplied, so no comparison was made";
+    const pex_why = "layer LISD: no pex row gives this conductor a positive sheet resistance";
+    try testing.expect(std.mem.indexOf(u8, text[1], "summary:\n  drc: ran\n  erc: ran\n  lvs: skipped, " ++ lvs_why ++ "\n  pex: refused, " ++ pex_why ++ "\n  1 rules skipped\n  241 rules clean\n  0 violations: 0 errors, 0 warnings\n") != null);
+    try testing.expect(std.mem.endsWith(u8, json[1], ",\"summary\":{\"drc\":{\"status\":\"ran\"},\"erc\":{\"status\":\"ran\"},\"lvs\":{\"status\":\"skipped\",\"why\":\"" ++ lvs_why ++ "\"},\"pex\":{\"status\":\"refused\",\"why\":\"" ++ pex_why ++ "\"},\"rules_skipped\":1,\"rules_clean\":241,\"violations\":0,\"errors\":0,\"warnings\":0}}"));
+
+    const dump = try runIn(arena, tmp.dir, &.{ "deck", "asap7", "--format", "json" });
+    const deck = try std.json.parseFromSliceLeaky(std.json.Value, arena, dump[1], .{});
+    const report = try std.json.parseFromSliceLeaky(std.json.Value, arena, json[1], .{});
+    var domain_of: std.StringHashMapUnmanaged([]const u8) = .empty;
+    for (deck.object.get("rules").?.array.items) |rule| try domain_of.put(arena, rule.object.get("id").?.string, rule.object.get("domain").?.string);
+    const runs = report.object.get("runs").?.array.items;
+    try testing.expectEqual(domain_of.count(), runs.len);
+    for (runs) |run| try testing.expectEqualStrings(domain_of.get(run.object.get("rule").?.string).?, run.object.get("domain").?.string);
 }

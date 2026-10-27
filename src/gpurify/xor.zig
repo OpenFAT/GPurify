@@ -68,6 +68,7 @@ pub fn run(gpa: Allocator, run_arena: Allocator, io: std.Io, dir: std.Io.Dir, in
     var scratch: std.heap.ArenaAllocator = .init(gpa);
     defer scratch.deinit();
     try compareInto(scratch.allocator(), run_arena, loaded, &store, &out.outputs);
+    try run_.tagRuns(run_arena, &out.outputs, .drc);
     out.summary = try run_.summarize(run_arena, &out.outputs, .{ .ran, .not_selected, .not_selected, .not_selected });
     return out;
 }

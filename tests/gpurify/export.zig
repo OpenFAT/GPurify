@@ -101,7 +101,9 @@ const World = struct {
     fn json(w: *World) ![]const u8 {
         w.out.clearRetainingCapacity();
         const none: report.Violations = .{};
-        try ex.json.writeReport(&w.out.writer, &w.header, &w.strings, &w.layers, try .init(1000), &w.violations, &none, &w.runs);
+        // Every stage status once, the refusal's reason needing escapes.
+        const summary: gpurify.Summary = .{ .drc = .ran, .erc = .{ .skipped = "no design intent was supplied" }, .lvs = .not_selected, .pex = .{ .refused = "layer \"m1\": no sheet resistance" }, .violations = 2, .errors = 1, .warnings = 1, .rules_clean = 0, .rules_skipped = 1 };
+        try ex.json.writeReport(&w.out.writer, &w.header, &w.strings, &w.layers, try .init(1000), &w.violations, &none, &w.runs, &.{ .drc, .drc, .erc }, summary);
         return w.out.written();
     }
 
@@ -171,8 +173,10 @@ test "the json report is exactly these bytes" {
     // Oracle: golden, written by hand from the known world (module doc): the
     // violation rows in the table's order, floats at six decimals, the skipped
     // rule beside the ones that ran; `layer_name` the deck's name, `null` for
-    // `report.no_layer`, and a `report.no_shape` shape `null` (json.zig's
-    // `writeReport` doc); and determinism, two
+    // `report.no_layer`, and a `report.no_shape` shape `null`; each run's
+    // `domain` as given, and the summary, every stage status once, with the
+    // text summary's fields in its order (json.zig's `writeReport` doc,
+    // text.zig's `writeSummary`); and determinism, two
     // worlds built apart give the same bytes.
     const expected =
         \\{"header":{"tool_version":"gpurify-test","deck_path":"decks/test.json","layout_path":"layouts/test.gds","timestamp":"2020-01-01T00:00:00Z"},
@@ -181,7 +185,9 @@ test "the json report is exactly these bytes" {
     ++
         \\{"rule":"m1.width","layer":0,"layer_name":"met1","severity":"error","at":{"unit":"nm","x":10.000000,"y":20.000000},"measured":{"kind":"length","unit":"nm","value":80.000000},"limit":{"kind":"length","unit":"nm","value":100.000000},"shapes":[0,1]}],
     ++
-        \\"runs":[{"rule":"m1.width","outcome":"ran","examined":1234,"violations":1},{"rule":"m1.density","outcome":"ran","examined":5678,"violations":1},{"rule":"m1.antenna","outcome":"skipped:no_design_intent","examined":0,"violations":0}]}
+        \\"runs":[{"rule":"m1.width","domain":"drc","outcome":"ran","examined":1234,"violations":1},{"rule":"m1.density","domain":"drc","outcome":"ran","examined":5678,"violations":1},{"rule":"m1.antenna","domain":"erc","outcome":"skipped:no_design_intent","examined":0,"violations":0}],
+    ++
+        \\"summary":{"drc":{"status":"ran"},"erc":{"status":"skipped","why":"no design intent was supplied"},"lvs":{"status":"not_selected"},"pex":{"status":"refused","why":"layer \"m1\": no sheet resistance"},"rules_skipped":1,"rules_clean":0,"violations":2,"errors":1,"warnings":1}}
     ;
     var a: World = undefined;
     try a.init("VSS");

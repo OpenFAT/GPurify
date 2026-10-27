@@ -195,7 +195,11 @@ pub fn checkSystem(gpa: Allocator, run_arena: Allocator, spec: *const System, di
     try sys.checkPins(a, pins.items, strings, &out.violations, &out.runs);
 
     const lvs_status = try compare(a, &layout, &flat, reference, top, spec, dies, strings, out);
+    // Bonds, alignment and pins count as LVS, the stage the
+    // system's summary reports them under (DRC is not selected).
+    try run_.tagRuns(a, out, .lvs);
     const erc: StageStatus = if (spec.esd) |esd| try esdRows(a, spec, esd, placed, intents, faces, package, &layout, at, strings, out, diag) else .not_selected;
+    try run_.tagRuns(a, out, .erc);
     return run_.summarize(run_arena, out, .{ .not_selected, erc, lvs_status, .not_selected });
 }
 

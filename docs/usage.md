@@ -115,6 +115,12 @@ what was measured, the limit it broke and the shapes involved. An LVS or
 system finding sits on no layer and may name no shape: the text line then
 leaves out that clause, and JSON writes `null` for it.
 
+The JSON report ends with the same summary: `"summary"` holds `drc`, `erc`,
+`lvs` and `pex`, each `{"status": "ran" | "not_selected" | "skipped" |
+"refused"}` with a `"why"` for a skip or refusal, then `rules_skipped`,
+`rules_clean`, `violations`, `errors` and `warnings`. Each entry in `"runs"`
+names its stage in `"domain"`.
+
 ## Comparing two layouts
 
 ```sh

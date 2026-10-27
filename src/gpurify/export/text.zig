@@ -12,6 +12,7 @@
 //!
 //! Contents:
 //! - `pub const StageStatus = union(enum) { ran, not_selected, skipped: []const u8, refused: []const u8 }`
+//! - `pub const Domain = enum { drc, erc, lvs, pex }`
 //! - `pub const Summary = struct`, `Summary.passed(s: Summary) bool`
 //! - `pub fn writeRuns(w: *std.Io.Writer, strings: *const StrTable, runs: []const RuleRun) std.Io.Writer.Error!void`
 //! - `pub fn writeViolations(w: *std.Io.Writer, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations) std.Io.Writer.Error!void`
@@ -50,6 +51,9 @@ pub const StageStatus = union(enum) {
     /// The input is outside what the tool represents exactly.
     refused: []const u8,
 };
+
+/// The stage a rule run belongs to, one per `Summary` stage.
+pub const Domain = enum { drc, erc, lvs, pex };
 
 /// The run at a glance; `0 violations` without `rules_skipped` is a false
 /// clean, so both print.

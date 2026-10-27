@@ -8,15 +8,18 @@
 //! (`rule`, `layer`, `layer_name`, `severity`, `at`, `measured`, `limit`,
 //! `shapes`, `fix` where the row has a hint, and `load`, the simulated
 //! `instance` and `terminal` loading it most, where the row has one);
-//! `waived`, only when non-empty; `runs`
-//! (`rule`, `outcome`, `examined`, `violations`). Units: `nm`, `nm^2`,
+//! `waived`, only when non-empty; `runs` (`rule`, `domain`, `outcome`,
+//! `examined`, `violations`); `summary`, the text report's `summary:`
+//! block: `drc`, `erc`, `lvs`, `pex` each `{"status": ...}` with `"why"`
+//! when skipped or refused, then `rules_skipped`, `rules_clean`,
+//! `violations`, `errors`, `warnings`. Units: `nm`, `nm^2`,
 //! `mV`, `uA`, `ohm`; a ratio or count has none. Floats are `{:.6}`
 //! (geom.float). Keys are fixed, never a map's, so the bytes are
 //! deterministic. A string escapes as serde_json does (RFC 8259 §7).
 //!
 //! Contents:
 //! - `pub const Error = error{Unrepresentable} || std.Io.Writer.Error`
-//! - `pub fn writeReport(w: *std.Io.Writer, header: *const Header, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations, runs: []const RuleRun) Error!void`
+//! - `pub fn writeReport(w: *std.Io.Writer, header: *const Header, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations, runs: []const RuleRun, run_domains: []const Domain, summary: Summary) Error!void`
 //! - `pub fn writeString(w: *std.Io.Writer, text: []const u8) std.Io.Writer.Error!void`
 
 const std = @import("std");
@@ -32,6 +35,10 @@ const RuleRun = report.RuleRun;
 const Violations = report.Violations;
 const float = geom.float;
 const Header = @import("header.zig").Header;
+const text_ = @import("text.zig");
+const Domain = text_.Domain;
+const StageStatus = text_.StageStatus;
+const Summary = text_.Summary;
 const assert = std.debug.assert;
 
 /// `Unrepresentable`: a measured value, limit or fix is NaN or infinite,
@@ -44,9 +51,12 @@ pub const Error = error{Unrepresentable} || Writer.Error;
 /// `layers` (the run's deck's table) gives it, a hidden inner layer's
 /// included (`x#1`, `<rule id>@k`), and `null` on `report.no_layer` (an
 /// LVS or system finding). A run with no one deck (a system) passes an
-/// empty table. A `shapes` entry is `null` for `report.no_shape`. Asserts
-/// that every row's layer is in `layers` or is `report.no_layer`.
-pub fn writeReport(w: *Writer, header: *const Header, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations, runs: []const RuleRun) Error!void {
+/// empty table. A `shapes` entry is `null` for `report.no_shape`.
+/// `run_domains[i]` is `runs[i]`'s stage (`Outputs.run_domain`); `summary`
+/// is the run's. Asserts that every row's layer is in `layers` or is
+/// `report.no_layer`, and that `run_domains` is as long as `runs`.
+pub fn writeReport(w: *Writer, header: *const Header, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations, runs: []const RuleRun, run_domains: []const Domain, summary: Summary) Error!void {
+    assert(run_domains.len == runs.len);
     if (!allFinite(violations) or !allFinite(waived)) return error.Unrepresentable;
     try w.writeAll("{\"header\":{\"tool_version\":");
     try writeString(w, header.tool_version);
@@ -64,11 +74,11 @@ pub fn writeReport(w: *Writer, header: *const Header, strings: *const StrTable, 
         try writeRows(w, strings, layers, grid, waived);
     }
     try w.writeAll("],\"runs\":[");
-    for (runs, 0..) |run, i| {
+    for (runs, run_domains, 0..) |run, domain, i| {
         if (i > 0) try w.writeByte(',');
         try w.writeAll("{\"rule\":");
         try writeString(w, strings.resolve(run.rule));
-        try w.writeAll(",\"outcome\":\"");
+        try w.print(",\"domain\":\"{t}\",\"outcome\":\"", .{domain});
         try w.writeAll(switch (run.outcome) {
             .ran => "ran",
             .refused => "refused",
@@ -81,7 +91,20 @@ pub fn writeReport(w: *Writer, header: *const Header, strings: *const StrTable, 
         });
         try w.print("\",\"examined\":{d},\"violations\":{d}}}", .{ run.examined, run.violations });
     }
-    try w.writeAll("]}");
+    try w.writeAll("],\"summary\":{");
+    const stages = [_]struct { []const u8, StageStatus }{ .{ "drc", summary.drc }, .{ "erc", summary.erc }, .{ "lvs", summary.lvs }, .{ "pex", summary.pex } };
+    for (stages) |stage| {
+        try w.print("\"{s}\":{{\"status\":\"{t}\"", .{ stage[0], stage[1] });
+        switch (stage[1]) {
+            .ran, .not_selected => {},
+            .skipped, .refused => |why| {
+                try w.writeAll(",\"why\":");
+                try writeString(w, why);
+            },
+        }
+        try w.writeAll("},");
+    }
+    try w.print("\"rules_skipped\":{d},\"rules_clean\":{d},\"violations\":{d},\"errors\":{d},\"warnings\":{d}}}}}", .{ summary.rules_skipped, summary.rules_clean, summary.violations, summary.errors, summary.warnings });
 }
 
 /// `text` as a JSON string: `"` and `\` escaped, `\b \f \n \r \t`, any

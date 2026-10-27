@@ -59,7 +59,7 @@ fn render(arena: Allocator, root: std.Io.Dir, job: Job, device: Device) ![]const
     var stderr: []const u8 = "";
     var exit: u8 = if (r.summary.passed()) 0 else 1;
     switch (job.command) {
-        .all, .lvs => try gpurify.@"export".json.writeReport(&stdout.writer, &header, &r.loaded.strings, &r.loaded.deck.deck.layers, r.loaded.grid, &r.outputs.violations, &r.outputs.waived, r.outputs.runs.items),
+        .all, .lvs => try gpurify.@"export".json.writeReport(&stdout.writer, &header, &r.loaded.strings, &r.loaded.deck.deck.layers, r.loaded.grid, &r.outputs.violations, &r.outputs.waived, r.outputs.runs.items, r.outputs.run_domain.items, r.summary),
         .pex, .pex_qs => if (r.outputs.parasitics) |*network| {
             const corners = try arena.alloc(*const @import("extract").network.ParasiticNetwork, r.outputs.corners.items.len);
             for (r.outputs.corners.items, corners) |*c, *o| o.* = &c.network;

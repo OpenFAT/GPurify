@@ -24,7 +24,7 @@
 //!   - `header`: `Header`, `Error`, `Diagnostic`; `LayerTable` (ingest), the writers' layer names
 //!   - `json`: `writeReport`, `writeString`
 //!   - `deck`: `writeDeck`, `format`; `deck_answers`: `writeAnswers`, `spacingQueries`
-//!   - `text`: `writeRuns`, `writeViolations`, `writeMerges`, `writeVerdict`, `writeSummary`, `Summary`, `StageStatus`
+//!   - `text`: `writeRuns`, `writeViolations`, `writeMerges`, `writeVerdict`, `writeSummary`, `Summary`, `StageStatus`, `Domain`
 //!   - `spef`: `writeSpef`, `writeSpefCorners`; `envelope`: `envelopeInto`
 //!   - `dspf`: `writeDspf`, `writeDspfSubckt`
 //!   - `netlist`: `writeSpice`; `subckt`: `Subckt`, `Value`, `writeCard`

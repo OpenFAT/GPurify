@@ -13,15 +13,17 @@
 //! Contents:
 //! - `pub const Checks = struct { drc, erc, lvs, pex }`, `Checks.all`
 //! - `pub const RunOptions = struct`, `pub const Outputs = struct`, `pub const Corner = struct`
-//! - `pub const Summary`, `pub const StageStatus` (export/text.zig's)
+//! - `pub const Summary`, `pub const StageStatus`, `pub const Domain` (export/text.zig's)
 //! - `pub const Error`, `pub const RunError`, `pub const Diagnostic`, `pub const Run = struct`
 //! - `pub fn run(gpa: Allocator, run_arena: Allocator, io: std.Io, dir: std.Io.Dir, inputs: Inputs, options: RunOptions, decks: []const NamedDeck, diag: *Diagnostic) RunError!Run`
 //! - `pub fn runChecks(gpa: Allocator, run_arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, options: RunOptions, out: *Outputs) Error!Summary`
 //! - `pub fn summarize(run_arena: Allocator, out: *Outputs, stages: [4]StageStatus) Allocator.Error!Summary`
 //! - `pub fn appendStage(run_arena: Allocator, out: *Outputs, violations: *const Violations, runs: []const RuleRun) Allocator.Error!void`
+//! - `pub fn tagRuns(run_arena: Allocator, out: *Outputs, stage: Domain) Allocator.Error!void`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const assert = std.debug.assert;
 const geom = @import("geom");
 const check = @import("check");
 const report = check.report;
@@ -82,6 +84,8 @@ pub const Outputs = struct {
     violations: Violations = .{},
     /// One row per rule, run or not, by rule id.
     runs: std.ArrayList(RuleRun) = .empty,
+    /// Each run's stage, parallel to `runs` once `summarize` has run.
+    run_domain: std.ArrayList(Domain) = .empty,
     /// The comparison: non-null whenever LVS ran with a reference,
     /// an inconclusive one included.
     lvs: ?lvs.Traced = null,
@@ -103,6 +107,7 @@ pub const Outputs = struct {
 /// What happened at a glance; `passed` is the criterion.
 pub const Summary = text.Summary;
 pub const StageStatus = text.StageStatus;
+pub const Domain = text.Domain;
 
 /// What can stop the checks: memory, a worker thread, or DRC geometry a
 /// derived operation cannot represent.
@@ -119,6 +124,9 @@ pub const Diagnostic = struct {
 
 /// Everything one run produced, in the run arena.
 pub const Run = struct { loaded: Loaded, extracted: Extracted, outputs: Outputs, summary: Summary };
+
+/// A run and its domain, sorted as one.
+const Tagged = struct { run: RuleRun, domain: Domain };
 
 /// Load, extract and check in one call. `inputs.deck` naming one of
 /// `decks` builds it instead of reading a file.
@@ -141,24 +149,38 @@ pub fn runChecks(gpa: Allocator, run_arena: Allocator, loaded: *const Loaded, ex
     var resident: geom.ResidentStore = .empty;
     defer resident.deinit();
     const drc: StageStatus = if (options.checks.drc) try domain(gpa, checks_drc.runDrc, .{ run_arena, options.device, &resident, loaded, extracted, out }) else .not_selected;
+    try tagRuns(run_arena, out, .drc);
     const erc: StageStatus = if (options.checks.erc) try domain(gpa, checks_erc.runErc, .{ run_arena, loaded, extracted, options.lvs, out }) else .not_selected;
+    try tagRuns(run_arena, out, .erc);
     if (staged) try checks_after.holdBackLaterStages(run_arena, loaded, out);
     const lvs_status: StageStatus = if (options.checks.lvs) try domain(gpa, checks_lvs.runLvs, .{ run_arena, loaded, extracted, options.lvs, out }) else .not_selected;
+    try tagRuns(run_arena, out, .lvs);
     const pex: StageStatus = if (options.checks.pex) try domain(gpa, checks_pex.runPex, .{ run_arena, options.device, loaded, extracted, options.quasistatic_nets, out }) else .not_selected;
+    try tagRuns(run_arena, out, .pex);
     // A short between labelled nets fails every run, with its row: LVS's
     // layout checks record it when they run, and this does when they do not.
     const layout_checked = options.checks.lvs and loaded.reference != null;
     if (!layout_checked and extracted.ports.shortedNet() != null) try domain(gpa, checks_after.netSeedShorts, .{ run_arena, loaded, extracted, out });
+    try tagRuns(run_arena, out, .lvs);
     try checks_after.applyWaivers(run_arena, loaded, out);
     return summarize(run_arena, out, .{ drc, erc, lvs_status, pex });
 }
 
 /// Puts `out` in canonical order and counts it, stages in DRC, ERC, LVS,
-/// PEX order.
+/// PEX order. Asserts that `tagRuns` gave every run its domain.
 pub fn summarize(run_arena: Allocator, out: *Outputs, stages: [4]StageStatus) Allocator.Error!Summary {
     try out.violations.sortCanonical(run_arena);
     try out.waived.sortCanonical(run_arena);
-    std.mem.sort(RuleRun, out.runs.items, {}, byRule);
+    const runs = out.runs.items;
+    assert(out.run_domain.items.len == runs.len);
+    // The domains ride along with their runs through the sort.
+    const tagged = try run_arena.alloc(Tagged, runs.len);
+    for (tagged, runs, out.run_domain.items) |*t, r, d| t.* = .{ .run = r, .domain = d };
+    std.mem.sort(Tagged, tagged, {}, byRule);
+    for (tagged, runs, out.run_domain.items) |t, *r, *d| {
+        r.* = t.run;
+        d.* = t.domain;
+    }
     const violations = out.violations.len();
     var errors: u32 = 0;
     for (out.violations.severity.items) |s| errors += @intFromBool(s == .@"error");
@@ -178,6 +200,16 @@ pub fn appendStage(run_arena: Allocator, out: *Outputs, violations: *const Viola
     try out.runs.appendSlice(run_arena, runs);
 }
 
+/// Gives `stage` to every run of `out` appended since the last call: a
+/// stage's spine calls it after each stage, before `summarize` sorts.
+/// Asserts that no run was removed since the last call.
+pub fn tagRuns(run_arena: Allocator, out: *Outputs, stage: Domain) Allocator.Error!void {
+    const tagged = out.run_domain.items.len;
+    assert(tagged <= out.runs.items.len);
+    try out.run_domain.appendNTimes(run_arena, stage, out.runs.items.len - tagged);
+    assert(out.run_domain.items.len == out.runs.items.len);
+}
+
 // ---- private ----
 
 /// Runs one domain with a scratch arena over `gpa`, freed on return.
@@ -188,6 +220,6 @@ fn domain(gpa: Allocator, comptime f: anytype, args: anytype) @typeInfo(@TypeOf(
 }
 
 /// Rust sorts by the rule's `StrId` (a stable sort, so equal ids keep order).
-fn byRule(_: void, a: RuleRun, b: RuleRun) bool {
-    return @backingInt(a.rule) < @backingInt(b.rule);
+fn byRule(_: void, a: Tagged, b: Tagged) bool {
+    return @backingInt(a.run.rule) < @backingInt(b.run.rule);
 }
