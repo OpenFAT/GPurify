@@ -1,0 +1,27 @@
+% The shared preamble of every docs diagram (docs/diagrams/<name>.tex).
+% dvisvgm's driver first, so patterns and opacity survive into the SVG.
+\def\pgfsysdriver{pgfsys-dvisvgm.def}
+\usepackage[siunitx,RPvoltages]{circuitikz}
+\usepackage{xcolor}
+% Latin Modern: outline fonts for every glyph a label uses, µ included.
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usetikzlibrary{arrows.meta,backgrounds,calc,patterns,positioning}
+\tikzset{
+  % A white card, so diagrams read in mdBook's dark themes too.
+  every picture/.append style={show background rectangle,
+    background rectangle/.style={fill=white,inner sep=4pt}},
+  % Layout geometry: layers told apart by fill and hatching, never colour alone.
+  layer a/.style={draw=black,line width=0.6pt,fill=gray!20},
+  layer b/.style={draw=black,line width=0.6pt,fill=gray!45},
+  layer c/.style={draw=black,line width=0.6pt,fill=white,postaction={pattern=north east lines}},
+  layer d/.style={draw=black,line width=0.6pt,fill=white,postaction={pattern=crosshatch dots}},
+  marker/.style={draw=black,dashed,line width=0.6pt},
+  % A measured distance and its label.
+  dim/.style={{Latex[length=2mm]}-{Latex[length=2mm]},line width=0.5pt},
+  dim label/.style={font=\small,fill=white,inner sep=1pt},
+  % Where a rule fails: thick, dashed and labelled, not only red.
+  violation/.style={draw=red!75!black,line width=1.4pt,dash pattern=on 3pt off 2pt},
+  violation label/.style={font=\small\bfseries,text=red!75!black},
+  caption/.style={font=\small},
+}

@@ -207,8 +207,7 @@ where \\( A_\text{metal} \\) is the metal area connected to the gate, and \\( A_
 hyphen: `#drc-028-influence-spacing-near-wide-metal`. A spaced slash leaves a double hyphen. Before
 you rename a heading, search the book for links to its old anchor.
 
-**Images and tables.** Draw the measured case, with labelled dimensions, as SVG in `src/images/`
-named by catalog id (`drc-028.svg`), and repeat its facts in prose. In tables, write "None" rather
+**Images and tables.** Diagrams follow section 7; repeat their facts in prose. In tables, write "None" rather
 than leaving a cell empty, and put the description column last.
 
 ## 6. Terms
@@ -234,15 +233,61 @@ Use these words with these meanings, and no others.
 | ran / skipped / refused | A rule's three outcomes. Only `ran` means the rule looked at the layout. |
 | status | A check's coverage: Implemented, Partial, Expressible (written with general deck operations) or Missing |
 
-## 7. Before you submit
+## 7. Diagrams (CircuiTikZ)
+
+**Every check entry on a DRC, LVS, ERC or PEX page has a diagram** that shows what the check
+looks at and where it fails. Explanation pages use them wherever a picture says it faster. Draw
+them in CircuiTikZ (TikZ plus circuit symbols), never as hand-made SVG or screenshots.
+
+- **Source:** one standalone file per diagram, `docs/diagrams/<name>.tex`, named by the entry's
+  catalog id in lower case (`drc-028.tex`; a second one `drc-028-b.tex`) or by page for explanation
+  pages (`measuring-1.tex`). Start from this template; the shared `preamble.tex` loads CircuiTikZ
+  and the house styles:
+
+  ```latex
+  \documentclass[border=0pt]{standalone}
+  \input{preamble}
+  \begin{document}
+  \begin{circuitikz}
+    % the drawing
+  \end{circuitikz}
+  \end{document}
+  ```
+
+- **House styles** (from `preamble.tex`; don't restyle by hand): `layer a`, `layer b` (grey
+  fills), `layer c` (hatched), `layer d` (dotted) for layout shapes, labelled with their deck layer
+  name; `marker` (dashed outline) for markers and derived regions; `dim` with `dim label` for a
+  measured distance; `violation` with `violation label` for where the rule fails, always labelled
+  so colour is not the only cue; `caption` for a short note. Units with `\SI{0.14}{\micro\metre}`.
+- **What to draw:**
+  - DRC: the layout from above, the shapes the rule reads, the distance or area it measures as a
+    `dim`, and the failing case as a `violation`. Add the passing case beside it when the boundary
+    is the point (inclusive or exclusive limit, corner against edge).
+  - LVS: the reference circuit and the layout's extracted circuit side by side, as CircuiTikZ
+    schematics, with the mismatching device, pin or net marked.
+  - ERC: the circuit (devices, nets, supplies, pads) with the failing path or node marked; a
+    cross-section for physical effects (antenna charging, latch-up's parasitic thyristor, a well).
+  - PEX: the wire or via as drawn and the R, C or L network GPurify extracts from it, with the
+    nodes named as the output names them.
+- **Numbers match the entry's example:** the same layer names and dimensions as its deck and layout.
+- **Embed** the rendered SVG under **How GPurify measures it**, with alt text that says what the
+  diagram shows: `![Two met1 shapes 0.12 µm apart, against a 0.14 µm minimum space](../../diagrams/drc-028.svg)`.
+  The path is relative from the page to `docs/src/diagrams/`.
+- **Render and look at it:** `nix develop .#docs -c docs/diagrams/render.sh` writes every SVG to
+  `docs/src/diagrams/` (generated, not committed; the docs workflow renders them before
+  `mdbook build`). Convert one to PNG (`nix shell nixpkgs#librsvg -c rsvg-convert -z 2 x.svg -o x.png`)
+  and look at it: no overlapping labels, nothing clipped, readable at page width.
+
+## 8. Before you submit
 
 1. Run every deck snippet and command on the page. The excerpts come from those runs.
 2. Check that each catalog id in your category appears once, as `### <ID>: <name>`, and that a
    search of the page for `src/`, `.zig`, `.rs` and catalog codes comes back empty.
 3. Read your page in `mdbook build` output. Every link resolves, every image has alt text, and no
    heading skips a level.
+4. Every check entry has its diagram, rendered and looked at.
 
-## 8. Sources
+## 9. Sources
 
 - Diátaxis: <https://diataxis.fr/>, <https://diataxis.fr/reference/>, <https://diataxis.fr/how-to-guides/>
 - Google: <https://developers.google.com/style/highlights>, <https://developers.google.com/style/units-of-measure>,
