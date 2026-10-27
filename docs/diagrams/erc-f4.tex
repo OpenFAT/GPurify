@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Two inverters drive Y1 and Y2; one nfet joins them.
+  \node[not port] (i1) at (0,0) {};
+  \node[not port,rotate=180] (i2) at (7,0) {};
+  \draw (i1.in) -- ++(-0.4,0) node[left]{A};
+  \draw (i2.in) -- ++(0.4,0) node[right]{B};
+  \node[caption,anchor=south] at (0,0.75) {VDD, VSS};
+  \node[caption,anchor=south] at (7,0.75) {VDD, VSS};
+  \draw (i1.out) to[short,-*] (2.2,0) coordinate(y1);
+  \draw (i2.out) to[short,-*] (4.8,0) coordinate(y2);
+  \node[caption,anchor=south] at (y1) {Y1};
+  \node[caption,anchor=south] at (y2) {Y2};
+  \draw (2.7,0) node[nmos,rotate=-90,anchor=S](t){};
+  \draw (y1) -- (t.S); \draw (t.D) -- (y2);
+  \draw (t.G) -- ++(0,0.4) node[above]{EN};
+  \draw[violation] ($(t.S)+(0,-0.75)$) rectangle ($(t.D)+(0,0.95)$);
+  \node[violation label,anchor=north] at ($(t.S)!0.5!(t.D)+(0,-0.85)$) {L = 200 nm $\leq$ 200 nm, used both ways};
+  \node[caption,anchor=north,align=center] at ($(t.S)!0.5!(t.D)+(0,-1.35)$) {cut out, Y1 and Y2 each still reach VDD and VSS};
+\end{circuitikz}
+\end{document}

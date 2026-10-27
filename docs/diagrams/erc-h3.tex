@@ -1,0 +1,28 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The inverter.
+  \node[pmos] (p) at (0,1.2) {};
+  \node[nmos] (n) at (0,-1.2) {};
+  \draw (p.D) -- (n.D);
+  \draw (p.S) -- ++(0,0.3) node[above] {VDD};
+  \draw (n.S) -- ++(0,-0.3) node[below] {VSS};
+  \draw (p.G) -- (n.G);
+  \draw (0,0) node[circ] {} -- ++(0.6,0) node[right] {Y};
+  % A, the inverter's input, pulled to VSS through two series nfets.
+  \draw (p.G |- 0,0) node[circ] {} -- (-2.2,0) node[circ] {};
+  \node[below] at (-1.55,-0.05) {A};
+  \node[nmos] (n1) at (-2.2,-1.0) {};
+  \node[nmos] (n2) at (-2.2,-2.8) {};
+  \draw (-2.2,0) -- (n1.D);
+  \draw (n1.S) -- (n2.D);
+  \draw (n2.S) -- ++(0,-0.3) node[below] {VSS};
+  \draw (n1.G) -- ++(-0.2,0) node[left] {B};
+  \draw (n2.G) -- ++(-0.2,0) node[left] {C};
+  % Findings.
+  \draw[violation] (-2.1,0.08) -- (-1.05,0.08);
+  \node[violation label,anchor=south east,align=right] at (-2.3,0.15) {A: 2 devices to VSS,\\ limit 1};
+  \node[violation label,anchor=east,align=right] at (-3.9,-1.9) {B, C: no path\\ at all};
+\end{circuitikz}
+\end{document}

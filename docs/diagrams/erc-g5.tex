@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Cross-section: two met1 pieces joined only through the n-well under their n-taps.
+  \draw[layer a] (0,0) rectangle (10,1.4);
+  \node[caption] at (5,0.4) {nwell};
+  \foreach \x in {1,8} {
+    \draw[layer b] (\x,1.0) rectangle (\x+1,1.4);
+    \draw[layer d] (\x+0.35,1.4) rectangle (\x+0.65,2.1);
+    \draw[layer c] (\x+0.2,2.1) rectangle (\x+0.8,2.5);
+  }
+  \node[caption, left] at (1,1.2) {ntap};
+  \node[caption, left] at (1.2,2.3) {met1};
+  \node[caption, above] at (1.5,2.5) {VDD};
+  \node[caption, right] at (1.65,1.75) {cont};
+  \draw[violation] (1.5,0.75) -- (8.5,0.75);
+  \node[violation label, above] at (5,0.75) {only path: through nwell};
+  \node[caption] at (5,2.3) {no met1 between the pieces};
+\end{circuitikz}
+\end{document}

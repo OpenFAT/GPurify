@@ -1,0 +1,34 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.3cm,y=0.45cm]
+  % Cross-section of the example (µm): nwell 0-10 with ntap 1-2 on VDD and
+  % pdiff 4-7 on VDDIO; ndiff victim 12-20; ptap 30-31.
+  \fill[layer a] (-1,-11) rectangle (33,0);
+  \fill[layer b] (0,-6) rectangle (10,0);
+  \fill[layer d] (1,-1) rectangle (2,0);
+  \fill[layer c] (4,-1) rectangle (7,0);
+  \fill[layer d] (12,-1) rectangle (20,0);
+  \fill[layer c] (30,-1) rectangle (31,0);
+  \draw (1.5,0) -- (1.5,1.2) node[caption,anchor=south east] {VDD \SI{1.8}{\volt}};
+  \draw (5.5,0) -- (5.5,1.2) node[caption,anchor=south west] {VDDIO \SI{3.3}{\volt}};
+  \node[caption,anchor=north] at (1.5,-1.1) {ntap};
+  \node[caption,anchor=south] at (16,0.2) {ndiff (victim)};
+  \node[caption,anchor=south] at (30.5,0.2) {ptap};
+  \node[caption,anchor=west] at (0.2,-5.3) {nwell};
+  \node[caption,anchor=west] at (22,-10.3) {p substrate};
+  % The thyristor: PNP (pdiff, nwell, substrate), NPN (ndiff, substrate, nwell).
+  \node[pnp,anchor=E] (P) at (5.5,-1) {};
+  \node[npn,anchor=E,yscale=-1] (N) at (16,-1) {};
+  \draw (P.C) -- ++(0,-4.5) coordinate (pc) -| ($(N.B)+(-2,0)$) -- (N.B);
+  \draw (N.C) -- ++(0,-6) -| (2.5,0 |- P.B) -- (P.B);
+  \node[caption,anchor=west] at ($(P.C)+(0.5,0.4)$) {PNP};
+  \node[caption,anchor=west] at ($(N.C)+(0.5,-0.4)$) {NPN};
+  % The victim's distance to its tap.
+  \draw[dim] (12,3.4) -- node[dim label,above] {\SI{18}{\micro\metre} to ptap, limit \SI{5}{\micro\metre}} (30,3.4);
+  \draw[densely dotted] (12,0) -- (12,3.4) (30,0) -- (30,3.4);
+  \draw[violation] (12,0) circle[radius=5pt];
+  \node[violation label,anchor=west,align=left] at (22,-3)
+    {pdiff can rise \SI{1.5}{\volt}\\ above its well:\\ an aggressor};
+\end{circuitikz}
+\end{document}

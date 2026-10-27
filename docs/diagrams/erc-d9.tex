@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The example's two PMOS in one n-well; the well is tied to VDD.
+  \draw (0,0) node[pmos,bulk,anchor=S] (P1) {};
+  \draw (4,0) node[pmos,bulk,anchor=S] (P2) {};
+  \draw (P1.S) -- ++(0,0.6) node[above] {VDD};
+  \draw (P2.S) -- ++(0,0.6) node[above] {VDD2};
+  \draw (P1.D) -- ++(0,-0.5) node[below] {OUT1};
+  \draw (P2.D) -- ++(0,-0.5) node[below] {OUT2};
+  \draw (P1.bulk) -- ++(0.6,0) coordinate (b1);
+  \draw (P2.bulk) -- ++(0.6,0) coordinate (b2);
+  \draw (b1) -- ++(0,-2.2) -| (b2);
+  \draw ($(b1)+(0,-2.2)$) -- ++(-2.2,0) -- ++(0,3.2) -| (P1.S);
+  \node[caption,anchor=north] at ($(b1)+(1,-2.2)$) {nwell (bulk) on VDD};
+  \node[caption,anchor=east] at ($(P1.G)+(-0.2,0)$) {P1};
+  \node[caption,anchor=east] at ($(P2.G)+(-0.2,0)$) {P2};
+  \draw[violation] ($(P2)+(-0.9,-1)$) rectangle ($(P2)+(0.9,1)$);
+  \node[violation label,anchor=west,align=left] at ($(P2)+(1.2,0)$) {no channel path\\ to its well's net};
+\end{circuitikz}
+\end{document}

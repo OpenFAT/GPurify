@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=1.6]
+  % Top view, 1 unit = 1 um: an n-tap and a p-tap on one met1 strip.
+  \draw[layer a] (0,0) rectangle (1,1);
+  \draw[layer b] (3,0) rectangle (4,1);
+  \draw[layer c] (0.2,0.2) rectangle (3.8,0.8);
+  \draw[layer d] (0.35,0.35) rectangle (0.65,0.65);
+  \draw[layer d] (3.35,0.35) rectangle (3.65,0.65);
+  \node[caption, above] at (0.5,1) {ntap};
+  \node[caption, above] at (3.5,1) {ptap};
+  \node[caption, fill=white, inner sep=1pt] at (2,0.5) {met1 VDD};
+  \draw (0.5,0.35) -- (0.5,-0.15) node[caption, below] {cont};
+  \draw[violation] (-0.12,-0.45) rectangle (4.12,1.45);
+  \node[violation label, below] at (2,-0.45) {one net holds both tap kinds};
+\end{circuitikz}
+\end{document}
