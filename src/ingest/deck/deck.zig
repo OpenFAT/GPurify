@@ -5,7 +5,7 @@
 //!
 //! Contents:
 //! - `parseDeck`, `parseSource` (parse.zig); `lower` (lower.zig); `print`, `PrintError` (print.zig)
-//! - `fromTables`, `fromControls` (decompile.zig)
+//! - `fromTables`, `fromControls` (decompile.zig); `kinds` (kinds.zig)
 //! - `Error`, `Diag`, `Diagnostic`, `render`, `locate` (diagnostic.zig)
 //! - tables.zig: `Deck`, `Reports`, `Edits`, `FillSpec`, `WidenSpec`, `PexModels`, `FillTreatment`, `SubstrateModel`, `TsvModel`, `DeviceParasitics`, `TemperatureLaw`, `Stages`, `ProcessCorner`, `CornerValues`, `Extraction`, `ExtractionKind`, `RuleSpec`, `ParamValue`, `NamedValue`, `RuleTable`, `Connectivity`, `Waiver`, `DeviceRecognition`, `DeviceValue`, `DeviceKind`, `Matching`, `MatchingBasis`, `LvsControls`, `UnusedFilter`, `ModelParam`, `Permute`, `SameNets`, `LdeWell`, `LvsLde`, `LvsCount`, `LvsRange`, `LvsLimit`, `LvsTolerance`, `ProcessStack`, `absoluteUnit`, `pinNames`
 //! - layers.zig: `LayerTable`, `DerivedOp`, `Range`, `max_cell_selections`
@@ -23,6 +23,8 @@ pub const print = @import("print.zig").print;
 pub const PrintError = @import("print_layers.zig").PrintError;
 pub const fromTables = @import("decompile.zig").fromTables;
 pub const fromControls = @import("decompile.zig").fromControls;
+/// The kind table: each deck spelling's engine kind and its parameters' dimensions.
+pub const kinds = @import("kinds.zig");
 
 pub const Error = diagnostic.Error;
 pub const Diag = diagnostic.Diag;
