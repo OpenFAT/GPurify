@@ -1,0 +1,13 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % staircase; 1 unit = 100 nm
+  \draw[layer a] (0,0) -- (20,0) -- (20,10) -- (19,10) -- (19,11) -- (18,11) -- (18,12) -- (0,12) -- cycle;
+  \node[caption] at (9,6) {met1};
+  \draw[violation] (17.6,9.6) rectangle (20.4,12.4);
+  \node[violation label,anchor=west,align=left] at (20.7,11.6) {4 edges $<$ \SI{0.14}{\micro\metre}};
+  \node[violation label,anchor=west] at (20.7,10.6) {in a row; 1 allowed};
+  \node[caption,anchor=west] at (20.7,9.6) {each \SI{0.10}{\micro\metre}};
+\end{circuitikz}
+\end{document}

@@ -3,7 +3,7 @@
 //! `GeometryStore`, on the first kernel call that goes to the GPU. Out: one
 //! device buffer (one geom.bulk upload) and each column's device address,
 //! reused by every later call, so a call moves only its own pair list and
-//! results (ARCHITECTURE.md, GPU).
+//! results.
 //!
 //! The caller owns it: the run spine makes an `empty` one, passes it down
 //! next to `Device`, and frees it when the checks end. Nothing is uploaded

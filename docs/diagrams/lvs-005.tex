@@ -1,0 +1,29 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % The inverter's VSS and A met1 straps, joined by a met1 bridge drawn on
+  % the left. The short path: four steps from shape 30 (VSS) to 31 (A).
+  \draw[layer b] (0,0) rectangle (5.0,0.4);
+  \node[font=\bfseries\footnotesize] at (4.2,0.2) {VSS};
+  \node[right,font=\footnotesize] at (5.0,0.2) {shape 30};
+  \draw[layer b] (0,1.6) rectangle (5.0,2.0);
+  \node[font=\bfseries\footnotesize] at (4.2,1.8) {A};
+  \node[right,font=\footnotesize] at (5.0,1.8) {shape 31};
+  \draw[layer b] (-1.6,0) rectangle (0,0.4);
+  \draw[layer b] (-1.6,1.6) rectangle (0,2.0);
+  \draw[layer b] (-2.0,0) rectangle (-1.6,2.0);
+  \node[font=\footnotesize,below] at (-0.8,0) {36};
+  \node[font=\footnotesize,above] at (-0.8,2.0) {35};
+  \node[font=\footnotesize,left] at (-2.0,1.0) {bridge 34};
+  \draw[violation,->] (0.6,0.2) -- (-0.6,0.2);
+  \draw[violation,->] (-1.2,0.2) -- (-1.8,0.6);
+  \draw[violation,->] (-1.8,1.4) -- (-1.2,1.8);
+  \draw[violation,->] (-0.6,1.8) -- (0.6,1.8);
+  \node[violation label] at (0.0,-0.35) {1};
+  \node[violation label] at (-1.35,0.75) {2};
+  \node[violation label] at (-1.35,1.25) {3};
+  \node[violation label] at (0.0,2.35) {4};
+  \node[caption,align=center] at (1.5,-1.0) {\texttt{lvs.net\_seed\_conflict}: VSS and A on one net;\\ \texttt{lvs.short\_path}: one row per numbered step};
+\end{circuitikz}
+\end{document}

@@ -301,8 +301,9 @@ test "fill avoids no-fill regions and fills window by window" {
 }
 
 test "fill without a density rule is refused" {
-    // Oracle: the refusal docs/deck.md states for a `fill` line: no rule
-    // measures met1, so nothing says how much to fill.
+    // Oracle: the refusal docs/src/reference/deck/fill-and-enhance.md (Density
+    // fill) states for a `fill` line: no rule measures met1, so nothing says
+    // how much to fill.
     const text = try fillDeck(testing.allocator, "10um", "0.6", "");
     const deck = try std.mem.replaceOwned(u8, testing.allocator, text, "for m1all", "for met1");
     testing.allocator.free(text);

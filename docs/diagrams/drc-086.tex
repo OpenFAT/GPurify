@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 wires (0,0)-(200,4000) VDD and (2000,0)-(2200,4000) VSS, strap (200,1800)-(2000,2000) nm; not to scale
+  \draw[layer a] (0,0) rectangle (0.8,8);
+  \draw[layer a] (6,0) rectangle (6.8,8);
+  \draw[layer a] (0.8,3.6) rectangle (6,4.4);
+  \node[caption,anchor=north] at (0.4,-0.05) {VDD};
+  \node[caption,anchor=north] at (6.4,-0.05) {VSS};
+  \node[caption,anchor=south] at (3.4,4.45) {met1 strap};
+  \draw[violation,-{Latex[length=2mm]}] (0.4,0.5) -- (0.4,4) -- (6.4,4) -- (6.4,0.5);
+  \node[violation label,anchor=north,align=center] at (3.4,3.4) {short: step 1 wire to strap,\\step 2 strap to wire};
+\end{circuitikz}
+\end{document}

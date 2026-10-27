@@ -158,7 +158,7 @@ Status and limits, and Sources. Every other label is required.
    modelled, labelled). Use the serial comma only when an item itself contains "and". No idioms,
    and no Latin abbreviations: write "for example", not "e.g.".
 8. **Write descriptive link text** that names the target and still makes sense read alone.
-   No: "see [here](...)". Yes: "see [Waivers](../reference/deck.md#waivers)".
+   No: "see [here](...)". Yes: "see [Waivers](../reference/deck/waivers.md)".
 9. **Make it accessible.** Every image gets alt text under 155 characters that says what the image
    shows, with no "image of". Never carry meaning by colour alone ("the red shape"), and give every
    table a header row.

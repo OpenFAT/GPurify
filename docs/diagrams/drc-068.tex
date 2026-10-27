@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.5cm,y=0.5cm]
+  % 1 unit = 100 nm. One connector (li under met1, 1 um square): two 170 nm
+  % mcon_pre cuts, one mcon_post cut.
+  \draw[layer a] (0,0) rectangle (10,10);
+  \draw[layer b] (1,1) rectangle (2.7,2.7);
+  \draw[layer b] (5,1) rectangle (6.7,2.7);
+  \node[above] at (5,10) {before: mcon\_pre, 2 cuts};
+  \node[caption,align=center] at (5,6) {li and met1\\overlap};
+  \draw[layer a] (14,0) rectangle (24,10);
+  \draw[layer b] (15,1) rectangle (16.7,2.7);
+  \draw[violation] (19,1) rectangle (20.7,2.7);
+  \node[above] at (19,10) {after: mcon\_post, 1 cut};
+  \node[violation label,align=center,below] at (19,-0.4) {ct.irdrop: lost \SI{0.0289}{\micro\metre\squared}\\$>$ \SI{0.02}{\micro\metre\squared} for 2 cuts};
+  \draw[dim] (5,3.4) -- (6.7,3.4) node[midway,above,dim label] {\SI{170}{\nano\metre}};
+\end{circuitikz}
+\end{document}

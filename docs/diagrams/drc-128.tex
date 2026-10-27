@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=0.5]
+  % m4 (0,0)-(24,1000), (48,0)-(72,1000), (-100,1050)-(172,1074) nm; x: 1 unit = 12 nm, y shortened
+  \draw[layer a] (0,0) rectangle (2,10);
+  \draw[layer a] (4,0) rectangle (6,10);
+  \draw[layer a] (-4,14.2) rectangle (10,16.2);
+  \node[caption,anchor=west] at (10.2,15.2) {m4};
+  \draw[dim] (2,5) -- (4,5);
+  \node[dim label,anchor=north] at (3,4.8) {\SI{24}{\nano\metre}};
+  \draw[dim] (1,10) -- (1,14.2);
+  \draw[dim] (5,10) -- (5,14.2);
+  \node[dim label,anchor=west] at (6.2,12.1) {\SI{50}{\nano\metre} each};
+  \fill (1,8) circle (3pt) (5,8) circle (3pt) (3,15.2) circle (3pt);
+  \draw[violation] (1,8) -- (5,8) -- (3,15.2) -- cycle;
+  \node[violation label,anchor=north,align=center] at (3,-0.3) {three different-colour\\edges under \SI{72}{\nano\metre}: odd};
+\end{circuitikz}
+\end{document}

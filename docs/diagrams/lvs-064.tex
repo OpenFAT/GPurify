@@ -1,0 +1,31 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference card. Right: the pnp from above: a 1 um x 1 um
+  % p emitter in the n well (the base), a p tap beside it (the collector).
+  \node[font=\bfseries] at (1.0,4.0) {Reference netlist};
+  \node[pnp] (q) at (1.2,2.4) {};
+  \draw (q.B) -- ++(-0.3,0) node[left] {B};
+  \draw (q.E) -- ++(0,0.2) node[above] {E};
+  \draw (q.C) -- ++(0,-0.2) node[below] {C};
+  \node[right] at (0,0.8) {Q1 pnp};
+  \node[right,violation] at (0,0.3) {ae \SI{1.5}{\square\micro\metre}};
+  \node[right] at (1.85,0.3) {pe \SI{4}{\micro\metre}};
+
+  \node[font=\bfseries] at (6.8,4.0) {Layout, extracted};
+  \draw[layer d] (4.2,0.6) rectangle (7.4,3.2);
+  \draw[layer a] (4.8,1.2) rectangle (6.0,2.4);
+  \node[font=\footnotesize] at (5.4,1.8) {E};
+  \draw[layer b] (6.4,1.2) rectangle (7.0,2.4);
+  \node[font=\footnotesize] at (6.7,1.8) {B};
+  \draw[layer b] (8.0,1.2) rectangle (8.6,2.4);
+  \node[font=\footnotesize] at (8.3,1.8) {C};
+  \draw[marker] (4.05,0.45) rectangle (8.8,3.35);
+  \node[font=\footnotesize,right] at (4.2,0.85) {nwell};
+  \node[font=\footnotesize,left] at (8.8,3.1) {\texttt{pnp}};
+  \draw[dim] (4.8,2.65) -- node[dim label,above] {\SI{1}{\micro\metre}} (6.0,2.65);
+  \node[violation label] at (6.4,-0.2) {ae \SI{1}{\square\micro\metre} against \SI{1.5}{\square\micro\metre}};
+  \node[caption] at (4.5,-0.85) {dotted: n well; light grey: p emitter; dark grey: taps; dashed: the marker};
+\end{circuitikz}
+\end{document}

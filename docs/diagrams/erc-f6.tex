@@ -1,0 +1,24 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \newcommand{\inv}[3]{%
+    \draw (#1,1) node[pmos,anchor=D](#2p){} (#1,-1) node[nmos,anchor=D](#2n){};
+    \draw (#2p.D) -- (#2n.D);
+    \draw (#2p.G) -- (#2n.G) coordinate[pos=0.5](#2in);
+    \draw (#2p.S) -- (#2p.S |- 0,#3);
+    \draw (#2n.S) -- (#2n.S |- 0,-2.6);
+  }
+  \inv{0}{a}{2.6}
+  \inv{4.5}{b}{3.2}
+  \draw (-1.6,2.6) -- (1.2,2.6) node[right]{VDD, 1.8 V (core)};
+  \draw (3.0,3.2) -- (6,3.2) node[right]{VDDH, 3.3 V (io)};
+  \draw (-1.6,-2.6) -- (6,-2.6) node[right]{VSS, 0 V};
+  \draw (ain) to[short,*-] (-1.6,0) node[left]{A};
+  \draw (0,0) to[short,*-*] (bin);
+  \draw (4.5,0) to[short,*-] (5.5,0) node[right]{Y};
+  \node[caption,anchor=south] at (1.8,0.05) {Y1: core};
+  \draw[violation] (3.45,-2.1) rectangle (5.0,2.1);
+  \node[violation label,anchor=north,align=center] at (4.25,-2.75) {gate in core, channel in io:\\no level shifter};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,41 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% Cross-section helpers: y levels diff -0.35..0, poly 0.05..0.45, licon
+% 0.45..0.85, li 0.85..1.1, mcon 1.1..1.5, met1 1.5..1.8, via1 1.8..2.2,
+% met2 2.2..2.5 (not to scale).
+\newcommand{\surface}[2]{\draw[line width=0.6pt] (#1,0) -- (#2,0);}
+\newcommand{\mos}[1]{%
+  \draw[layer b] (#1-1.1,-0.35) rectangle (#1-0.3,0);
+  \draw[layer b] (#1+0.3,-0.35) rectangle (#1+1.1,0);
+  \draw[layer c] (#1-0.3,0.05) rectangle (#1+0.3,0.45);}
+\newcommand{\polyup}[1]{%
+  \draw[layer b] (#1-0.1,0.45) rectangle (#1+0.1,0.85);
+  \draw[layer a] (#1-0.3,0.85) rectangle (#1+0.3,1.1);
+  \draw[layer b] (#1-0.1,1.1) rectangle (#1+0.1,1.5);}
+\newcommand{\metone}[2]{\draw[layer d] (#1,1.5) rectangle (#2,1.8);}
+\newcommand{\viaone}[1]{\draw[layer b] (#1-0.15,1.8) rectangle (#1+0.15,2.2);}
+\newcommand{\mettwo}[2]{\draw[layer c] (#1,2.2) rectangle (#2,2.5);}
+\newcommand{\gatebox}[1]{\draw[marker] (#1-0.35,-0.08) rectangle (#1+0.35,0.5);}
+\newcommand{\fail}[1]{\draw[violation] (#1-0.45,-0.15) rectangle (#1+0.45,0.6);}
+\newcommand{\charge}[2]{\foreach \x in {#1} {\node[font=\small] at (\x,#2) {$+$};}}
+\begin{document}
+\begin{circuitikz}
+
+  \surface{-1}{9.5}
+  \draw[layer a] (4,-1.4) rectangle (8.5,0);
+  \node[caption,anchor=north] at (6.25,-1.45) {nwell};
+  \draw[layer b] (5.2,-0.4) rectangle (7.2,0);
+  \draw[marker] (5.1,-0.5) rectangle (7.3,0.15);
+  \draw[violation] (5.0,-0.6) rectangle (7.4,0.3);
+  \node[violation label,anchor=south] at (6.2,0.35) {Ant.h: dantenna in nwell};
+  \draw[layer b] (0,-0.4) rectangle (2,0);
+  \draw[marker] (-0.1,-0.5) rectangle (2.1,0.15);
+  \node[caption,anchor=north] at (1,-0.6) {dantenna in substrate: allowed};
+  \draw[line width=0.6pt] (9.5,0) -- (14,0);
+  \draw[layer c] (10.5,-0.4) rectangle (12.5,0);
+  \draw[marker] (10.4,-0.5) rectangle (12.6,0.15);
+  \draw[violation] (10.3,-0.6) rectangle (12.7,0.3);
+  \node[violation label,anchor=south] at (11.5,0.35) {Ant.i: dpantenna outside nwell};
+  \node[caption,anchor=north] at (11.5,-0.7) {psd diode in substrate};
+\end{circuitikz}
+\end{document}

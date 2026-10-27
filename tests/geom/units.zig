@@ -280,7 +280,7 @@ test "interning a name twice gives one id and resolve inverts it" {
 }
 
 test "interning order is id order" {
-    // Oracle: closed form. ARCHITECTURE.md (Determinism): ids follow interning
+    // Oracle: closed form. src/geom/intern.zig: ids follow interning (arrival)
     // order, so the k-th new name gets id k and a repeat issues nothing new.
     var table: geom.StrTable = .empty;
     defer table.deinit(testing.allocator);

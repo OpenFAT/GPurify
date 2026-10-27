@@ -1,9 +1,8 @@
 //! Bulk host-to-device movement: every column a kernel reads goes up in one
 //! device allocation and one copy, never one transfer per column. In: the
-//! columns as bytes, and the sizes of device-only scratch regions (written
-//! by kernels, e.g. a solve's `x` and `y`). Out: one Gompute buffer, each
-//! region's byte offset in it, and each region's device address for kernel
-//! arguments (ARCHITECTURE.md, GPU).
+//! columns as bytes, and the sizes of device-only scratch regions (written by
+//! kernels, e.g. a solve's `x` and `y`). Out: one Gompute buffer, each region's
+//! byte offset in it, and each region's device address for kernel arguments.
 //!
 //! Every region starts on a 256-byte boundary, the alignment both drivers
 //! give an allocation, so a kernel sees each column as if it were its own.

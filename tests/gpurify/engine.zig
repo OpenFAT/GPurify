@@ -402,10 +402,10 @@ test "a run selecting no check reports four declines and passes" {
 }
 
 test "lvs is skipped without a reference and a mismatch fails the run with one" {
-    // Oracle: docs/usage.md ("a check whose input is missing is reported as
-    // skipped, never as passed") and construct-from-answer: a one-transistor
-    // reference against an empty layout leaves that device unpaired and
-    // nothing on the layout side, each discrepancy an error.
+    // Oracle: docs/src/reference/cli.md (Commands, `all`: "A check whose input
+    // is missing is skipped, which fails the run") and construct-from-answer: a
+    // one-transistor reference against an empty layout leaves that device
+    // unpaired and nothing on the layout side, each discrepancy an error.
     var w: Hand = try .init(&.{}, &.{});
     defer w.deinit();
     const ex = try w.extract();
@@ -470,10 +470,10 @@ test "a kind in neither domain is refused when the deck compiles" {
 }
 
 test "a quasistatic net is solved for inductance too" {
-    // Oracle: docs/usage.md's `--quasistatic` ("Field-solve this net's
-    // capacitance and inductance"): the analytical run carries no
-    // inductance, the field-solved one at least one, and no fewer
-    // capacitive elements.
+    // Oracle: docs/src/reference/cli.md's `--quasistatic` ("Field-solve this
+    // net's capacitance and inductance"): the analytical run carries no
+    // inductance, the field-solved one at least one, and no fewer capacitive
+    // elements.
     const none = try countKinds(false);
     const solved = try countKinds(true);
     try testing.expectEqual(0, none[0]);

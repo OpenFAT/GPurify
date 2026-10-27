@@ -1,6 +1,6 @@
-//! The deck's `lvs` statements a fixture states, as the oracle reads them
-//! from deck.md ("LVS controls"), the deck lines that state them, and what
-//! the layout measures on a drawn passive. Ported from
+//! The deck's `lvs` statements a fixture states, as the oracle reads them from
+//! docs/src/reference/deck/lvs-controls.md, the deck lines that state them, and
+//! what the layout measures on a drawn passive. Ported from
 //! tests/exhaustive/lvs.rs (`Controls`, `pin_names`, `measured`, `close`).
 //!
 //! Contents:
@@ -69,9 +69,9 @@ pub const Controls = struct {
     boxed: []const []const u8 = &.{},
 
     /// The value a relaxed parallel merge combines on `model`, and whether
-    /// harmonically: a resistor's `r` (`1 / Σ 1/r`), a capacitor's `c`
-    /// (added), deck.md's; null under the strict policy and for any other
-    /// model.
+    /// harmonically: a resistor's `r` (`1 / Σ 1/r`), a capacitor's `c` (added),
+    /// as docs/src/reference/deck/lvs-controls.md (Merging by value) says; null
+    /// under the strict policy and for any other model.
     pub fn valueLaw(k: *const Controls, model: Model) ?struct { []const u8, bool } {
         if (!k.relaxed) return null;
         return switch (model) {
@@ -82,17 +82,17 @@ pub const Controls = struct {
         };
     }
 
-    /// `c` without the devices the controls leave out, as if never drawn
-    /// or written: every one of an ignored model, each dummy (every pin on
-    /// one net) of a model ignored when shorted, deck.md's `filter_unused`
-    /// on the drawing, and, deck.md's `max_res` and `min_caps`, each
-    /// resistor above the one and capacitor below the other, its value
-    /// what was drawn (`measured`) or what the card writes. Its nets stay,
-    /// and `reduce` keeps only those a device or a port holds.
+    /// `c` without the devices the controls leave out, as if never drawn or
+    /// written: every one of an ignored model, each dummy (every pin on one
+    /// net) of a model ignored when shorted, `filter_unused` on the drawing,
+    /// and `max_res` and `min_caps` (docs/src/reference/deck/lvs-controls.md,
+    /// Devices left out), each resistor above the one and capacitor below the
+    /// other, its value what was drawn (`measured`) or what the card writes.
+    /// Its nets stay, and `reduce` keeps only those a device or a port holds.
     pub fn kept(k: *const Controls, arena: Allocator, c: *const Circuit, drawn: bool) !Circuit {
-        // deck.md's `filter_unused`, on the drawing alone and judged as
-        // drawn: a pin floats when its net holds no other pin and is no
-        // port (no label).
+        // `filter_unused` (docs/src/reference/deck/lvs-controls.md), on the
+        // drawing alone and judged as drawn: a pin floats when its net holds no
+        // other pin and is no port (no label).
         const held = try arena.alloc(usize, c.nets());
         @memset(held, 0);
         for (c.devs) |*d| for (d.pinsOf()) |p| {
@@ -121,9 +121,10 @@ pub const Controls = struct {
     }
 
     /// The pin positions of `model` (in `Dev.pins` order) as classes of
-    /// interchangeable pins, deck.md's: a MOS's source and drain (1, 2)
-    /// unless the model is asymmetric, a resistor's ends (0, 1), joined
-    /// with every `lvs permute` pair of the model and closed under chaining.
+    /// interchangeable pins, as docs/src/reference/deck/lvs-controls.md
+    /// (Interchangeable pins) gives them: a MOS's source and drain (1, 2)
+    /// unless the model is asymmetric, a resistor's ends (0, 1), joined with
+    /// every `lvs permute` pair of the model and closed under chaining.
     pub fn classes(k: *const Controls, model: Model) Classes {
         var class: Classes = .{ 0, 1, 2, 3 };
         if (model.isMos() and !has(k.asymmetric, model)) join(&class, 1, 2);
@@ -195,10 +196,11 @@ pub const Controls = struct {
         return out.items;
     }
 
-    /// Whether `a` and `b`, values of `param` on `model` in a unit `si`
-    /// times SI's, agree: under the model's row, `|a - b| <= absolute +
-    /// relative * max(|a|, |b|)` with the parts adding as deck.md says;
-    /// with no row, `close`.
+    /// Whether `a` and `b`, values of `param` on `model` in a unit `si` times
+    /// SI's, agree: under the model's row,
+    /// `|a - b| <= absolute + relative * max(|a|, |b|)` with the parts adding
+    /// as docs/src/reference/deck/lvs-controls.md (Tolerances) says; with no
+    /// row, `close`.
     pub fn close(k: *const Controls, model: Model, param: []const u8, a: f64, b: f64, si: f64) bool {
         for (k.tolerance) |t| if (t.model == model and std.mem.eql(u8, t.param, param)) {
             const absolute = if (t.absolute) |abs| abs.si else 0.0;
@@ -208,8 +210,8 @@ pub const Controls = struct {
     }
 };
 
-/// The names deck.md gives `lvs permute` a pin of `model`, in `Dev.pins`
-/// order.
+/// The names docs/src/reference/deck/lvs-controls.md (Interchangeable pins)
+/// gives `lvs permute` a pin of `model`, in `Dev.pins` order.
 pub fn pinNames(model: Model) []const []const u8 {
     return switch (model) {
         .n, .p, .h, .b => &.{ "gate", "source", "drain", "bulk" },
@@ -275,7 +277,8 @@ fn ignores(k: *const Controls, model: Model, name: []const u8) bool {
     return false;
 }
 
-/// Whether deck.md's `filter_unused` drops drawn device `d`.
+/// Whether `filter_unused` (docs/src/reference/deck/lvs-controls.md) drops
+/// drawn device `d`.
 fn unused(k: *const Controls, c: *const Circuit, held: []const usize, d: *const Dev, drawn: bool) !bool {
     if (!drawn or !d.model.isMos()) return false;
     const g = d.pins[0];

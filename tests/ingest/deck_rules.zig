@@ -15,22 +15,24 @@ const expectStrings = fx.expectStrings;
 
 // ---- private ----
 
-/// The fenced block of docs/deck.md that opens with `marker`.
+/// The fenced block of docs/src/reference/deck/README.md that opens with
+/// `marker`, from the line after its fence.
 fn example(gpa: std.mem.Allocator, marker: []const u8) ![]const u8 {
-    const path = try std.fmt.allocPrint(gpa, "{s}/docs/deck.md", .{paths.root});
+    const path = try std.fmt.allocPrint(gpa, "{s}/docs/src/reference/deck/README.md", .{paths.root});
     defer gpa.free(path);
     const spec = try std.Io.Dir.cwd().readFileAlloc(testing.io, path, gpa, .unlimited);
     defer gpa.free(spec);
-    const start = (std.mem.indexOf(u8, spec, marker) orelse return error.TestUnexpectedResult) + 4;
+    const fence = (std.mem.indexOfScalar(u8, marker, '\n') orelse return error.TestUnexpectedResult) + 1;
+    const start = (std.mem.indexOf(u8, spec, marker) orelse return error.TestUnexpectedResult) + fence;
     const end = start + (std.mem.indexOf(u8, spec[start..], "```") orelse return error.TestUnexpectedResult);
     return gpa.dupe(u8, spec[start..end]);
 }
 
 test "a one-line rule lowers to the engine kind and grid units" {
-    // Oracle: hand-derived. Each check's engine kind is the Kind / Deck form
-    // table of docs/klayout-mirror.md, and the values are the deck's units
-    // converted by hand on the 1 nm grid: 0.14 um is 140 dbu, 0.083 um2 is
-    // 83 000 dbu2, 80 % is 0.8.
+    // Oracle: hand-derived. Each check's engine kind is the rule reference
+    // table in src/check/root.zig (Deck, Kind), and the values are the deck's
+    // units converted by hand on the 1 nm grid: 0.14 um is 140 dbu, 0.083
+    // um2 is 83 000 dbu2, 80 % is 0.8.
     var o = try ok("rule m1.1 width(met1) >= 0.14um\n" ++
         "rule m1.2 width(met1) <= 10um\n" ++
         "rule m1.4 enclosure(mcon, met1) >= 30nm\n" ++
@@ -55,8 +57,9 @@ test "a one-line rule lowers to the engine kind and grid units" {
 }
 
 test "the overlay and cut checks lower to their engine kinds" {
-    // Oracle: docs/deck.md's spelling of each check, and the engine kind and
-    // parameters each lowers to.
+    // Oracle: the spelling of each check in docs/src/reference/drc/cut.md and
+    // overlay.md, and the engine kind and parameters each lowers to (the rule
+    // reference in src/check/root.zig).
     var o = try ok("rule c2c space(mcon, center) >= 300nm\n" ++
         "rule adj adjacent_space(mcon; cuts: 3, within: 250nm) >= 220nm\n" ++
         "rule adjc adjacent_space(mcon, center; cuts: 3, within: 300nm) >= 300nm\n" ++
@@ -105,8 +108,9 @@ test "the overlay and cut checks lower to their engine kinds" {
 
 test "die density lowers with an optional boundary layer" {
     // Oracle: foundry example, gf180 M1.4 (30 % over the die), lowered by the
-    // `global_density` and `density` rows of docs/deck.md; the fractions and
-    // the boundary layer's place are read off the rule text.
+    // `global_density` and `density` rows of docs/src/reference/drc/density.md
+    // (DRC-070, DRC-071); the fractions and the boundary layer's place are read
+    // off the rule text.
     var o = try ok("rule M1.4 global_density(met1) >= 30%\n" ++
         "rule M1.k global_density(met1, met3) <= 60%\n" ++
         "rule M1.j density(met1, met3; window: 800um, step: 400um) >= 35%\n");
@@ -121,8 +125,9 @@ test "die density lowers with an optional boundary layer" {
 
 test "an exact cut size lowers to both sides" {
     // Oracle: foundry example, sky130 licon.1 (0.17 um square), and
-    // docs/deck.md's `size(L) == len x len`: 170 nm on the 1 nm grid is 170
-    // dbu a side; `>=` is not the documented comparator.
+    // docs/src/reference/drc/dimension.md (DRC-013)'s `size(L) == len x len`:
+    // 170 nm on the 1 nm grid is 170 dbu a side; `>=` is not the documented
+    // comparator.
     var o = try ok("rule licon.1 size(licon) == 0.17um x 0.17um\nrule ct.slot size(licon) == 170nm x 510nm\n");
     defer o.deinit();
     const got = try o.rules();
@@ -134,9 +139,9 @@ test "an exact cut size lowers to both sides" {
 
 test "erc named arguments convert to engine units and none leaves a param out" {
     // Oracle: hand-derived unit conversions: 0.28 mA/um is 280 A/m, 15 mA is
-    // 15 000 uA, 105 C is 378.15 K, 1.8 V is 1800 mV, 50 um is 50 000 dbu,
-    // 20 % is 0.2; and docs/deck.md's rule that `none` states a parameter
-    // absent, so it lowers to no row.
+    // 15 000 uA, 105 C is 378.15 K, 1.8 V is 1800 mV, 50 um is 50 000 dbu, 20 %
+    // is 0.2; and docs/src/reference/deck/rules.md (Arguments): `none` states a
+    // parameter absent, so it lowers to no row.
     var o = try ok(
         \\rule em.li warning electromigration(li, licon,
         \\    max_density: 0.28mA/um, max_current_per_cut: 80uA, blech_limit: 15mA,
@@ -155,9 +160,10 @@ test "erc named arguments convert to engine units and none leaves a param out" {
 }
 
 test "model lists lower to one param per model and must name a device" {
-    // Oracle: the Electrical rules section of docs/deck.md: `models` is a
-    // list of quoted names, each declared by a `device` line, and `none`
-    // leaves the parameter out; 1.98 V is 1980 mV.
+    // Oracle: docs/src/reference/erc/voltage.md (ERC-F2, Options) and
+    // docs/src/reference/deck/README.md (Names): `models` is a list of quoted
+    // names, each declared by a `device` line, and `none` leaves the parameter
+    // out; 1.98 V is 1980 mV.
     var o = try ok(
         \\device mos poly model "nfet" terminals [poly, diff, diff]
         \\device mos met3 model "pfet" terminals [poly, diff, diff]
@@ -186,9 +192,9 @@ test "model lists lower to one param per model and must name a device" {
 }
 
 test "if reads a block by a switch" {
-    // Oracle: spec example, docs/deck.md (Reuse), expanded by hand: with
-    // `floating = false` only the `not` block's rule is read, once per metal
-    // of the loop, and the `true` block's rule is not.
+    // Oracle: the definition in docs/src/reference/deck/reuse.md (if), expanded
+    // by hand: with `floating = false` only the `not` block's rule is read,
+    // once per metal of the loop, and the `true` block's rule is not.
     var o = try ok(
         \\let floating = false
         \\if floating {
@@ -212,10 +218,10 @@ test "if reads a block by a switch" {
 }
 
 test "let and for expand with interpolated ids" {
-    // Oracle: spec example, the `let`/`for` example of docs/deck.md (Reuse),
-    // expanded by hand: a width and a space rule per metal in list order,
-    // then a `max` rule per metal of the second loop; met3's limit is 300 nm
-    // and `wide` 1 um, 300 and 1000 dbu.
+    // Oracle: the definition in docs/src/reference/deck/reuse.md (let, for),
+    // expanded by hand: a width and a space rule per metal in list order, then
+    // a `max` rule per metal of the second loop; met3's limit is 300 nm and
+    // `wide` 1 um, 300 and 1000 dbu.
     var o = try ok(
         \\let metals = [(met1, 140nm), (met2, 140nm), (met3, 300nm)]
         \\for (m, w) in metals {
@@ -278,10 +284,11 @@ test "connectivity devices and pex lower" {
 }
 
 test "device values lower per recogniser and belong to their kind" {
-    // Oracle: hand-derived conversions (0.3 kohm is 300 ohm, 2 fF/um2 is 2000
-    // aF/um2, a value left out is null), and the Devices section of
-    // docs/deck.md: `sheet` is a resistor's, `area_cap` and `fringe_cap` a
-    // capacitor's, each optional and given once.
+    // Oracle: hand-derived conversions (0.3 kohm is 300 ohm, 2 fF/um2 is
+    // 2000 aF/um2, a value left out is null), and
+    // docs/src/reference/deck/devices.md (Values a device states): `sheet` is a
+    // resistor's, `area_cap` and `fringe_cap` a capacitor's, each optional and
+    // given once.
     var o = try ok(
         \\device resistor poly model "rpoly" terminals [li, li] sheet 0.3kohm
         \\device capacitor met2 model "cmim" terminals [met2, met1] area_cap 2fF/um2 fringe_cap 190aF/um
@@ -309,9 +316,10 @@ test "device values lower per recogniser and belong to their kind" {
 }
 
 test "an inductor states its inductance" {
-    // Oracle: the language spec (deck.md, "Devices"): an `inductor` states
-    // its inductance in pH, nH or uH, kept in nH (1.5 uH is 1500 nH);
-    // `inductance` on any other kind, or in another unit, is refused.
+    // Oracle: the language spec (docs/src/reference/deck/devices.md, Values a
+    // device states): an `inductor` states its inductance in pH, nH or uH, kept
+    // in nH (1.5 uH is 1500 nH); `inductance` on any other kind, or in another
+    // unit, is refused.
     var o = try ok("device inductor met2 model \"spiral\" terminals [met2, met2] inductance 1.5uH\n");
     defer o.deinit();
     try testing.expectEqualSlices(ingest.deck.DeviceKind, &.{.inductor}, o.d().devices.kind);
@@ -321,8 +329,9 @@ test "an inductor states its inductance" {
 }
 
 test "a mos gate condition lowers in millivolts and takes one polarity" {
-    // Oracle: the device grammar of docs/deck.md (Devices) and the units by
-    // hand: 1 V is 1000 mV, -0.5 V is -500 mV.
+    // Oracle: the device grammar of docs/src/reference/deck/devices.md (Values
+    // a device states) and the units by hand: 1 V is 1000 mV, -0.5 V is
+    // -500 mV.
     var o = try ok(
         \\device mos diff model "nfet" terminals [poly, diff, diff] on_gate_min 1V
         \\device mos li model "pfet" terminals [poly, li, li] on_gate_max -0.5V
@@ -340,26 +349,38 @@ test "a mos gate condition lowers in millivolts and takes one polarity" {
 }
 
 test "the example in the language spec parses" {
-    // Oracle: spec example. The sky130 excerpt in docs/deck.md is the deck
-    // users copy; it holds ten rules, counted in the document: six written
-    // out, three from its `for` loop and the `em.li` row.
-    const text = try example(testing.allocator, "```\n# sky130 (excerpt)");
+    // Oracle: spec example. The complete deck in
+    // docs/src/reference/deck/README.md is the deck users copy; it holds six
+    // rules, counted in the document.
+    const text = try example(testing.allocator, "```text\n# A two-metal process");
     defer testing.allocator.free(text);
     var o = try fx.runText(text);
     defer o.deinit();
     try testing.expectEqual(null, o.err);
-    try testing.expectEqual(10, o.d().rules.spec.len);
+    try testing.expectEqual(6, o.d().rules.spec.len);
 }
 
 test "the multi-patterning example in the language spec parses" {
-    // Oracle: deck.md's own multi-patterning example. It parses after the
-    // three layers it names are declared, and each row lowers to the kind
-    // the text says checks it.
-    const gpa = testing.allocator;
-    const block = try example(gpa, "```\nrule M1.DP.opp");
-    defer gpa.free(block);
-    const text = try std.mem.concat(gpa, u8, &.{ "grid 1nm\nlayer m1 = gds(1, 0)\nlayer m1_c1 = gds(1, 1)\nlayer m1_c2 = gds(1, 2)\n", block });
-    defer gpa.free(text);
+    // Oracle: the multi-patterning example of docs/deck.md (in git history),
+    // copied here. It parses after the three layers it names are declared, and
+    // each row lowers to the kind its comment says checks it
+    // (docs/src/reference/drc/multi-patterning.md, DRC-101 to DRC-104).
+    const text =
+        \\grid 1nm
+        \\layer m1 = gds(1, 0)
+        \\layer m1_c1 = gds(1, 1)
+        \\layer m1_c2 = gds(1, 2)
+        \\rule M1.DP.opp  space(m1) >= 40nm                          # closer than any two masks allow
+        \\rule M1.DP.self notch(m1) >= 80nm                          # a shape too close to itself for one mask
+        \\rule M1.DP.odd  patterning(m1; colors: 2) >= 80nm          # no split exists (an odd cycle)
+        \\rule M1.DP.anc  patterning(m1, m1_c1, m1_c2; colors: 2) >= 80nm   # the pre-coloured shapes cannot be honoured
+        \\rule M1.S.same  space(m1 and m1_c1) >= 80nm                # same-mask spacing of coloured shapes
+        \\rule M1.S.diff  space(m1 and m1_c1, m1 and m1_c2) >= 40nm  # different-mask spacing
+        \\rule M1.ST.ov   overlap(m1_c1, m1_c2) >= 10nm              # a stitch overlaps at least this far
+        \\rule M1.ST.sp   space(m1_c1 and m1_c2, m1.not_interacting(m1_c1 and m1_c2)) >= 80nm   # and not near other shapes
+        \\rule M1.D.bal   density_balance(m1_c1, m1_c2; window: 10um, step: 5um) >= 0.8   # the masks' coverage in balance
+        \\
+    ;
     var o = try fx.runText(text);
     defer o.deinit();
     try testing.expectEqual(null, o.err);
@@ -387,9 +408,10 @@ test "layer operations chain and a rule can name the result" {
 }
 
 test "edge layers are typed and only edge operations take them" {
-    // Oracle: the Edge checks section of docs/deck.md: edge layers come from
-    // `.edges()` and edge operations, and only a check or operation that
-    // takes edges accepts one; each refusal is a documented type rule.
+    // Oracle: the Edge layers section of docs/src/reference/deck/layers.md:
+    // edge layers come from `.edges()` and edge operations, and only a check or
+    // operation that takes edges accepts one; each refusal is a documented type
+    // rule.
     var o = try ok("layer e = diff.edges()\n" ++
         "layer butt = e and poly.edges()\n" ++
         "layer e_in = e.inside_part(met1).with_length(<= 1um)\n" ++
@@ -409,9 +431,10 @@ test "edge layers are typed and only edge operations take them" {
 }
 
 test "a layer operation checks its arguments" {
-    // Oracle: the operations of docs/deck.md, Layers: sizes on the grid, a
-    // documented operation name, a non-empty range with one bound a side, a
-    // bound written with a comparator, an area for `with_area`.
+    // Oracle: the operations of docs/src/reference/deck/layers.md (Derived
+    // layers): sizes on the grid, a documented operation name, a non-empty
+    // range with one bound a side, a bound written with a comparator, an area
+    // for `with_area`.
     const cases = [_][2][]const u8{
         .{ "layer x = met1.sized(3nm)\n", "is not a multiple of the grid" },
         .{ "layer x = met1.grow(10nm)\n", "unknown layer operation `.grow`" },
@@ -428,9 +451,10 @@ test "a layer operation checks its arguments" {
 }
 
 test "warning marks a design rule as it does an electrical one" {
-    // Oracle: deck.md, "Rules": `rule <id> warning <check>` marks any rule,
-    // and the mark is the `warning` flag after the rule's own parameters; a
-    // row written without it carries no flag.
+    // Oracle: docs/src/reference/deck/rules.md (Severity):
+    // `rule <id> warning <check>` marks any rule, and the mark is the `warning`
+    // flag after the rule's own parameters; a row written without it carries no
+    // flag.
     var o = try ok("rule M1.bR warning space(met1) >= 220nm\nrule M1.b space(met1) >= 180nm\n");
     defer o.deinit();
     const got = try o.rules();
@@ -440,9 +464,9 @@ test "warning marks a design rule as it does an electrical one" {
 }
 
 test "presence net table and attached rows lower" {
-    // Oracle: the Kind / Deck form table of docs/klayout-mirror.md for each
-    // row's kind, and the deck's values on the 1 nm grid by hand (280 nm is
-    // 280 dbu, 3 um 3000, 1 um 1000; the table's cells in row order).
+    // Oracle: the rule reference table in src/check/root.zig (Deck, Kind) for
+    // each row's kind, and the deck's values on the 1 nm grid by hand (280 nm
+    // is 280 dbu, 3 um 3000, 1 um 1000; the table's cells in row order).
     var o = try ok("rule f forbidden(met3)\n" ++
         "rule c contains(diff, licon) >= 2\n" ++
         "rule i inside(licon, diff)\n" ++
@@ -473,9 +497,10 @@ test "presence net table and attached rows lower" {
 }
 
 test "a spacing table is complete and monotone" {
-    // Oracle: the spacing table rules of docs/deck.md: `prl` and `width`
-    // start at 0 and rise, one row per width and one cell per run length,
-    // and no cell smaller than the one before it in its row or column.
+    // Oracle: the spacing table rules of docs/src/reference/drc/spacing.md
+    // (DRC-026): `prl` and `width` start at 0 and rise, one row per width and
+    // one cell per run length, and no cell smaller than the one before it in
+    // its row or column.
     const gpa = testing.allocator;
     const rows = "[[180nm, 180nm], [180nm, 220nm]]";
     const cases = [_][4][]const u8{
@@ -495,9 +520,9 @@ test "a spacing table is complete and monotone" {
 }
 
 test "a rule argument may be a layer expression" {
-    // Oracle: docs/deck.md's `forbidden(licon and poly and (diff or tap))`
-    // form: an expression argument becomes a derived layer, and a named layer
-    // stays itself.
+    // Oracle: docs/src/reference/deck/layers.md (Derived layers): the
+    // `forbidden(licon and poly)` form: an expression argument becomes a
+    // derived layer, and a named layer stays itself.
     var o = try ok("rule x.1 forbidden(licon and poly and (diff or met1))\n" ++
         "rule x.2 space(met1.sized(10nm), met2) >= 100nm\n" ++
         "rule x.3 width(met1) >= 100nm\n");
@@ -510,10 +535,10 @@ test "a rule argument may be a layer expression" {
 }
 
 test "edge checks take edge layers in their edge slots" {
-    // Oracle: the Edge checks table of docs/deck.md with the Kind / Deck form
-    // table of docs/klayout-mirror.md: `length(E)` is `edge_min_length`,
-    // `space(E[, F])` `edge_spacing`, `enclosure(E, L)` `edge_enclosure`, and
-    // the same names on polygon layers keep their polygon kinds.
+    // Oracle: the edge rows of the rule reference table in src/check/root.zig
+    // (Deck, Kind): `length(E)` is `edge_min_length`, `space(E[, F])`
+    // `edge_spacing`, `enclosure(E, L)` `edge_enclosure`, and the same names on
+    // polygon layers keep their polygon kinds.
     var o = try ok("layer e = diff.edges() not poly.edges()\n" ++
         "rule l length(e) >= 290nm\n" ++
         "rule s1 space(e) >= 400nm\n" ++
@@ -533,8 +558,9 @@ test "edge checks take edge layers in their edge slots" {
 }
 
 test "a text selection needs a drawn layer and a pattern" {
-    // Oracle: the `with_text` operation of docs/deck.md: text is drawn on a
-    // GDS layer, and the pattern is a non-empty quoted string.
+    // Oracle: the `with_text` operation of docs/src/reference/deck/layers.md:
+    // text is drawn on a GDS layer, and the pattern is a non-empty quoted
+    // string.
     var o = try ok("layer label = gds(68, 5)\n" ++
         "layer vdd = met1.with_text(label, \"VDD*\")\n" ++
         "layer other = met1.without_text(label, \"VDD?\")\n");
@@ -579,9 +605,10 @@ test "a cell selection built in code is held to the parser's rules" {
 }
 
 test "a cell selection takes a drawn layer and glob patterns" {
-    // Oracle: the `in_cells` operation of docs/deck.md: a drawn receiver, a
-    // non-empty pattern list, KLayout's other glob characters refused rather
-    // than read differently, and `max_cell_selections` (one tag bit each).
+    // Oracle: the `in_cells` operation of docs/src/reference/deck/layers.md: a
+    // drawn receiver, a non-empty pattern list, KLayout's other glob characters
+    // refused rather than read differently, and `max_cell_selections` (one tag
+    // bit each).
     var o = try ok("layer pad = met1.in_cells(\"PAD_*\", \"pad?\")\nlayer rest = met1.not_in_cells(\"PAD_*\")\n");
     defer o.deinit();
     const pad = o.layer("pad");
@@ -605,8 +632,9 @@ test "a cell selection takes a drawn layer and glob patterns" {
 }
 
 test "an ignored pair is listed and may not repeat or be declared" {
-    // Oracle: docs/deck.md, Layers: "A pair cannot be both ignored and
-    // declared, and cannot be ignored twice", in either statement order.
+    // Oracle: docs/src/reference/deck/layers.md (Ignored GDS layers): "A pair
+    // is ignored once, and a pair cannot be both ignored and declared", in
+    // either statement order.
     var o = try ok("ignore gds(81, 4)\nignore gds(12, 0)\n");
     defer o.deinit();
     const l = o.d().layers;

@@ -36,9 +36,9 @@ pub const Axpy = struct { alpha: f64 };
 pub const xpay = g.zip("geom_xpay", f64, f64, f64, Xpay, xpayBody, .{});
 pub const Xpay = struct { beta: f64 };
 
-/// The wave-1 device probe (ARCHITECTURE.md, GPU): an `i128` product and an
-/// `i128` division inside a kernel body. Gompute buffers are at most 64 bits
-/// wide, so the wide value lives only inside the body, as an area would.
+/// The device probe that `i128` lowers on nvptx and amdgcn: an `i128` product
+/// and an `i128` division inside a kernel body. Gompute buffers are at most 64
+/// bits wide, so the wide value lives only inside the body, as an area would.
 pub const wide_probe = g.zip("geom_wide_probe", i64, i64, i64, WideProbe, wideProbeBody, .{});
 pub const WideProbe = struct { d: i64 };
 

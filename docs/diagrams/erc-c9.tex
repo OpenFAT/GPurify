@@ -1,0 +1,25 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  \draw (0,3) node[left] {VDDA} -- (3,3);
+  \draw (0,0) node[left] {VSSA} -- (3.4,0);
+  \node[not port] (inv) at (1.5,1.5) {};
+  \draw (inv.out) -- (6.6,1.5) node[above,pos=0.3] {X};
+  \draw (6.2,3) -- (9.5,3) node[right] {VDDB};
+  \draw (6,0) -- (9.5,0) node[right] {VSSB};
+  \node[nmos,anchor=G] (m) at (6.6,1.5) {};
+  \draw (m.D) -- (m.D |- 0,3);
+  \draw (m.S) -- (m.S |- 0,0);
+  % anti-parallel coupling, 4 ohm each
+  \draw (3.4,0) -- (3.4,-0.7) to[D,l={\SI{4}{\ohm}}] (6,-0.7) -- (6,0);
+  \draw (6,-1.9) to[D,l={\SI{4}{\ohm}}] (3.4,-1.9) -- (3.4,-0.7);
+  \draw (6,-1.9) -- (6,-0.7);
+  % ground resistance, driver to receiver
+  \draw[violation] (1.5,-0.25) -- (1.5,-2.7) -- (7.2,-2.7) -- (7.2,-0.25);
+  \node[violation label,anchor=north] at (4.35,-2.8) {ground resistance \SI{8.54}{\ohm} $>$ \SI{2}{\ohm}};
+  % missing local clamp
+  \draw[violation] (6.3,1.5) -- (6.3,0);
+  \node[violation label,anchor=east] at (6.15,0.75) {no local clamp, X to VSSB};
+\end{circuitikz}
+\end{document}

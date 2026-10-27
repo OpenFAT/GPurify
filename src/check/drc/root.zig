@@ -1,5 +1,4 @@
-//! drc: a deck's DRC rows typed and run (ARCHITECTURE.md, Spines: `drc`).
-//! Only re-exports.
+//! drc: a deck's DRC rows typed and run (the spine: run.zig). Only re-exports.
 //!
 //! Data decision. Rust's 83-variant `Rule` enum (one fat row per rule,
 //! sized by its largest variant) becomes one SoA table per kind

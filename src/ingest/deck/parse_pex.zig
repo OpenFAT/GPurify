@@ -1,9 +1,10 @@
 //! The parasitic statements: `pex`, `corner`, `temperature`, `pex_fill`,
 //! `pex_device`, `pex_tsv`, `pex_substrate` and `extraction` → their rows of
-//! the `DeckSource`, every value one a process can have (docs/deck.md,
-//! Parasitic stack). Ported from crates/ingest/src/deck/parse.rs (`pex`,
-//! `corner`, `pex_values`, `temperature`, `pex_fill`, `pex_device`,
-//! `pex_tsv`, `pex_substrate`, `extraction`, `kelvin`, `pex_keys`).
+//! the `DeckSource`, every value one a process can have
+//! (docs/src/reference/deck/extraction.md). Ported from
+//! crates/ingest/src/deck/parse.rs (`pex`, `corner`, `pex_values`,
+//! `temperature`, `pex_fill`, `pex_device`, `pex_tsv`, `pex_substrate`,
+//! `extraction`, `kelvin`, `pex_keys`).
 //!
 //! Contents:
 //! - `pub fn pex(p: *Parser) PErr!void`, `pub fn corner(p: *Parser) PErr!void`

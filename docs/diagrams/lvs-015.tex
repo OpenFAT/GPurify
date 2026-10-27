@@ -1,0 +1,38 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2, pfet text #3, nfet text #4.
+\newcommand{\inv}[4]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {#3};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt] at (#2n.east) {#4};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2p.D) ++(0,-0.35) -- ++(1.6,0) node[right] {Y};
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.5,5.1) {Reference netlist};
+  \node[font=\bfseries] at (6.5,5.1) {Layout, extracted};
+
+  \node[nmos] (n) at (1.4,1.6) {};
+  \node[right=2pt] at (n.east) {M1 nfet};
+  \draw (n.D) -- ++(0,0.4) coordinate (d) node[above] {D};
+  \draw (n.G) -- ++(-0.4,0) coordinate (g) -- (g |- d) -- (d);
+  \draw (n.S) -- ++(0,-0.3) node[below] {S};
+  \draw (-0.2,0.8) node[ocirc] {} node[left] {G};
+  \node[caption] at (-0.2,0.35) {(open)};
+  \draw[violation] (0.45,1.3) rectangle (1.45,2.35);
+  \node[violation label] at (1.4,-0.3) {gate on D};
+  \node[nmos] (ln) at (6.2,1.6) {};
+  \node[right=2pt] at (ln.east) {nfet};
+  \draw (ln.D) -- ++(0,0.4) node[above] {D};
+  \draw (ln.S) -- ++(0,-0.3) node[below] {S};
+  \draw (ln.G) -- ++(-0.3,0) node[left] {G};
+  \draw[violation] (5.0,1.3) rectangle (5.75,1.9);
+  \node[violation label] at (6.2,-0.3) {gate on its own net G};
+\end{circuitikz}
+\end{document}

@@ -1,10 +1,11 @@
 //! Whole-text globs: a pattern and a text → whether the pattern matches all of
-//! it. `*` matches any run, `?` one character (one UTF-8 code point), and
-//! every other character itself, case included. The deck's text patterns
+//! it. `*` matches any run, `?` one character (one UTF-8 code point), and every
+//! other character itself, case included. The deck's text patterns
 //! (`with_text`, `lvs connect_implicit`) and cell names (`in_cells`, `lvs
 //! blackbox`) match so. KLayout's glob also reads `[…]`, `{a,b}` and `\`
-//! (docs/klayout-mirror.md, Q3); a cell-name pattern holding one is refused by
-//! the deck parser, so the two read every accepted pattern alike.
+//! (docs/klayout-mirror.md, Q3, in git history); a cell-name pattern holding
+//! one is refused by the deck parser, so the two read every accepted pattern
+//! alike.
 //!
 //! Contents:
 //! - `pub fn globMatches(pattern: []const u8, text: []const u8) bool`
@@ -54,9 +55,10 @@ fn charLen(bytes: []const u8, at: usize) usize {
 }
 
 test "a glob matches the whole text" {
-    // Oracle: the glob `docs/deck.md` documents for `with_text`: `*` any run,
-    // `?` one character, every other character itself, case included, over the
-    // whole text; each pair is decided by hand (`[V]DD` is literal).
+    // Oracle: the glob docs/src/reference/deck/layers.md (Operations on polygon
+    // layers, Patterns) documents for `with_text`: `*` any run, `?` one
+    // character, every other character itself, case included, over the whole
+    // text; each pair is decided by hand (`[V]DD` is literal).
     const yes = [_][2][]const u8{
         .{ "VDD", "VDD" },   .{ "VDD*", "VDD" }, .{ "VDD*", "VDDIO" },
         .{ "*IO", "VDDIO" }, .{ "V?D", "VDD" },  .{ "a*b*c", "axxbyyc" },

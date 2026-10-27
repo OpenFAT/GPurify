@@ -1,10 +1,10 @@
 //! The deck's one-line statements other than rules, `lvs` and the parasitic
 //! stack: `grid`, `let`, `layer`, `ignore`, `connect`, `device`, `matching`,
 //! `fill`, `widen`, `report`, `waive`, `boundary`, `netlist_scale` → rows of
-//! the `DeckSource`. Grammar: docs/deck.md. Ported from
-//! crates/ingest/src/deck/parse.rs (the statement methods of those names,
-//! `bind`, `unbound`, `check_ignored`, `gds_pair`, `net_name`); `matching`
-//! is new in the rewrite (UW-ASIC/GPurify#84).
+//! the `DeckSource`. Grammar: docs/src/reference/deck/README.md (Statements).
+//! Ported from crates/ingest/src/deck/parse.rs (the statement methods of those
+//! names, `bind`, `unbound`, `check_ignored`, `gds_pair`, `net_name`);
+//! `matching` is new in the rewrite (UW-ASIC/GPurify#84).
 //!
 //! Contents:
 //! - `pub fn grid(p: *Parser, span: Span) PErr!void`, `pub fn let_(p: *Parser) PErr!void`

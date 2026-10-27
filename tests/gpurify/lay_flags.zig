@@ -90,8 +90,8 @@ fn tm2Bars(arena: Allocator, g: i64) !Layout {
 }
 
 /// A DRC rule written `warning` (DRC-110): a foundry's recommended rule.
-/// deck.md, "Rules": its findings are reported as the same rule unmarked
-/// would report them, but do not fail the run.
+/// docs/src/reference/deck/rules.md (Severity): its findings are reported as
+/// the same rule unmarked would report them, but do not fail the run.
 ///
 /// The rule is IHP SG13G2 TM2.bR as `pdks/ihp_sg13g2.deck` transcribes it
 /// (a spacing table: 5 um between `TopMetal2` lines wider than 5 um running

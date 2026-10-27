@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 rail VDD, 1 um wide: loads at 40 um and 90 um, fed at 50 um
+  \coordinate (A) at (0,0);
+  \coordinate (F) at (4.5,0);
+  \coordinate (B) at (11,0);
+  \draw (F) to[R, l_=\SI{1.25}{\ohm}, i^>=\SI{3000}{\micro\ampere}] (A);
+  \draw (F) to[R, l=\SI{5}{\ohm}, i_>=\SI{3000}{\micro\ampere}] (B);
+  \draw (F) -- ++(0,0.6) node[vcc]{feed, \SI{1.8}{\volt}};
+  \draw (A) to[american current source, l_=\SI{3}{\milli\ampere}] ++(0,-2.6) node[ground]{};
+  \draw (B) to[american current source, l=\SI{3}{\milli\ampere}] ++(0,-2.6) node[ground]{};
+  \foreach \p in {A,F,B} \fill (\p) circle (1.5pt);
+  \node[caption, above] at (A) {\SI{40}{\micro\metre}};
+  \node[caption, below right] at (F) {\SI{50}{\micro\metre}};
+  \node[caption, above] at (B) {\SI{90}{\micro\metre}};
+  % both segments fail
+  \draw[violation] (0.5,-0.8) rectangle (3.9,1.0);
+  \draw[violation] (5.2,-0.8) rectangle (10.5,1.0);
+  \node[violation label] at (2.2,-1.25) {\SI{3000}{\micro\ampere} $>$ \SI{2800}{\micro\ampere}};
+  \node[violation label] at (7.85,-1.25) {\SI{3000}{\micro\ampere} $>$ \SI{2800}{\micro\ampere}};
+  \node[caption, anchor=north] at (5.5,-3.4) {met1 rail \texttt{VDD}, \SI{1}{\micro\metre} wide: limit
+    \SI[per-mode=symbol]{2.8}{\milli\ampere\per\micro\metre} $\times$ \SI{1}{\micro\metre} = \SI{2800}{\micro\ampere} per segment};
+\end{circuitikz}
+\end{document}

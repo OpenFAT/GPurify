@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % One transistor whose channel joins the VDD and VDDH rails.
+  \draw (-3,0) -- (0,0) node[midway,below]{VDD, 1.8 V (core)};
+  \draw (0.4,0) node[nmos,rotate=-90,anchor=S](t){};
+  \draw (0,0) -- (t.S);
+  \draw (t.D) -- ++(3,0) node[midway,below]{VDDH, 3.3 V (io)};
+  \draw (t.G) -- ++(0,0.4) node[above]{EN};
+  \draw[violation] ($(t.S)+(0,-0.6)$) rectangle ($(t.D)+(0,0.95)$);
+  \node[violation label,anchor=north] at ($(t.S)!0.5!(t.D)+(0,-0.9)$) {channel reaches 2 power domains};
+\end{circuitikz}
+\end{document}

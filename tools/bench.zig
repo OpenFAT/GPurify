@@ -1,14 +1,14 @@
-//! `zig build bench`: every GPU-capable kernel timed on the CPU (one thread
-//! and every thread) and on the GPU across a size sweep, against the
-//! startup calibration `--backend auto` runs (gpurify/calibrate.zig), which
-//! it prints first with its cost (ARCHITECTURE.md, GPU: Selection). In:
-//! nothing but the machine. Out: one table on stdout, a row per kernel and
-//! size, then each kernel's crossover. GPU timings include the kernel load
-//! and the per-call bulk upload (geom.bulk) and download; `setup` is what
-//! is uploaded once and amortized: a BEM solve's columns over its applies,
-//! the resident store over one call per spacing rule of the sky130 deck.
-//! Ported in spirit from examples/bench_all.rs (the scale corpus sweep); a
-//! timing is not a check, so nothing is gated.
+//! `zig build bench`: every GPU-capable kernel timed on the CPU (one thread and
+//! every thread) and on the GPU across a size sweep, against the startup
+//! calibration `--backend auto` runs (gpurify/calibrate.zig), which it prints
+//! first with its cost (docs/src/explanation/cpu-and-gpu.md, How
+//! `--backend auto` decides). In: nothing but the machine. Out: one table on
+//! stdout, a row per kernel and size, then each kernel's crossover. GPU timings
+//! include the kernel load and the per-call bulk upload (geom.bulk) and
+//! download; `setup` is what is uploaded once and amortized: a BEM solve's
+//! columns over its applies, the resident store over one call per spacing rule
+//! of the sky130 deck. Ported in spirit from examples/bench_all.rs (the scale
+//! corpus sweep); a timing is not a check, so nothing is gated.
 //!
 //! Contents:
 //! - `pub fn main(init: std.process.Init) !void`

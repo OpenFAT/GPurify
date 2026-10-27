@@ -1,0 +1,34 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.55cm,y=0.55cm]
+  % The selection operations on one layout, 1 unit = 1 um.
+  % sel: (0,0)-(4,3) and (5.3,0.7)-(5.9,1.3).
+  % met1: A (0.5,1)-(1.5,2) inside; B (3.5,1)-(4.5,2) across the edge;
+  % C (1.5,3)-(2.5,3.5) touching from outside; D (5,2.2)-(5.8,2.8) apart;
+  % E (5,0.4)-(6.2,1.6) holding the small sel shape.
+  \def\sel{\draw[marker] (0,0) rectangle (4,3); \draw[marker] (5.3,0.7) rectangle (5.9,1.3);}
+  \def\A{(0.5,1) rectangle (1.5,2)}
+  \def\B{(3.5,1) rectangle (4.5,2)}
+  \def\C{(1.5,3) rectangle (2.5,3.5)}
+  \def\D{(5,2.2) rectangle (5.8,2.8)}
+  \def\E{(5,0.4) rectangle (6.2,1.6)}
+  \def\panel#1#2#3{\begin{scope}[shift={#1}]\sel #3
+    \node[caption,anchor=north] at (3.1,-0.4) {#2};\end{scope}}
+  % The drawn layout.
+  \begin{scope}[shift={(0,5.6)}]
+    \fill[layer c] (0,0) rectangle (4,3);
+    \fill[layer a] \A; \fill[layer a] \B; \fill[layer a] \C; \fill[layer a] \D; \fill[layer a] \E;
+    \fill[layer c] (5.3,0.7) rectangle (5.9,1.3);
+    \foreach \n/\x/\y in {A/1/1.5, B/4/1.5, C/2/3.25, D/5.4/2.5, E/6.6/1} \node[caption,fill=white,inner sep=0.5pt] at (\x,\y) {\n};
+    \node[caption,anchor=north] at (3.1,-0.4) {drawn};
+  \end{scope}
+  \panel{(9,5.6)}{\texttt{.interacting(sel)}: A B C E}{\fill[layer b] \A; \fill[layer b] \B; \fill[layer b] \C; \fill[layer b] \E;}
+  \panel{(18,5.6)}{\texttt{.not\_interacting(sel)}: D}{\fill[layer b] \D;}
+  \panel{(27,5.6)}{\texttt{.inside(sel)}: A}{\fill[layer b] \A;}
+  \panel{(0,0)}{\texttt{.outside(sel)}: C D}{\fill[layer b] \C; \fill[layer b] \D;}
+  \panel{(9,0)}{\texttt{.overlapping(sel)}: A B E}{\fill[layer b] \A; \fill[layer b] \B; \fill[layer b] \E;}
+  \panel{(18,0)}{\texttt{.covering(sel)}: E}{\fill[layer b] \E;}
+  \panel{(27,0)}{\texttt{.not\_covering(sel)}: A B C D}{\fill[layer b] \A; \fill[layer b] \B; \fill[layer b] \C; \fill[layer b] \D;}
+\end{circuitikz}
+\end{document}

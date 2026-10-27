@@ -1,5 +1,5 @@
-//! check: everything that reads a design and reports on it (ARCHITECTURE.md).
-//! Only re-exports; check's Gompute kernel root.
+//! check: everything that reads a design and reports on it. Only re-exports;
+//! check's Gompute kernel root.
 //!
 //! Files import only files above them in this order (a test in
 //! tests/check.zig greps for back edges): report → rects → proximity →
@@ -8,14 +8,11 @@
 //! # Rule reference
 //!
 //! Every rule kind a deck can name, the Zig item that checks it, and the
-//! check catalog (docs/check-catalog.tsv)
-//! rows it covers. The catalog lists every check a signoff verifier is expected to
-//! handle, and check-sources.md (docs/check-sources.md)
-//! names the foundry manual, standard or tool that defines each one. The deck
-//! language itself is in
-//! deck.md (docs/deck.md). A
-//! catalog row may be covered only in part; what is missing is in
-//! limitations.md (docs/limitations.md).
+//! check catalog (tests/check-catalog.tsv) rows it covers. The catalog lists
+//! every check a signoff verifier is expected to handle, with the foundry
+//! manual, standard or tool that defines each one. The user docs
+//! (docs/src/reference) describe each row, what is missing from a partial
+//! one, and the deck language itself.
 //!
 //! ## Design rules
 //!

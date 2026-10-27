@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=1cm,y=1cm]
+  % 1 cm = 50 nm. A 200 x 100 nm via1 cut of the class; its side zone
+  % (lengthened 40 nm, widened 60 nm) and end zone (lengthened 50 nm,
+  % widened 80 nm); another cut 40 nm above it.
+  \draw[layer a] (0,0) rectangle (4,2);
+  \node at (2,1) {via1};
+  \draw[marker] (-0.8,-1.2) rectangle (4.8,3.2);
+  \draw[densely dotted,line width=0.8pt] (-1,-1.6) rectangle (5,3.6);
+  \draw[layer b] (0,2.8) rectangle (2,4.8);
+  \node at (1,4.3) {via1};
+  \draw[violation] (0,2.8) rectangle (2,3.6);
+  \node[caption,right] at (5.3,3.2) {dashed: side zone};
+  \node[caption,right] at (5.3,2.5) {dotted: end zone};
+  \draw[dim] (3.4,2) -- (3.4,3.2) node[midway,right,dim label] {\SI{60}{\nano\metre}};
+  \draw[dim] (-1.6,2) -- (-1.6,3.6) node[midway,left,dim label] {\SI{80}{\nano\metre}};
+  \node[violation label,align=left,right] at (2.3,5.0) {V1.KOZ: \SI{4000}{\nano\metre\squared} of the\\other cut inside the zones};
+\end{circuitikz}
+\end{document}

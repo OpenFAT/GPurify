@@ -1,7 +1,7 @@
-//! The deck's `lvs` statements (deck.md, "LVS controls") on parameters and
-//! pins: tolerance rows, ignored parameters, asymmetric transistors,
-//! permuted pins, ignored models and dummies, and ports by name, each
-//! verdict the oracle's under the statements the fixture's deck adds.
+//! The deck's `lvs` statements (docs/src/reference/deck/lvs-controls.md) on
+//! parameters and pins: tolerance rows, ignored parameters, asymmetric
+//! transistors, permuted pins, ignored models and dummies, and ports by name,
+//! each verdict the oracle's under the statements the fixture's deck adds.
 //! Ported from tests/exhaustive/lvs.rs (`controlled`, its first half).
 //!
 //! Contents:
@@ -245,9 +245,9 @@ fn portsInto(arena: Allocator, out: *std.ArrayList(Fixture)) !void {
 }
 
 test "every LVS control fixture on parameters and pins holds" {
-    // Oracle: the brute-force oracle (lvs_oracle.zig) under the controls
-    // each fixture's deck states, read from deck.md ("LVS controls"), never
-    // from the tool.
+    // Oracle: the brute-force oracle (lvs_oracle.zig) under the controls each
+    // fixture's deck states, read from docs/src/reference/deck/lvs-controls.md,
+    // never from the tool.
     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
     defer arena.deinit();
     var fixtures: std.ArrayList(Fixture) = .empty;

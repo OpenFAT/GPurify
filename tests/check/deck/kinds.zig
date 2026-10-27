@@ -1,7 +1,7 @@
-//! Every rule kind and layer operation the shipped decks do not exercise:
-//! its constructor, the printer and the query API, on one deck that states
-//! each of them (docs/deck.md's spellings). Ported from
-//! crates/check/tests/deck/kinds.rs.
+//! Every rule kind and layer operation the shipped decks do not exercise: its
+//! constructor, the printer and the query API, on one deck that states each of
+//! them (the spellings of docs/src/reference/deck and docs/src/reference/drc).
+//! Ported from crates/check/tests/deck/kinds.rs.
 
 const std = @import("std");
 const testing = std.testing;

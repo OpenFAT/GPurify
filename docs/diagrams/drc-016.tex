@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % M4: shape 0..40 x 0..24, shape 70..300 x 0..24; 1 unit = 10 nm
+  \draw[layer a] (0,0) rectangle (4,2.4);
+  \draw[layer a] (7,0) rectangle (13,2.4);
+  \node[caption,anchor=south] at (6.5,2.5) {M4};
+  \draw[line width=1.6pt] (0,0) -- (0,2.4);
+  \draw[line width=1.6pt] (4,0) -- (4,2.4);
+  \draw[line width=1.6pt] (7,0) -- (7,2.4);
+  \draw[dim] (0,1.2) -- (4,1.2);
+  \node[violation label,anchor=north] at (2,-0.2) {width \SI{40}{\nano\metre} $<$ \SI{44}{\nano\metre}};
+  \draw[dim] (4,1.2) -- (7,1.2);
+  \node[violation label,anchor=north] at (5.5,-0.7) {space \SI{30}{\nano\metre} $<$ \SI{40}{\nano\metre}};
+  \node[caption,anchor=west] at (13.3,1.2) {thick: M4\_v};
+\end{circuitikz}
+\end{document}

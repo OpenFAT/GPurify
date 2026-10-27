@@ -109,7 +109,7 @@ pub const no_port: u32 = std.math.maxInt(u32);
 /// `S` on the top face: `out = (Ux⊗Uy) diag(s) (Ux⊗Uy)ᵀ v`, `v[i * ny + j]`.
 /// Each stage writes disjoint rows, each row's sums folded in index order,
 /// so any thread count gives the same bits.
-// ponytail: dense mode transforms on host threads, O(nx·ny·(nx+ny)) per apply; GPU row kernels (ARCHITECTURE.md's second shape) when a profile shows substrate solves dominate.
+// ponytail: dense mode transforms on host threads, O(nx·ny·(nx+ny)) per apply; GPU row kernels (one body for host and device, as field/rows.zig and field/gpu.zig run the BEM rows) when a profile shows substrate solves dominate.
 const Operator = struct {
     nx: usize,
     ny: usize,

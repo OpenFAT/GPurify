@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.09cm,y=0.09cm]
+  % triangle (0,0) (100,0) (100,20); square (-10,7) to (10,27); nm
+  \draw[layer a] (0,0) -- (100,0) -- (100,20) -- cycle;
+  \draw[layer a] (-10,7) rectangle (10,27);
+  \node[caption] at (80,6) {met1};
+  \node[caption] at (0,17) {met1};
+  % foot of the perpendicular from (10,7) onto the line along (5,1): (285/26, 57/26)
+  \draw[violation] (10,7) -- (10.96,2.19);
+  \fill (10,7) circle[radius=0.6];
+  \node[caption,anchor=east] at (-12,2) {corner (\SI{10}{\nano\metre}, \SI{7}{\nano\metre})};
+  \draw[->] (-12,2) -- (9.4,6.8);
+  \node[violation label,anchor=west] at (22,32) {$25/\sqrt{26} \approx \SI{4.90}{\nano\metre} < \SI{5}{\nano\metre}$, reported as \SI{4}{\nano\metre}};
+  \draw[->] (22,32) -- (10.8,4.8);
+  \node[caption,anchor=north] at (50,-2) {edge along $(5, 1)$ from the origin};
+\end{circuitikz}
+\end{document}

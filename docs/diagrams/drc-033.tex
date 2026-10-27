@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met2 (0,0)-(100,1000) and (220,0)-(320,1000) nm; x: 1 unit = 50 nm, y shortened
+  \draw[layer a] (0,0) rectangle (2,5);
+  \draw[layer a] (4.4,0) rectangle (6.4,5);
+  \node[caption,anchor=south] at (3.2,5.05) {met2};
+  \draw[dim] (-0.5,0) -- (-0.5,5);
+  \node[dim label,anchor=east] at (-0.6,2.5) {run \SI{1}{\micro\metre}};
+  \draw[violation] (2,0) rectangle (4.4,5);
+  \draw[dim] (2,2.5) -- (4.4,2.5);
+  \node[dim label,anchor=south] at (3.2,2.6) {\SI{0.12}{\micro\metre}};
+  \node[violation label,anchor=west,align=left] at (6.7,2.5) {\SI{0.10}{\micro\metre} $\le$ gap $\le$ \SI{0.15}{\micro\metre}:\\forbidden};
+\end{circuitikz}
+\end{document}

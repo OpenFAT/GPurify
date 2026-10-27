@@ -318,9 +318,9 @@ fn orderStr(key: []const u8, item: []const u8) std.math.Order {
 }
 
 test "a missing leakage names the analysis it came from" {
-    // Oracle: `docs/liberty.md`, Leakage: "A one-vector state is a DC
-    // operating point. A sequence is simulated", so each message names its
-    // own analysis (F35: it always blamed the operating point).
+    // Oracle: `docs/liberty.md` (in git history), Leakage: "A one-vector state
+    // is a DC operating point. A sequence is simulated", so each message names
+    // its own analysis (F35: it always blamed the operating point).
     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();

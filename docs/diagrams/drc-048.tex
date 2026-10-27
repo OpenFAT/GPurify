@@ -1,0 +1,28 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % licon.16: tap (1000,0)-(1500,500), licon (1400,100)-(1570,270); 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (5,5);
+  \node[caption] at (2.5,3.8) {tap};
+  \draw[layer b] (4,1) rectangle (5.7,2.7);
+  \node[caption,anchor=west] at (5.8,1.85) {licon};
+  \draw[violation] (-0.1,-0.1) rectangle (5.1,5.1);
+  \node[violation label,align=center,anchor=north] at (2.5,-0.2) {licon.16: holds 0 licons,\\ needs at least 1};
+  % licon.18: poly (0,0)-(1000,400), npc (0,0)-(800,400), licons; 1 unit = 100 nm, shifted
+  \begin{scope}[shift={(9,0)}]
+    \draw[layer a] (0,0) rectangle (10,4);
+    \node[caption] at (9.2,3.4) {poly};
+    \draw[layer b] (1,1) rectangle (2.7,2.7);
+    \draw[layer b] (7,1) rectangle (8.7,2.7);
+    \node[caption,anchor=north] at (1.85,0.9) {poly\_licon};
+    \draw[marker,line width=1pt] (-0.15,-0.15) rectangle (8,4.15);
+    \node[caption,anchor=south] at (4,4.2) {npc (dashed)};
+    \draw[violation] (8,1) rectangle (8.7,2.7);
+    \draw[dim] (8,3.2) -- (8.7,3.2);
+    \node[dim label,anchor=south] at (8.35,4.2) {\SI{70}{\nano\metre}};
+    \draw (8.35,3.3) -- (8.35,4.2);
+    \node[violation label,align=center,anchor=north] at (5,-0.2) {licon.18: \SI{11900}{\nano\metre\squared} outside npc};
+  \end{scope}
+\end{circuitikz}
+\end{document}

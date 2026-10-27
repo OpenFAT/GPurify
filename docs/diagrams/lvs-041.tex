@@ -1,0 +1,43 @@
+% LVS-041 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.2,3.0) {Layout, drawn};
+  \node[font=\bfseries] at (7.199999999999999,3.0) {Layout, reduced};
+  \node[font=\bfseries] at (12.0,3.0) {Reference netlist};
+  \node[nmos] (d7) at (0.6,1.15) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d7.east) {L \SI{0.15}{\micro\metre}};
+  \draw (d7.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d7.D) -- ++(0,0.25) node[above] {D};
+  \node[nmos] (d8) at (0.6,-0.35) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d8.east) {L \SI{0.15}{\micro\metre}};
+  \draw (d8.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d8.S) -- ++(0,-0.25) node[below] {S};
+  \draw (d7.S) -- (d8.D);
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (3.6,0.4) -- node[above,caption,align=center] {series\\merge} (5.0,0.4);
+  \node[nmos] (d9) at (6.6,0.4) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d9.east) {W \SI{1}{\micro\metre}\\L \SI{0.3}{\micro\metre}};
+  \draw (d9.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d9.D) -- ++(0,0.25) node[above] {D};
+  \draw (d9.S) -- ++(0,-0.25) node[below] {S};
+  \node[nmos] (d10) at (11.2,0.4) {};
+  \draw (d10.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d10.D) -- ++(0,0.25) node[above] {D};
+  \draw (d10.S) -- ++(0,-0.25) node[below] {S};
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (12.0,-1.0) {M1 D G S S nfet\\W=1u L=0.3u};
+  \node[caption,anchor=west,font=\small\itshape] at (-0.8,-2.2) {A second layout: the inner node labelled M};
+  \node[nmos] (d11) at (0.6,-4.15) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d11.east) {L \SI{0.15}{\micro\metre}};
+  \draw (d11.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d11.D) -- ++(0,0.25) node[above] {D};
+  \node[nmos] (d12) at (0.6,-5.65) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d12.east) {L \SI{0.15}{\micro\metre}};
+  \draw (d12.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d12.S) -- ++(0,-0.25) node[below] {S};
+  \draw (d11.S) -- (d12.D);
+  \draw ($(d11.S)!0.5!(d12.D)$) to[short,-*] ++(0,0) -- ++(-0.6,0) node[left] {M};
+  \draw[violation] (-0.8,-7.2) rectangle (2.6,-2.55);
+  \node[violation label,align=center,anchor=center] at (7.199999999999999,-4.9) {M is a port: no merge,\\two devices against one};
+\end{circuitikz}
+\end{document}

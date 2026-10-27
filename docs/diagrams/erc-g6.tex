@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The inverter and a met1 stub that reaches no device.
+  \node[pmos] (P) at (2,2) {};
+  \node[nmos] (N) at (2,0) {};
+  \draw (P.S) -- ++(0,0.3) node[vcc] {VDD};
+  \draw (N.S) -- ++(0,-0.3) node[ground] {};
+  \node[right] at ($(N.S)+(0.15,-0.55)$) {VSS};
+  \draw (P.D) -- (N.D);
+  \draw (P.D |- 0,1) node[circ] {} to[short, -o] ++(1,0) node[right] {Y};
+  \draw (P.G) -- ++(-0.4,0) coordinate (gp) -- (gp |- N.G) -- (N.G);
+  \draw (gp |- 0,1) node[circ] {} to[short, -o] ++(-0.6,0) node[left] {A};
+  \draw[layer c] (4.6,-0.4) rectangle (5.6,0);
+  \node[caption, left] at (4.45,-0.2) {met1};
+  \draw[violation] (4.45,-0.55) rectangle (5.75,0.15);
+  \node[violation label, below] at (5.1,-0.55) {reaches no device};
+\end{circuitikz}
+\end{document}

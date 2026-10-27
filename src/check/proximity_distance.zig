@@ -5,14 +5,14 @@
 //! exact value is not. Ported from crates/check/src/drc/rules/mod.rs
 //! (`pair_distances_into`, `capped_distances`, `capped_dist2_*`).
 //!
-//! A row kernel (ARCHITECTURE.md, GPU): `cappedDist2` is one generic body per
-//! pair, integer-only (every gap clamped to `2^26`, so `gx² + gy² <= 2^53`
-//! fits an `i64`), so the CPU threads and the GPU give the same bits. The
-//! device root exports it as `check_capped_dist2`; the CPU runs it over
-//! contiguous pair blocks, one `std.Thread` per block (0.18 has no
-//! `std.Thread.Pool`). Rust used f64 lanes for SIMD; integers are as exact
-//! and lower everywhere. A pair with a non-axis edge reads -1 from the body
-//! and is measured on the host by `rects.polyDist2`.
+//! A row kernel: `cappedDist2` is one generic body per pair, integer-only
+//! (every gap clamped to `2^26`, so `gx² + gy² <= 2^53` fits an `i64`), so the
+//! CPU threads and the GPU give the same bits. The device root exports it as
+//! `check_capped_dist2`; the CPU runs it over contiguous pair blocks, one
+//! `std.Thread` per block (0.18 has no `std.Thread.Pool`). Rust used f64 lanes
+//! for SIMD; integers are as exact and lower everywhere. A pair with a non-axis
+//! edge reads -1 from the body and is measured on the host by
+//! `rects.polyDist2`.
 //!
 //! Contents:
 //! - `pub const gap_cap: i64`

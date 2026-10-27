@@ -1,11 +1,10 @@
-//! Several dies placed into one assembly (2.5D, 3D, chiplets on an
-//! interposer), checked as one: the system LVS pieces (catalog LVS-073) and
-//! the package- and system-level ESD checks (ERC-C12, ERC-C13). In: each
-//! die's extraction and LVS graph, where it sits (`Placement`), and which
-//! layers face another die or the package. Out: violation rows (no layer:
-//! layer ids belong to one die's deck) and one `RuleRun` per check, in the
-//! assembly's coordinates. Ported from crates/check/src/system.rs (moved
-//! here per ARCHITECTURE.md).
+//! Several dies placed into one assembly (2.5D, 3D, chiplets on an interposer),
+//! checked as one: the system LVS pieces (catalog LVS-073) and the package- and
+//! system-level ESD checks (ERC-C12, ERC-C13). In: each die's extraction and
+//! LVS graph, where it sits (`Placement`), and which layers face another die or
+//! the package. Out: violation rows (no layer: layer ids belong to one die's
+//! deck) and one `RuleRun` per check, in the assembly's coordinates. Ported
+//! from crates/check/src/system.rs.
 //!
 //! System LVS, as Calibre 3DSTACK's public material defines it (Siemens fact
 //! sheet 82850-D2, 2022; "HDAP connectivity verification", 2018): a bump is

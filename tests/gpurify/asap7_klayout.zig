@@ -1,6 +1,6 @@
 //! The asap7 deck against OpenROAD-flow-scripts' KLayout asap7 deck
 //! (tests/fixtures/asap7/asap7.lydrc), rule by rule, on the fixture cells,
-//! held to the ledger docs/xcheck/asap7.tsv. Built only with
+//! held to the ledger tests/xcheck/asap7.tsv. Built only with
 //! `-Dcomparison-tests=true`, inside `nix develop .#comparison`; it fails,
 //! never skips, when `klayout` is not on `PATH`.
 //!
@@ -29,7 +29,7 @@ const Found = std.StringHashMapUnmanaged(u32);
 // ---- private ----
 
 fn ledger(a: Allocator) ![]const Row {
-    const path = try std.fmt.allocPrint(a, "{s}/docs/xcheck/asap7.tsv", .{paths.root});
+    const path = try std.fmt.allocPrint(a, "{s}/tests/xcheck/asap7.tsv", .{paths.root});
     const text = try std.Io.Dir.cwd().readFileAlloc(io, path, a, .unlimited);
     var rows: std.ArrayList(Row) = .empty;
     var lines = std.mem.splitScalar(u8, text, '\n');

@@ -1,0 +1,25 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Layout from above: bars a and b on met1, three met1_fill squares between them.
+  \fill[layer a] (0,0) rectangle (6,0.3);
+  \fill[layer a] (0,1.5) rectangle (6,1.8);
+  \foreach \x in {1.2,2.7,4.2} \fill[layer c] (\x,0.6) rectangle (\x+0.6,1.2);
+  \node[caption] at (0.3,0.15) {a};
+  \node[caption] at (0.3,1.65) {b};
+  \node[caption,anchor=west] at (6.1,0.15) {met1};
+  \node[caption,anchor=west] at (6.1,0.9) {met1\_fill};
+  \draw[dim] (5.4,0.3) -- (5.4,0.6) node[dim label,midway,right=2pt] {\SI{0.5}{\micro\metre}};
+  % One piece before the treatment: coupled to both bars and to ground.
+  \draw (8.2,1.6) node[circ,label=above:{a}]{} to[C, l=\SI{28.7}{\atto\farad}] (10.2,1.6) node[circ,label=above:{fill}]{}
+    to[C, l=\SI{28.7}{\atto\farad}] (12.2,1.6) node[circ,label=above:{b}]{};
+  \draw (10.2,1.6) to[C, l=\SI{188}{\atto\farad}] (10.2,0) node[ground]{};
+  \node[caption] at (10.2,-0.8) {one piece of three, before};
+  % After the floating pieces are eliminated.
+  \draw (14,1.6) node[circ,label=above:{a}]{} to[C, l=\SI{0.0818}{\femto\farad}] (16.4,1.6) node[circ,label=above:{b}]{};
+  \draw (14,1.6) to[C, l_=\SI{1.047}{\femto\farad}] (14,0) node[ground]{};
+  \draw (16.4,1.6) to[C, l=\SI{1.047}{\femto\farad}] (16.4,0) node[ground]{};
+  \node[caption] at (15.2,-0.8) {floating, after};
+\end{circuitikz}
+\end{document}

@@ -322,9 +322,10 @@ test "gf180 m1.4 whole die density" {
 }
 
 test "a derived layer does not widen the boundary less die" {
-    // Oracle: hand-derived, with `docs/deck.md`'s rule that a derived layer
-    // does not widen the die: 700 x 1000 of the 1000 square marker is 0.7,
-    // over a 60 % maximum, at the die's centre.
+    // Oracle: hand-derived, with docs/src/reference/drc/density.md (DRC-070):
+    // with no boundary layer the die is the bounding box of every drawn layer,
+    // so a derived layer does not widen it: 700 x 1000 of the 1000 square
+    // marker is 0.7, over a 60 % maximum, at the die's centre.
     var lb = LayoutBuilder.init(3);
     _ = try lb.rect(gpa, 0, 0, 0, 700, 1_000);
     _ = try lb.rect(gpa, 1, 0, 0, 1_000, 1_000);

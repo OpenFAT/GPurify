@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=1.6cm,y=1.6cm]
+  % A transistor as the deck sees it: diff (0,0)-(3,2), poly (1.25,-0.6)-(1.75,2.6).
+  % ngate = poly and diff and nsdm; diff_sd = diff not poly.
+  \fill[layer a] (0,0) rectangle (3,2);
+  \fill[layer c] (1.25,-0.6) rectangle (1.75,2.6);
+  \draw[marker,line width=1.2pt] (1.25,0) rectangle (1.75,2);
+  \node[caption] at (0.6,1) {source};
+  \node[caption] at (2.4,1) {drain};
+  \node[caption,anchor=south] at (1.5,2.6) {poly: gate terminal};
+  \node[caption,anchor=north,align=center] at (0.6,-0.1) {diff\_sd};
+  \node[caption,anchor=north,align=center] at (2.4,-0.1) {diff\_sd};
+  % W along the gate, L across it.
+  \draw[dim] (3.25,0) -- (3.25,2);
+  \node[dim label,anchor=west] at (3.3,1) {$W$: extent across the current};
+  \draw[dim] (1.25,-0.85) -- (1.75,-0.85);
+  \node[dim label,anchor=north] at (1.5,-0.9) {$L$: extent along it};
+  \draw[-{Latex[length=2mm]}] (-0.4,2.35) node[caption,anchor=east] {marker \texttt{ngate}} -- (1.24,1.9);
+\end{circuitikz}
+\end{document}

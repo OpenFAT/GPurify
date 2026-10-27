@@ -1,0 +1,25 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=3cm,y=3cm]
+  % The two-metal example layout, 1 unit = 1 um: met1 wires A (y 0..0.2)
+  % and B (y 0.5..0.6), a via1 cut on A, and a met2 strap over both.
+  \fill[layer a] (0,0) rectangle (2,0.2);
+  \fill[layer a] (0,0.5) rectangle (2,0.6);
+  \fill[layer c,opacity=0.85] (1.75,-0.2) rectangle (2,1);
+  \fill[layer b] (1.8,0.025) rectangle (1.95,0.175);
+  \draw (1.8,0.025) -- (1.95,0.175) (1.8,0.175) -- (1.95,0.025);
+  % Labels.
+  \fill (0.1,0.1) circle (0.6pt);
+  \node[caption,anchor=west] at (0.12,0.1) {text \texttt{A} on met1\_label};
+  \fill (0.1,0.55) circle (0.6pt);
+  \node[caption,anchor=west] at (0.12,0.55) {text \texttt{B}};
+  % Callouts.
+  \node[caption,anchor=east] at (-0.05,0.1) {met1};
+  \node[caption,anchor=east] at (-0.05,0.55) {met1};
+  \node[caption,anchor=south] at (1.875,1) {met2};
+  \draw[-{Latex[length=2mm]}] (2.3,0.1) node[caption,anchor=west] {via1 joins met1 to met2} -- (1.96,0.1);
+  \draw[-{Latex[length=2mm]}] (2.3,0.55) node[caption,anchor=west,align=left] {met2 crosses B; no via,\\so B stays its own net} -- (2.01,0.55);
+  \node[caption,anchor=north west,align=left] at (0,-0.3) {net A: met1 wire A, via1, met2 strap.\quad net B: met1 wire B.};
+\end{circuitikz}
+\end{document}

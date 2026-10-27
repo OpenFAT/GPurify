@@ -1,14 +1,15 @@
-//! The check catalog against the code. `docs/check-catalog.tsv` lists every
-//! check kind a signoff verifier must handle, one row per kind, with the
-//! sources that define it and what the code has for it. This keeps it, the
-//! code and the docs from drifting apart: every kind the catalog names
-//! exists in the code and every kind the code has is in the catalog; every
-//! `missing` or `partial` check is in `docs/limitations.md`; the status
-//! counts and the beyond-open-source block of `docs/check-sources.md` are
-//! the catalog's; and the rule reference in src/check/root.zig (Rust's
+//! The check catalog against the code and the user docs.
+//! `tests/check-catalog.tsv` lists every check kind a signoff verifier must
+//! handle, one row per kind, with the sources that define it and what the
+//! code has for it. This keeps it, the code and the docs from drifting
+//! apart: every kind the catalog names exists in the code and every kind the
+//! code has is in the catalog; every row has exactly one entry in the user
+//! docs (docs/src/reference), whose **Status and limits.** opens with the
+//! row's status; and the rule reference in src/check/root.zig (Rust's
 //! crates/check/src/lib.rs) cites the catalog rows and names Zig items that
-//! exist. A stale generated block is rewritten and the test fails, so the
-//! change is reviewed like a golden file. Ported from tests/catalog.rs.
+//! exist. Ported from tests/catalog.rs; its generated blocks in
+//! limitations.md and check-sources.md went with those pages, into the
+//! entries this checks.
 
 const std = @import("std");
 const testing = std.testing;
@@ -21,17 +22,8 @@ const statuses = [_][]const u8{ "implemented", "expressible", "partial", "missin
 /// Feature tags in the `gpurify` column: a capability, not a rule kind.
 const tags = [_][]const u8{ "deck:", "drc:", "erc:", "lvs:", "pex:", "ingest:", "lib:" };
 
-/// The domains in the order the docs list them, with their headings.
-const domains = [_][2][]const u8{
-    .{ "drc", "Design rules (DRC)" },
-    .{ "lvs", "Layout against schematic (LVS)" },
-    .{ "erc", "Electrical rules (ERC)" },
-    .{ "pex", "Parasitic extraction (PEX)" },
-    .{ "flow", "Flow" },
-};
-
-const begin = "<!-- generated from docs/check-catalog.tsv by tests/catalog.rs; edit the catalog, not this block -->";
-const end = "<!-- end of generated block -->";
+/// The domains a row may name.
+const domains = [_][]const u8{ "drc", "lvs", "erc", "pex", "flow" };
 
 /// Open tools the catalog cites, in `sources` and in a `TX:<tool>` oracle.
 const open_tools = [_][]const u8{ "KL", "NG", "MAG", "OR", "drt", "YOSYS", "ngspice", "FasterCap", "FastHenry" };
@@ -50,6 +42,11 @@ const Row = struct {
     notes: []const u8,
 };
 
+/// One check entry of the user docs, `### <ID>: <name>` (docs/STYLE.md,
+/// section 3): its page under docs/src/reference, and the first word after
+/// its **Status and limits.** lead-in, null when it has none.
+const Entry = struct { id: []const u8, page: []const u8, status: ?[]const u8 };
+
 // ---- private ----
 
 fn read(arena: Allocator, rel: []const u8) ![]const u8 {
@@ -57,9 +54,65 @@ fn read(arena: Allocator, rel: []const u8) ![]const u8 {
     return std.Io.Dir.cwd().readFileAlloc(testing.io, path, arena, .unlimited);
 }
 
-fn rewrite(arena: Allocator, rel: []const u8, data: []const u8) !void {
-    const path = try std.fmt.allocPrint(arena, "{s}/{s}", .{ paths.root, rel });
-    try std.Io.Dir.cwd().writeFile(testing.io, .{ .sub_path = path, .data = data });
+/// Whether `id` reads as a catalog id: capitals, a hyphen, then letters
+/// and digits (`DRC-028`, `ERC-D1a`).
+fn isCatalogId(id: []const u8) bool {
+    const dash = std.mem.indexOfScalar(u8, id, '-') orelse return false;
+    if (dash == 0 or dash + 1 == id.len) return false;
+    for (id[0..dash]) |c| if (!std.ascii.isUpper(c)) return false;
+    for (id[dash + 1 ..]) |c| if (!std.ascii.isAlphanumeric(c)) return false;
+    return true;
+}
+
+/// Every check entry under docs/src/reference. An entry runs to the next
+/// heading outside a code block (a deck snippet's `#` comment is no heading).
+fn docEntries(arena: Allocator) ![]const Entry {
+    const root = try std.fmt.allocPrint(arena, "{s}/docs/src/reference", .{paths.root});
+    var dir = try std.Io.Dir.cwd().openDir(testing.io, root, .{ .iterate = true });
+    defer dir.close(testing.io);
+    var walker = try dir.walk(arena);
+    defer walker.deinit();
+    var out: std.ArrayList(Entry) = .empty;
+    while (try walker.next(testing.io)) |file| {
+        if (file.kind != .file or !std.mem.endsWith(u8, file.path, ".md")) continue;
+        const page = try arena.dupe(u8, file.path);
+        const text = try file.dir.readFileAlloc(testing.io, file.basename, arena, .unlimited);
+        var open: ?usize = null;
+        var fenced = false;
+        var lines = std.mem.splitScalar(u8, text, '\n');
+        while (lines.next()) |line| {
+            if (std.mem.startsWith(u8, line, "```")) {
+                fenced = !fenced;
+                continue;
+            }
+            if (fenced) continue;
+            if (std.mem.startsWith(u8, line, "#")) {
+                open = null;
+                if (!std.mem.startsWith(u8, line, "### ")) continue;
+                const colon = std.mem.indexOf(u8, line, ": ") orelse continue;
+                const id = line[4..colon];
+                if (!isCatalogId(id)) continue;
+                try out.append(arena, .{ .id = id, .page = page, .status = null });
+                open = out.items.len - 1;
+                continue;
+            }
+            const at = open orelse continue;
+            const lead = "**Status and limits.**";
+            if (out.items[at].status != null or !std.mem.startsWith(u8, line, lead)) continue;
+            const rest = std.mem.trimStart(u8, line[lead.len..], " ");
+            var n: usize = 0;
+            while (n < rest.len and std.ascii.isAlphabetic(rest[n])) n += 1;
+            out.items[at].status = rest[0..n];
+        }
+    }
+    return out.items;
+}
+
+/// The word an entry's status opens with: `partial` reads `Partial`.
+fn statusWord(arena: Allocator, status: []const u8) ![]const u8 {
+    const word = try std.mem.replaceOwned(u8, arena, status, "_", " ");
+    if (word.len > 0) word[0] = std.ascii.toUpper(word[0]);
+    return word;
 }
 
 fn eql(a: []const u8, b: []const u8) bool {
@@ -72,7 +125,7 @@ fn oneOf(name: []const u8, set: []const []const u8) bool {
 }
 
 fn catalog(arena: Allocator) ![]const Row {
-    const text = try read(arena, "docs/check-catalog.tsv");
+    const text = try read(arena, "tests/check-catalog.tsv");
     var lines = std.mem.splitScalar(u8, std.mem.trimEnd(u8, text, "\n"), '\n');
     try testing.expectEqualStrings("id\tdomain\tcategory\tcheck\tsources\tgpurify\tstatus\toracle\tnotes", lines.next().?);
     var rows: std.ArrayList(Row) = .empty;
@@ -106,28 +159,6 @@ fn isTag(name: []const u8) bool {
     return false;
 }
 
-fn cell(arena: Allocator, text: []const u8) ![]const u8 {
-    if (text.len == 0) return "—";
-    return std.mem.replaceOwned(u8, arena, text, "|", "\\|");
-}
-
-/// The limitations block as the catalog says it should read.
-fn limitationsBlock(arena: Allocator, rows: []const Row) ![]const u8 {
-    var out: std.ArrayList(u8) = .empty;
-    try out.print(arena, "{s}\n", .{begin});
-    for (domains) |d| {
-        var any = false;
-        for (rows) |r| {
-            if (!eql(r.domain, d[0]) or !(eql(r.status, "missing") or eql(r.status, "partial"))) continue;
-            if (!any) try out.print(arena, "\n### {s}\n\n| Id | Check | Status | What is missing |\n|---|---|---|---|\n", .{d[1]});
-            any = true;
-            try out.print(arena, "| {s} | {s} | {s} | {s} |\n", .{ r.id, try cell(arena, r.check), r.status, try cell(arena, r.notes) });
-        }
-    }
-    try out.print(arena, "\n{s}", .{end});
-    return out.items;
-}
-
 /// The oracle codes of an `oracle` cell: `TX:KL; MR` is `TX`, `MR`.
 fn hasCode(oracle: []const u8, code: []const u8) bool {
     var it = std.mem.splitScalar(u8, oracle, ';');
@@ -153,28 +184,6 @@ fn beyondOpenSource(r: Row) bool {
     return !hasCode(r.oracle, "TX");
 }
 
-fn beyondBlock(arena: Allocator, rows: []const Row) ![]const u8 {
-    var out: std.ArrayList(u8) = .empty;
-    try out.print(arena, "{s}\n\n| Id | Check | Status | Defined by (public) | Evidence |\n|---|---|---|---|---|\n", .{begin});
-    for (rows) |r| if (beyondOpenSource(r)) {
-        try out.print(arena, "| {s} | {s} | {s} | {s} | {s} |\n", .{ r.id, try cell(arena, r.check), r.status, try cell(arena, r.sources), try cell(arena, r.oracle) });
-    };
-    try out.print(arena, "\n{s}", .{end});
-    return out.items;
-}
-
-/// `doc`'s generated block replaced by `want`; fails (after rewriting the
-/// file) when they differ.
-fn expectBlock(arena: Allocator, rel: []const u8, want: []const u8) !void {
-    const doc = try read(arena, rel);
-    const start = std.mem.indexOf(u8, doc, begin) orelse return error.TestUnexpectedResult;
-    const stop = (std.mem.indexOf(u8, doc, end) orelse return error.TestUnexpectedResult) + end.len;
-    if (eql(doc[start..stop], want)) return;
-    try rewrite(arena, rel, try std.mem.concat(arena, u8, &.{ doc[0..start], want, doc[stop..] }));
-    std.debug.print("{s} was stale against the catalog; it is rewritten: review and commit it\n", .{rel});
-    return error.TestExpectedEqual;
-}
-
 /// Whether a rule-reference item (`drc.Rule.min_width`,
 /// `erc.RuleSet.tables.antenna`, `lvs.Discrepancy.unpaired_net`,
 /// `lvs.checkLayout`) names something in the check module.
@@ -189,8 +198,7 @@ fn zigItemExists(item: []const u8) bool {
 }
 
 test "every row is well formed and resolved" {
-    // Oracle: the catalog's schema as tests/catalog.rs and
-    // docs/check-sources.md state it: unique ids, a listed domain and
+    // Oracle: the catalog's schema as tests/catalog.rs states it: unique ids, a listed domain and
     // status, no `verify` once committed, a covered row naming what covers
     // it, and a partial or out-of-scope row saying why.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
@@ -202,7 +210,7 @@ test "every row is well formed and resolved" {
             return error.TestUnexpectedResult;
         };
         var known_domain = false;
-        for (domains) |d| known_domain = known_domain or eql(d[0], r.domain);
+        for (domains) |d| known_domain = known_domain or eql(d, r.domain);
         try testing.expect(known_domain);
         try testing.expect(oneOf(r.status, &statuses));
         try testing.expect(!eql(r.status, "verify"));
@@ -239,58 +247,6 @@ test "every kind the code has is in the catalog" {
             return error.TestUnexpectedResult;
         }
     }
-}
-
-test "check sources states the catalog's status counts" {
-    // Oracle: the catalog's rows, counted per domain and status, against the
-    // table and row total docs/check-sources.md states.
-    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
-    defer arena.deinit();
-    const a = arena.allocator();
-    const rel = "docs/check-sources.md";
-    const doc = try read(a, rel);
-    const rows = try catalog(a);
-    var lines: std.ArrayList([]const u8) = .empty;
-    var it = std.mem.splitScalar(u8, std.mem.trimEnd(u8, doc, "\n"), '\n');
-    while (it.next()) |line| try lines.append(a, line);
-    var stale = false;
-    for (lines.items) |*line| {
-        if (!(std.mem.startsWith(u8, line.*, "**Snapshot") and std.mem.endsWith(u8, line.*, " rows):"))) continue;
-        const open = std.mem.lastIndexOfScalar(u8, line.*, '(') orelse continue;
-        const want = try std.fmt.allocPrint(a, "{s}({d} rows):", .{ line.*[0..open], rows.len });
-        if (!eql(line.*, want)) stale = true;
-        line.* = want;
-    }
-    for (domains) |d| {
-        const label = if (eql(d[0], "flow")) "Flow" else try std.ascii.allocUpperString(a, d[0]);
-        var want: std.ArrayList(u8) = .empty;
-        try want.print(a, "| {s} |", .{label});
-        for (statuses) |status| {
-            var n: usize = 0;
-            for (rows) |r| n += @intFromBool(eql(r.domain, d[0]) and eql(r.status, status));
-            try want.print(a, " {d} |", .{n});
-        }
-        const prefix = try std.fmt.allocPrint(a, "| {s} | ", .{label});
-        const line = for (lines.items) |*line| {
-            if (std.mem.startsWith(u8, line.*, prefix)) break line;
-        } else return error.TestUnexpectedResult;
-        if (!eql(line.*, want.items)) stale = true;
-        line.* = want.items;
-    }
-    if (!stale) return;
-    const joined = try std.mem.join(a, "\n", lines.items);
-    try rewrite(a, rel, try std.mem.concat(a, u8, &.{ joined, if (std.mem.endsWith(u8, doc, "\n")) "\n" else "" }));
-    std.debug.print("{s}'s status counts were stale against the catalog; they are rewritten: review and commit them\n", .{rel});
-    return error.TestExpectedEqual;
-}
-
-test "limitations lists every missing and partial check" {
-    // Oracle: golden: the block built from the catalog's missing and partial
-    // rows against the reviewed block in docs/limitations.md.
-    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
-    defer arena.deinit();
-    const a = arena.allocator();
-    try expectBlock(a, "docs/limitations.md", try limitationsBlock(a, try catalog(a)));
 }
 
 test "the rule reference cites the catalog and names Zig items that exist" {
@@ -333,8 +289,7 @@ test "the rule reference cites the catalog and names Zig items that exist" {
 
 test "checks beyond open source are listed with two independent oracles" {
     // Oracle: the catalog's oracle codes: a supported row no open tool
-    // defines has two independent codes (Rust's EVIDENCE_GAPS is empty);
-    // and golden, the generated block against docs/check-sources.md.
+    // defines has two independent codes (Rust's EVIDENCE_GAPS is empty).
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
@@ -347,5 +302,36 @@ test "checks beyond open source are listed with two independent oracles" {
             return error.TestUnexpectedResult;
         }
     };
-    try expectBlock(a, "docs/check-sources.md", try beyondBlock(a, rows));
+}
+
+test "the user docs give every catalog row one entry that opens with its status" {
+    // Oracle: the catalog: each row's id heads exactly one `### <ID>: <name>`
+    // entry under docs/src/reference (docs/STYLE.md, section 3), no entry
+    // names an id the catalog lacks, and each entry's **Status and limits.**
+    // opens with its row's status word.
+    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const rows = try catalog(a);
+    const entries = try docEntries(a);
+    var bad: std.ArrayList([]const u8) = .empty;
+    for (rows) |r| {
+        const want = try statusWord(a, r.status);
+        var n: usize = 0;
+        for (entries) |e| if (eql(e.id, r.id)) {
+            n += 1;
+            const got = e.status orelse "no status";
+            if (!eql(got, want)) try bad.append(a, try std.fmt.allocPrint(a, "{s} ({s}): its status reads {s}, the catalog says {s}", .{ r.id, e.page, got, want }));
+        };
+        if (n != 1) try bad.append(a, try std.fmt.allocPrint(a, "{s}: {d} entries in the docs, want 1", .{ r.id, n }));
+    }
+    for (entries) |e| {
+        for (rows) |r| {
+            if (eql(r.id, e.id)) break;
+        } else try bad.append(a, try std.fmt.allocPrint(a, "{s} ({s}): no catalog row has this id", .{ e.id, e.page }));
+    }
+    if (bad.items.len > 0) {
+        std.debug.print("{d} entries disagree with the catalog:\n{s}\n", .{ bad.items.len, try std.mem.join(a, "\n", bad.items) });
+        return error.TestExpectedEqual;
+    }
 }

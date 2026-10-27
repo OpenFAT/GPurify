@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % nwell (0,0)-(2000,2000) on VDD, (3000,0)-(5000,2000) on VDDA nm; 1 unit = 500 nm
+  \draw[layer a] (0,0) rectangle (4,4);
+  \draw[layer a] (6,0) rectangle (10,4);
+  \node[caption,align=center] at (2,2) {nwell\\net VDD};
+  \node[caption,align=center] at (8,2) {nwell\\net VDDA};
+  \draw[violation] (4,0) rectangle (6,4);
+  \draw[dim] (4,3) -- (6,3);
+  \node[dim label,anchor=south] at (5,3.1) {\SI{1}{\micro\metre}};
+  \node[violation label,anchor=north,align=center] at (5,-0.2) {different nets: space $<$ \SI{1.4}{\micro\metre}};
+\end{circuitikz}
+\end{document}

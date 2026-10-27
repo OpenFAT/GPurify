@@ -217,8 +217,8 @@ test "every answer in each shipped deck's dump is its query's return value" {
 }
 
 test "a dump is the same bytes every time" {
-    // Oracle: determinism (ARCHITECTURE.md, Data): two compiles of one deck
-    // into fresh tables dump identically.
+    // Oracle: determinism (the same inputs give the same bytes): two compiles
+    // of one deck into fresh tables dump identically.
     var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();

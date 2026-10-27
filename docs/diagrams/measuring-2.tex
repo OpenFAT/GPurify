@@ -1,0 +1,13 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 (0,0)-(1000,1000) and (1000,1000)-(2000,2000) nm: one shape; 1 unit = 250 nm
+  \draw[layer a] (0,0) rectangle (4,4);
+  \draw[layer a] (4,4) rectangle (8,8);
+  \node[caption] at (2,2) {met1};
+  \node[caption] at (6,6) {met1};
+  \draw[violation] (4,4) circle (0.35);
+  \node[violation label,anchor=west,align=left] at (4.5,3.2) {one shape: width 0\\at (\SI{1000}{\nano\metre}, \SI{1000}{\nano\metre})};
+\end{circuitikz}
+\end{document}

@@ -1,7 +1,7 @@
-//! Deck text → tokens. A newline is a token except inside `(` and `[`, one
-//! per run of blank lines; every character the lexer cannot read is a
-//! diagnostic, and lexing goes on. The language: docs/deck.md, Basics.
-//! Ported from crates/ingest/src/deck/lex.rs.
+//! Deck text → tokens. A newline is a token except inside `(` and `[`, one per
+//! run of blank lines; every character the lexer cannot read is a diagnostic,
+//! and lexing goes on. The language: docs/src/reference/deck/README.md (Values,
+//! Units). Ported from crates/ingest/src/deck/lex.rs.
 //!
 //! Contents:
 //! - `pub const Tok`, `pub const Token`
@@ -143,9 +143,9 @@ fn digits(s: []const u8, start: usize) usize {
 }
 
 test "a number keeps its unit and an exponent needs digits" {
-    // Oracle: docs/deck.md, Basics, by hand: `2eV` is two electron-volts,
-    // `1e-3um` the number `1e-3` in `um`; a blank-line run is one newline
-    // token, and none is made inside `(`.
+    // Oracle: docs/src/reference/deck/README.md (Values, Units), by hand: `2eV`
+    // is two electron-volts, `1e-3um` the number `1e-3` in `um`; a blank-line
+    // run is one newline token, and none is made inside `(`.
     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
     defer arena.deinit();
     var errors: std.ArrayList(Diagnostic) = .empty;
@@ -161,8 +161,9 @@ test "a number keeps its unit and an exponent needs digits" {
 }
 
 test "a middle dot or a period before a letter joins a unit" {
-    // Oracle: docs/deck.md, Basics, by hand: `mV·um` and `%.um` are one unit
-    // each; `um` then `.` then `)` ends the unit at the period.
+    // Oracle: docs/src/reference/deck/README.md (Units), by hand: `mV·um` and
+    // `%.um` are one unit each; `um` then `.` then `)` ends the unit at the
+    // period.
     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
     defer arena.deinit();
     var errors: std.ArrayList(Diagnostic) = .empty;

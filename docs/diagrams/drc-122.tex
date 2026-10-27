@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.8cm,y=0.8cm]
+  % 1 unit = 100 nm. diff 1 um x 600 nm; tap 400 x 200 nm butting it at
+  % x = 1 um; a licon 30 nm past the butting edge.
+  \draw[layer a] (0,0) rectangle (10,6);
+  \node at (5,4) {diff};
+  \draw[layer c] (10,0) rectangle (14,2);
+  \node[above] at (12,2) {tap};
+  \draw[marker] (9.4,0) rectangle (10.6,2);
+  \draw[layer b] (10.3,0.15) rectangle (12,1.85);
+  \node at (11.4,1) {licon};
+  \draw[violation] (10,0) -- (10,2);
+  \draw[dim] (8.6,0) -- (8.6,2) node[midway,left,dim label] {butt \SI{200}{\nano\metre}};
+  \draw[dim] (9.4,-0.5) -- (10.6,-0.5) node[midway,below,dim label] {\SI{60}{\nano\metre} each side};
+  \node[violation label,align=left,right] at (14.5,1.6) {difftap.4: \SI{200}{\nano\metre} $<$ \SI{290}{\nano\metre}};
+  \node[violation label,align=left,right] at (14.5,0.4) {butt.licon: licon in the band};
+\end{circuitikz}
+\end{document}

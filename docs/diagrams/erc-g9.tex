@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % An inverter whose pull-down source is left off VSS.
+  \node[pmos] (P) at (2,2) {};
+  \node[nmos] (N) at (2,0) {};
+  \draw (P.S) -- ++(0,0.3) node[vcc] {VDD};
+  \draw (P.D) -- (N.D);
+  \draw (P.D |- 0,1) node[circ] {} to[short, -o] ++(1,0) node[right] {Y};
+  \draw (P.G) -- ++(-0.4,0) coordinate (gp) -- (gp |- N.G) -- (N.G);
+  \draw (gp |- 0,1) node[circ] {} to[short, -o] ++(-0.6,0) node[left] {A};
+  \draw[violation] (N.S) -- ++(0,-0.5) node[circ] {};
+  \node[violation label, right] at ($(N.S)+(0.1,-0.5)$) {no path to VSS};
+  \node[violation label, right] at ($(P.D |- 0,1)+(0.1,0.35)$) {power only};
+  \node[violation label, above] at ($(gp |- 0,1)+(-0.7,0.1)$) {no path};
+\end{circuitikz}
+\end{document}

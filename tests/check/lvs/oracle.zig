@@ -1,13 +1,13 @@
-//! LVS's independent oracle: two small circuits match iff, after the
-//! documented reductions (docs/usage.md, "LVS reduction"), a bijection of
-//! devices and nets preserves kind, model and terminal incidence up to the
-//! interchangeable roles, every parameter within the 2 % relative tolerance
-//! and every count equal (F99). A brute force over every net bijection,
-//! decided from the documented semantics alone, never from the tool. Ported
-//! from tests/exhaustive/lvs.rs (`Model`, `Dev`, `Circuit`, `Declared`,
-//! `reduce`, `pairs`, `measured`, `assign`, `matches`, `equivalent`) under
-//! the default deck controls only: the controlled fixtures that need the
-//! others wait for the engine harness (wave 5).
+//! LVS's independent oracle: two small circuits match iff, after the documented
+//! reductions (docs/src/reference/lvs/reduction.md), a bijection of devices and
+//! nets preserves kind, model and terminal incidence up to the interchangeable
+//! roles, every parameter within the 2 % relative tolerance and every count
+//! equal (F99). A brute force over every net bijection, decided from the
+//! documented semantics alone, never from the tool. Ported from
+//! tests/exhaustive/lvs.rs (`Model`, `Dev`, `Circuit`, `Declared`, `reduce`,
+//! `pairs`, `measured`, `assign`, `matches`, `equivalent`) under the default
+//! deck controls only: the controlled fixtures that need the others wait for
+//! the engine harness (wave 5).
 //!
 //! Contents:
 //! - `pub const max_devs`, `pub const max_nets`, `pub const Prm`
@@ -310,7 +310,8 @@ fn crossed(a: *const Reduced, b: *const Reduced, map: []const u8) bool {
     return a.model.isMos() and a.pins[1] != a.pins[2] and map[a.pins[2]] == b.pins[1];
 }
 
-/// The default classes of interchangeable pin positions (deck.md): a MOS's
+/// The default classes of interchangeable pin positions
+/// (docs/src/reference/deck/lvs-controls.md, Interchangeable pins): a MOS's
 /// source and drain, a resistor's ends; every other pin alone.
 fn classOf(model: Model, position: usize) u8 {
     return switch (model) {

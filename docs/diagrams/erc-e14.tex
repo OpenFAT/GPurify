@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % the met1 rail with three loads at 40, 70 and 90 um, fed at 50 um,
+  % each load drawing its simulated average current
+  \coordinate (A) at (0,0);
+  \coordinate (F) at (3,0);
+  \coordinate (C) at (7.5,0);
+  \coordinate (B) at (11.5,0);
+  \draw (F) to[R, l_=\SI{1.25}{\ohm}, i^>=\SI{500}{\micro\ampere}] (A);
+  \draw (F) to[R, l=\SI{2.5}{\ohm}, i_>=\SI{2500}{\micro\ampere}] (C);
+  \draw (C) to[R, l=\SI{2.5}{\ohm}, i_>=\SI{2000}{\micro\ampere}] (B);
+  \draw (F) -- ++(0,0.6) node[vcc]{feed};
+  \draw (A) to[american current source, l_=\texttt{xdut.r40}, a^=\SI{0.5}{\milli\ampere}] ++(0,-2.6) node[ground]{};
+  \draw (C) to[american current source, l_=\texttt{xdut.r70}, a^=\SI{0.5}{\milli\ampere}] ++(0,-2.6) node[ground]{};
+  \draw (B) to[american current source, l=\texttt{xdut.r90}, a_=\SI{2}{\milli\ampere}] ++(0,-2.6) node[ground]{};
+  \foreach \p in {A,F,C,B} \fill (\p) circle (1.5pt);
+  \draw[violation] (3.6,-0.8) rectangle (7.0,1.0);
+  \node[violation label] at (5.6,1.35) {\SI{2500}{\micro\ampere} $>$ \SI{2200}{\micro\ampere}};
+  \draw[violation] (B) circle (5pt);
+  \node[violation label, anchor=south] at ($(B)+(0,0.25)$) {\SI{11.25}{\milli\volt} $>$ \SI{10}{\milli\volt}};
+  \node[caption, align=center, anchor=north] at (5.75,-3.4) {the same \SI{3}{\milli\ampere} as a budget, \SI{1}{\milli\ampere} a load:
+    \SI{2000}{\micro\ampere} and \SI{7.5}{\milli\volt} at worst, both passing};
+\end{circuitikz}
+\end{document}

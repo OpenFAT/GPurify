@@ -1,0 +1,27 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 1 um = 0.15 cm. Interposer bumps (0,0)-(20,20) and (50,0)-(70,20);
+  % chip bumps (4,0)-(24,20) and (54,0)-(74,20), drawn over them.
+  \draw[layer a] (0,0) rectangle (3,3);
+  \draw[layer a] (7.5,0) rectangle (10.5,3);
+  \draw[layer c] (0.6,0) rectangle (3.6,3);
+  \draw[layer c] (8.1,0) rectangle (11.1,3);
+  % Legend.
+  \draw[layer a] (0,4.1) rectangle (0.4,4.4);
+  \node[caption,right] at (0.45,4.25) {Xint bump};
+  \draw[layer c] (3.6,4.1) rectangle (4,4.4);
+  \node[caption,right] at (4.05,4.25) {Xchip bump};
+  % Centre offset.
+  \fill (1.5,1.5) circle (0.06);
+  \fill (2.1,1.5) circle (0.06);
+  \draw[violation] (1.5,1.5) -- (2.1,1.5);
+  \node[violation label,below,align=center] at (1.8,-0.2) {offset \SI{4}{\micro\metre}\\limit \SI{2}{\micro\metre}};
+  % Gap from chip bump 0 to interposer bump 1.
+  \draw[dim] (3.6,2.2) -- (7.5,2.2) node[midway,above,dim label] {\SI{26}{\micro\metre}};
+  \draw[violation] (3.6,1.2) -- (7.5,1.2);
+  \node[violation label,below,align=center] at (5.55,1.1) {not bonded\\limit \SI{30}{\micro\metre}};
+  \node[violation label,below,align=center] at (9.3,-0.2) {offset \SI{4}{\micro\metre}};
+\end{circuitikz}
+\end{document}

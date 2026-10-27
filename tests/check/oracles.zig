@@ -1,10 +1,10 @@
 //! Every test states its oracle. A test is only as good as the independent
-//! thing that says its expected value is right (docs/testing-plan.md), so
-//! every `test` block in src/ and tests/ names it on a comment line starting
-//! `Oracle:`, either among the comments just above it or inside its body.
-//! The scan reads the `.zig` files as text, so a test added without one
-//! fails here, naming it. Ported from tests/oracles.rs (which read the
-//! doc comment of each `#[test]`).
+//! thing that says its expected value is right (AGENTS.md, Testing: "The oracle
+//! is named before the code"), so every `test` block in src/ and tests/ names
+//! it on a comment line starting `Oracle:`, either among the comments just
+//! above it or inside its body. The scan reads the `.zig` files as text, so a
+//! test added without one fails here, naming it. Ported from tests/oracles.rs
+//! (which read the doc comment of each `#[test]`).
 
 const std = @import("std");
 const testing = std.testing;
@@ -63,9 +63,9 @@ fn isOracle(line: []const u8) bool {
 }
 
 test "every test in the repository states its oracle" {
-    // Oracle: the methodology's rule itself (docs/testing-plan.md, AGENTS.md
-    // "give each new test one"), read from the sources. Each failure names
-    // the file and the test to give an `Oracle:` line.
+    // Oracle: the methodology's rule itself (AGENTS.md "give each new test
+    // one"), read from the sources. Each failure names the file and the test to
+    // give an `Oracle:` line.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();

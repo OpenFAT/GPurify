@@ -117,13 +117,13 @@ fn corroborationRow(arena: Allocator, cases: []const std.json.Value) ![]const u6
 }
 
 test "the readme status table is the catalog" {
-    // Oracle: docs/check-catalog.tsv itself: each domain's rows counted by
+    // Oracle: tests/check-catalog.tsv itself: each domain's rows counted by
     // status, which README's status table must state.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
     const readme = try read(a, "README.md");
-    const catalog = try read(a, "docs/check-catalog.tsv");
+    const catalog = try read(a, "tests/check-catalog.tsv");
     for ([_][2][]const u8{ .{ "DRC", "DRC-" }, .{ "LVS", "LVS-" }, .{ "ERC", "ERC-" }, .{ "PEX", "PEX-" }, .{ "Flow", "FLOW-" } }) |d| {
         var want: [4]u64 = @splat(0);
         var rows = std.mem.splitScalar(u8, catalog, '\n');

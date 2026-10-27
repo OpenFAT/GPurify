@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % FIN (0,0)-(500,7), (0,27)-(500,34), (0,57)-(500,64) nm; y: 1 unit = 10 nm, x shortened
+  \draw[layer a] (0,0) rectangle (6,0.7);
+  \draw[layer a] (0,2.7) rectangle (6,3.4);
+  \draw[layer a] (0,5.7) rectangle (6,6.4);
+  \node[caption,anchor=north] at (3,-0.05) {FIN};
+  \draw[marker] (-0.3,0.35) -- (8.2,0.35);
+  \draw[marker] (-0.3,3.05) -- (8.2,3.05);
+  \draw[marker] (-0.3,6.05) -- (8.2,6.05);
+  \draw[dim] (6.8,0.35) -- (6.8,3.05);
+  \node[dim label,anchor=west] at (6.9,1.7) {\SI{27}{\nano\metre}: passes};
+  \draw[violation] (6.8,3.05) -- (6.8,6.05);
+  \draw[dim] (6.8,3.05) -- (6.8,6.05);
+  \node[violation label,anchor=west] at (6.9,4.55) {\SI{30}{\nano\metre} $\ne$ \SI{27}{\nano\metre}};
+  \node[caption,anchor=west] at (8.3,6.05) {centre lines};
+\end{circuitikz}
+\end{document}

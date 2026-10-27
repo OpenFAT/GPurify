@@ -1,7 +1,6 @@
-//! extract: parasitic extraction, the resistance, capacitance and
-//! inductance a layout adds to the circuit it draws (ARCHITECTURE.md). Only
-//! re-exports; extract's Gompute kernel root. Ported from
-//! crates/extract/src/lib.rs.
+//! extract: parasitic extraction, the resistance, capacitance and inductance a
+//! layout adds to the circuit it draws. Only re-exports; extract's Gompute
+//! kernel root. Ported from crates/extract/src/lib.rs.
 //!
 //! Nets come as check's per-polygon net column (`poly_net`, to `NetPolys`),
 //! devices as plain columns (`device_region.Mos`), the process as plain

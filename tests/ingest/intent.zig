@@ -47,8 +47,8 @@ const states_head =
 
 // ---- private ----
 
-/// The `dynamic` entry of the docs/usage.md example, on VDD, with `budget`
-/// beside it and `extra` spliced into it.
+/// The `dynamic` entry of the example in docs/src/reference/design-intent.md,
+/// on VDD, with `budget` beside it and `extra` spliced into it.
 fn dynamicIntent(r: *Run, budget: []const u8, extra: []const u8) ![]u8 {
     return r.fmt(
         \\{{"temperature_c":105,"domains":{{"core":{{"voltage_mv":1800}}}},
@@ -118,11 +118,11 @@ test "a supply listed twice in one domain is named as a repeat" {
 }
 
 test "power states read back and a malformed one is refused" {
-    // Oracle: construct-from-answer, on the schema in docs/usage.md (Power
-    // states): two states in file order with their switched-off supplies and
-    // held inputs in mV; a file of states alone is not empty; a repeated
-    // state, one turning off an undeclared net, and an input held twice are
-    // each refused by name.
+    // Oracle: construct-from-answer, on the schema in
+    // docs/src/reference/design-intent.md (states): two states in file order
+    // with their switched-off supplies and held inputs in mV; a file of states
+    // alone is not empty; a repeated state, one turning off an undeclared net,
+    // and an input held twice are each refused by name.
     var r: Run = .{};
     defer r.deinit();
     const got = try r.parse(states_head ++
@@ -164,9 +164,9 @@ test "power states read back and a malformed one is refused" {
 }
 
 test "a dynamic entry and a temperature read back as written" {
-    // Oracle: round trip against the schema docs/usage.md documents: 105 °C
-    // reads back as 378.15 K and every `dynamic` number lands in its field,
-    // an absent `decap_pf` as zero.
+    // Oracle: round trip against the schema docs/src/reference/design-intent.md
+    // documents: 105 °C reads back as 378.15 K and every `dynamic` number lands
+    // in its field, an absent `decap_pf` as zero.
     var r: Run = .{};
     defer r.deinit();
     const got = try r.parse(try dynamicIntent(&r, ",\"budget_current_ua\":2000", ""));

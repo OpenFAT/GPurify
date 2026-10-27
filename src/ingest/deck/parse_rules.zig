@@ -1,8 +1,8 @@
 //! `rule` and `stage` statements: `rule <id> <kind>(<layers>; <name: value>..)
-//! [cmp value]` → one `RuleSource` row, its kind picked from the kind table
-//! by name, modifier, layer count, comparison and the named arguments given.
-//! A layer expression among the arguments becomes a derived layer named
-//! `<rule id>@k`. Rules: docs/deck.md, Rules. Ported from
+//! [cmp value]` → one `RuleSource` row, its kind picked from the kind table by
+//! name, modifier, layer count, comparison and the named arguments given. A
+//! layer expression among the arguments becomes a derived layer named
+//! `<rule id>@k`. Rules: docs/src/reference/deck/rules.md. Ported from
 //! crates/ingest/src/deck/parse.rs (`rule`, `stage`, `rule_id`, `args`,
 //! `positional`, `pick`, `cmp_text`).
 //!

@@ -427,9 +427,10 @@ test "an array of text over the flat budget is refused before it is expanded" {
 }
 
 test "an ignored pair is dropped even under reject" {
-    // Oracle: the deck's documented `ignore` (`docs/deck.md`, Layers: an
-    // ignored pair's shapes are dropped, an undeclared one refuses the
-    // layout): the met1 square survives, 99/7 is dropped, 99/8 is refused.
+    // Oracle: the deck's documented `ignore`
+    // (docs/src/reference/deck/layers.md, Ignored GDS layers: an ignored pair's
+    // shapes are dropped, an undeclared one refuses the layout): the
+    // met1 square survives, 99/7 is dropped, 99/8 is refused.
     var t: Setup = try .init();
     defer t.deinit();
     const deck = try fx.parseDeck(t.arena(), "layer met1 = gds(68, 20)\nignore gds(99, 7)\n", &t.strings);

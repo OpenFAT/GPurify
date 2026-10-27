@@ -1,14 +1,12 @@
-//! The ERC spine (ARCHITECTURE.md, Spines: `erc`): classifyNets → intent →
-//! netTypes → propagateVoltage (and per power state) → networks →
-//! powerGrid → solveIrDrop (and the AC grids, and with simulated terminal
-//! currents the grids they load) → rules. In: a `RuleSet` and the
-//! extracted design (`Inputs`). Out: violations and exactly one
-//! `RuleRun` per rule row, appended. A network that could not be built (a
-//! conductor with no stated sheet resistance) or a failed solve refuses
-//! only the rows that read it; rows that need intent record themselves
-//! skipped when the intent is absent or names nothing this layout has.
-//! Nothing refuses the whole run. Ported from crates/check/src/erc/mod.rs
-//! (`check`, `Inputs`).
+//! The ERC spine: classifyNets → intent → netTypes → propagateVoltage (and per
+//! power state) → networks → powerGrid → solveIrDrop (and the AC grids, and
+//! with simulated terminal currents the grids they load) → rules. In: a
+//! `RuleSet` and the extracted design (`Inputs`). Out: violations and exactly
+//! one `RuleRun` per rule row, appended. A network that could not be built (a
+//! conductor with no stated sheet resistance) or a failed solve refuses only
+//! the rows that read it; rows that need intent record themselves skipped when
+//! the intent is absent or names nothing this layout has. Nothing refuses the
+//! whole run. Ported from crates/check/src/erc/mod.rs (`check`, `Inputs`).
 //!
 //! Contents:
 //! - `pub const Inputs = struct`

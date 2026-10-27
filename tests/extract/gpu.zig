@@ -1,7 +1,7 @@
 //! The row kernels on the GPU against the host threads, bit for bit
-//! (ARCHITECTURE.md, GPU: Verification). Compiled only under
-//! `-Dgpu-tests=true`, where a build without device kernels, or a machine
-//! without the driver, fails rather than skips.
+//! (docs/src/explanation/cpu-and-gpu.md, One computation, two devices).
+//! Compiled only under `-Dgpu-tests=true`, where a build without device
+//! kernels, or a machine without the driver, fails rather than skips.
 
 const std = @import("std");
 const testing = std.testing;

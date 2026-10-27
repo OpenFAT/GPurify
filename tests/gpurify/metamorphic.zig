@@ -88,9 +88,9 @@ pub fn fixturesInto(arena: Allocator, depth: Depth, out: *std.ArrayList(Fixture)
 
 // ---- private ----
 
-/// docs/check-catalog.tsv: column 5 lists each row's kinds.
+/// tests/check-catalog.tsv: column 5 lists each row's kinds.
 fn catalogRows(arena: Allocator, root: std.Io.Dir) !Rows {
-    const text = try root.readFileAlloc(io, "docs/check-catalog.tsv", arena, .unlimited);
+    const text = try root.readFileAlloc(io, "tests/check-catalog.tsv", arena, .unlimited);
     var rows: Rows = .empty;
     var lines = std.mem.splitScalar(u8, text, '\n');
     _ = lines.next();

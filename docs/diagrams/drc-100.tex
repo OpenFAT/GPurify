@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=0.4]
+  % m1 (0,0)-(40,400), (100,0)-(140,400), (-100,460)-(240,500) nm; 1 unit = 20 nm
+  \draw[layer a] (0,0) rectangle (2,20);
+  \draw[layer a] (5,0) rectangle (7,20);
+  \draw[layer a] (-5,23) rectangle (12,25);
+  \node[caption,anchor=west] at (12.2,24) {m1};
+  \draw[dim] (2,10) -- (5,10);
+  \node[dim label,anchor=north] at (3.5,9.8) {\SI{60}{\nano\metre}};
+  \draw[dim] (1,20) -- (1,23);
+  \draw[dim] (6,20) -- (6,23);
+  \node[dim label,anchor=west] at (7.2,21.5) {\SI{60}{\nano\metre} each};
+  \fill (1,16) circle (3pt) (6,16) circle (3pt) (3.5,24) circle (3pt);
+  \draw[violation] (1,16) -- (6,16) -- (3.5,24) -- cycle;
+  \node[violation label,anchor=north,align=center] at (3.5,-0.3) {odd cycle under \SI{80}{\nano\metre}:\\3 masks needed $>$ 2};
+\end{circuitikz}
+\end{document}

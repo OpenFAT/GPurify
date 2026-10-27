@@ -76,11 +76,11 @@ fn boxedSpice(arena: Allocator, top: *const Circuit, name: []const u8, body: *co
     return std.mem.replaceOwned(u8, arena, text, "BLK", name);
 }
 
-/// LVS-033 black boxes and LVS-067's fixed cells, each verdict derived by
-/// hand from the definition (deck.md, `lvs blackbox`; Netgen's "will only
-/// recognize the pin names and pin order but will otherwise ignore the
-/// subcell contents"): a placement matches an instance of the same cell
-/// whose pins land on the same nets by name, whatever either holds.
+/// LVS-033 black boxes and LVS-067's fixed cells, each verdict derived by hand
+/// from the definition (docs/src/reference/deck/lvs-controls.md, Black boxes;
+/// Netgen's "will only recognize the pin names and pin order but will otherwise
+/// ignore the subcell contents"): a placement matches an instance of the same
+/// cell whose pins land on the same nets by name, whatever either holds.
 ///
 /// `TOP` is an `nmos` and a `pmos` on n0..n3; `BLK`, drawn, holds an
 /// `nmos` on its pins `P`, `Q`, `R`, placed so they land on n0, n1, n2.
@@ -152,9 +152,10 @@ fn subcircuitDevicesInto(arena: Allocator, out: *std.ArrayList(Fixture)) !void {
 }
 
 test "every black box and fixed-cell fixture holds" {
-    // Oracle: hand-derived from deck.md's `lvs blackbox` and Netgen's
-    // stated black-box semantics (pins by name and order, contents
-    // ignored), and the oracle's verdict on the marker route's card form.
+    // Oracle: hand-derived from `lvs blackbox` in
+    // docs/src/reference/deck/lvs-controls.md (Black boxes) and Netgen's stated
+    // black-box semantics (pins by name and order, contents ignored), and the
+    // oracle's verdict on the marker route's card form.
     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
     defer arena.deinit();
     var fixtures: std.ArrayList(Fixture) = .empty;

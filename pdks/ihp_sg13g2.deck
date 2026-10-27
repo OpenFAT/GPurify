@@ -11,7 +11,7 @@
 #        resistor matching coefficients §2.8/2.9 and their definition, condition A.ac).
 #  [DRC] Open KLayout deck, ihp-sg13g2/libs.tech/klayout/tech/drc, last changed in commit 3e4a6c5021;
 #        AFil.d, AFil.j and MIM.h follow it at 5e6d592e4002 and its unit cells
-#        (testing/testcases/unit; ledger docs/xcheck/ihp_sg13g2.tsv)
+#        (testing/testcases/unit; ledger tests/xcheck/ihp_sg13g2.tsv)
 #        (layers_def.drc for GDS numbers, density.drc for window step and die
 #        boundary, docs/main_rules.md + extra_rules.md cross-checked against [LR]).
 #  [LVS] Open KLayout LVS, ihp-sg13g2/libs.tech/klayout/tech/lvs/rule_decks, last changed in commit 6ff43baf32

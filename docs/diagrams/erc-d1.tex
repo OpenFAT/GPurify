@@ -1,0 +1,38 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.15cm,y=0.45cm]
+  % Cross-section of the example: n-well 0-60 µm, n-tap 1-3 µm, pdiff 5-55 µm.
+  % Beside it, outside the example, a neighbouring ndiff and its p-tap: the
+  % NPN half of the thyristor.
+  \fill[layer a] (-3,-12) rectangle (86,0);
+  \fill[layer b] (0,-5) rectangle (60,0);
+  \fill[layer d] (1,-1) rectangle (3,0);
+  \fill[layer c] (5,-1) rectangle (55,0);
+  \fill[layer c] (63,-1) rectangle (65,0);
+  \fill[layer d] (72,-1) rectangle (80,0);
+  \node[caption,anchor=south] at (2,0.2) {ntap};
+  \node[caption,fill=white,inner sep=1pt] at (30,-0.5) {pdiff (P+)};
+  \node[caption,anchor=south] at (64,0.2) {ptap};
+  \node[caption,anchor=south] at (76,0.2) {ndiff (N+)};
+  \node[caption,anchor=west] at (1,-4.2) {nwell};
+  \node[caption,anchor=west] at (-2,-11.2) {p substrate};
+  % The parasitic thyristor: PNP (pdiff, nwell, substrate) and NPN (ndiff,
+  % substrate, nwell), with the well and substrate resistances to the taps.
+  \node[pnp,anchor=E] (Q) at (50,-1) {};
+  \node[npn,anchor=E,yscale=-1] (N) at (76,-1) {};
+  \draw (Q.B) to[R, l_={$R_\text{well}$}] (8,0 |- Q.B) -| (2,-1);
+  \draw (Q.C) |- (64,-8) coordinate (sub) -| ($(N.B)+(-2,0)$) -- (N.B);
+  \draw (64,-1) to[R, l_={$R_\text{sub}$}] (sub);
+  \fill (sub) circle[radius=1.5pt];
+  \draw (N.C) |- (45,-10.5) |- (Q.B);
+  \fill (45,0 |- Q.B) circle[radius=1.5pt];
+  \node[caption,anchor=west] at ($(Q.C)+(1,0.6)$) {PNP};
+  \node[caption,anchor=west] at ($(N.C)+(1,-0.6)$) {NPN};
+  % The measured distance and the failing point.
+  \draw[dim] (3,2.2) -- node[dim label,above] {52 \si{\micro\metre} from the tap, limit 20 \si{\micro\metre}} (55,2.2);
+  \draw[densely dotted] (3,0) -- (3,2.2) (55,0) -- (55,2.2);
+  \draw[violation] (55,0) circle[radius=6pt];
+  \node[violation label,anchor=west] at (56,2.2) {furthest point};
+\end{circuitikz}
+\end{document}

@@ -240,9 +240,9 @@ test "a supply ring with a hole solves" {
 }
 
 test "a via into a global layer is no grid link" {
-    // Oracle: docs/deck.md, Connectivity: a global layer is "net-only, not a
-    // conductor: it carries no modelled current", so a tie into it adds no
-    // grid link and `ir_drop` runs.
+    // Oracle: docs/src/reference/deck/connectivity.md (Global nets): a global
+    // layer is "net-only. It carries no modelled current", so a tie into it
+    // adds no grid link and `ir_drop` runs.
     var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();

@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 4 cm per um; layout around the match: lines at y 1.0..1.2 um, tips at x 5.0 and 5.2 um
+  % (drawn at y = 0.8..1.6 cm after shifting)
+  \draw[layer a] (-1.5,0.8) -- (2.0,0.8) -- (2.0,1.6) -- (-1.5,1.6);
+  \draw[layer a] (6.5,0.8) -- (2.8,0.8) -- (2.8,1.6) -- (6.5,1.6);
+  \node[caption] at (-0.5,1.2) {met1};
+  \draw[violation] (0.4,0) rectangle (4.4,2.4);
+  \node[violation label,anchor=south] at (2.4,2.45) {match: window \SI{1}{\micro\metre} $\times$ \SI{600}{\nano\metre}};
+  \draw[dim] (2.0,1.9) -- node[dim label,above=1pt] {\SI{200}{\nano\metre}} (2.8,1.9);
+  % the other pair, 300 nm apart, drawn below
+  \draw[layer a] (-1.5,-1.8) -- (2.0,-1.8) -- (2.0,-1.0) -- (-1.5,-1.0);
+  \draw[layer a] (6.5,-1.8) -- (3.2,-1.8) -- (3.2,-1.0) -- (6.5,-1.0);
+  \draw[dim] (2.0,-0.7) -- node[dim label,above=1pt] {\SI{300}{\nano\metre}} (3.2,-0.7);
+  \node[caption,anchor=north] at (2.6,-1.9) {no match};
+\end{circuitikz}
+\end{document}

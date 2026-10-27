@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The VDD grid as a resistor ladder from its supply, each node at 1.98 V.
+  \draw (0,0) node[ground]{} to[V,l=VDD 1.98 V] (0,2.5)
+    to[R,l=met1] (3,2.5) to[R,l=cont] (6,2.5) to[R,l=sd] (9,2.5);
+  \foreach \x in {3,6,9} {
+    \draw (\x,2.5) node[circ]{};
+    \draw[violation] (\x,2.5) circle (0.3);
+  }
+  \draw (9,2.5) -- (9,1.5) node[below,caption]{pfet source};
+  \node[violation label,anchor=north,align=center] at (5.2,1.7) {each node: 2209 h $<$ 87600 h};
+  \node[caption,anchor=north,align=center] at (5.2,0.8)
+    {$100000\,\mathrm{h} \times (1.8\,\mathrm{V} / 1.98\,\mathrm{V})^{40} = 2209\,\mathrm{h}$ at 125 \textdegree C};
+\end{circuitikz}
+\end{document}

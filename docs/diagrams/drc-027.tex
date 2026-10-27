@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met2 (0,0)-(300,2000) and (520,0)-(820,2000) nm; x: 1 unit = 100 nm, y shortened
+  \draw[layer a] (0,0) rectangle (3,5);
+  \draw[layer a] (5.2,0) rectangle (8.2,5);
+  \node[caption,anchor=south] at (4.1,5.05) {met2};
+  \draw[dim] (0,0.6) -- (3,0.6);
+  \node[dim label] at (1.5,0.6) {\SI{0.30}{\micro\metre}};
+  \draw[dim] (5.2,0.6) -- (8.2,0.6);
+  \node[dim label] at (6.7,0.6) {\SI{0.30}{\micro\metre}};
+  \draw[violation] (3,0) rectangle (5.2,5);
+  \draw[dim] (3,2.5) -- (5.2,2.5);
+  \node[dim label,anchor=south] at (4.1,2.6) {\SI{0.22}{\micro\metre}};
+  \node[violation label,anchor=west] at (8.5,3) {space $<$ \SI{0.25}{\micro\metre}};
+  \node[caption,anchor=west,align=left] at (8.5,1.9) {cell: both widths\\over \SI{250}{\nano\metre}};
+\end{circuitikz}
+\end{document}

@@ -350,10 +350,11 @@ fn attach(gpa: Allocator, design: Design, layer: LayerId, stack: Stack, conducto
 }
 
 test "a stage holds the conductors up to its etch and the vias between them" {
-    // Oracle: the etch-step model docs/deck.md states for `antenna` (each
-    // term counts what is connected when that layer is etched), by hand: at
-    // met1 the conductors through met1 and the licon and mcon rows exist,
-    // via1 does not, and a cut stands on its lower conductor.
+    // Oracle: the etch-step model docs/src/reference/erc/antenna.md (ERC-A1)
+    // states for `antenna` (each term counts what is connected when that layer
+    // is etched), by hand: at met1 the conductors through met1 and the licon
+    // and mcon rows exist, via1 does not, and a cut stands on its lower
+    // conductor.
     const gpa = std.testing.allocator;
     const l = struct {
         fn id(i: u16) LayerId {

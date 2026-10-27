@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % from above, µm: IO cathode ndiff (-4..-2, 13..17), VSS tap ndiff (-4..-2, 10..12)
+  \begin{scope}[x=0.8cm,y=0.8cm]
+    \draw[layer c] (-4,13) rectangle (-2,17);
+    \node[fill=white,inner sep=1pt,align=center] at (-3,15) {ndiff\\on IO};
+    \draw[layer c] (-4,10) rectangle (-2,12);
+    \node[fill=white,inner sep=1pt,align=center] at (-3,11) {ndiff\\on VSS};
+    \draw[dim] (-1.5,12) -- (-1.5,13);
+    \node[dim label,anchor=west] at (-1.4,12.5) {\SI{1}{\micro\metre}};
+    \draw[violation] (-4.2,11.9) rectangle (-1.8,13.1);
+    \node[violation label,anchor=west,align=left] at (-0.2,12.5) {\SI{1}{\micro\metre} $<$ \SI{2}{\micro\metre}\\parasitic NPN};
+  \end{scope}
+\end{circuitikz}
+\end{document}

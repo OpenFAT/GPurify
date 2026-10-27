@@ -113,9 +113,9 @@ test "two shapes of one merged figure have no gap to violate" {
 
 test "spacing exempts the intra figure gap that notch now reports" {
     // Oracle: construct-from-answer. Three rectangles of a fractured U merge
-    // into one figure, and `docs/deck.md` makes a gap between two parts of
-    // one shape a notch that `space` never measures: clean under 81.
-    // (Ported from width_rules.rs.)
+    // into one figure, and docs/src/reference/drc/spacing.md (DRC-023) makes a
+    // gap between two parts of one shape a notch that `space` never measures:
+    // clean under 81. (Ported from width_rules.rs.)
     var lb = LayoutBuilder.init(1);
     _ = try lb.rect(gpa, 0, 0, 0, 300, 100);
     _ = try lb.rect(gpa, 0, 0, 100, 110, 500);

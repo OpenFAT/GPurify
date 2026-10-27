@@ -184,9 +184,9 @@ test "licon 16 counts only licons entirely on the tap" {
 test "contains counts touching inner shapes as one" {
     // Two licons that touch are one shape, so a tap holding only that pair
     // holds one, short of two.
-    // Oracle: `docs/deck.md`'s `contains` ("touching inner shapes count as
-    // one"): the first tap holds two apart, the second one touching pair, 1
-    // of 2.
+    // Oracle: docs/src/reference/drc/device.md (DRC-090): `contains` counts
+    // "touching inner shapes as one": the first tap holds two apart, the second
+    // one touching pair, 1 of 2.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     var r = try runRects(try withSky130(arena.allocator(), "rule two contains(tap, licon) >= 2"), &.{
@@ -238,8 +238,9 @@ test "nwell spacing follows the extracted net not the drawing" {
 
 test "net spacing on a layer that is not a conductor is refused at load" {
     // A layer that carries no net cannot be asked which net it is on.
-    // Oracle: `docs/deck.md`'s `space(L; nets: ...)`: "`L` must be a
-    // conductor", and this deck connects nothing.
+    // Oracle: docs/src/reference/drc/net.md (DRC-080, Status and limits): a
+    // shape over no net refuses `space(L; nets: ...)`, and this deck connects
+    // nothing.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     var strings: geom.StrTable = .empty;

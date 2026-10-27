@@ -155,10 +155,11 @@ test "every kind the list names is a kind fromDeck recognises" {
 }
 
 test "a voltage table lowers by step and an unordered one is refused" {
-    // Oracle: construct-from-answer, on the deck grammar (docs/deck.md,
-    // `voltage_space`): a table lowers to its steps in mV and grid units, on
-    // one layer or two; voltages that fall, repeat or go negative, spaces
-    // that fall, or lists of two lengths are refused by name.
+    // Oracle: construct-from-answer, on the deck grammar
+    // (docs/src/reference/erc/voltage.md, ERC-F11, `voltage_space`): a table
+    // lowers to its steps in mV and grid units, on one layer or two; voltages
+    // that fall, repeat or go negative, spaces that fall, or lists of two
+    // lengths are refused by name.
     const ok = voltage_head ++
         \\rule vs voltage_space(met1; voltage: [0V, 3.3V], space: [200nm, 450nm])
         \\rule vs2 voltage_space(met1, met2; voltage: [1.5V], space: [1um])
@@ -216,11 +217,11 @@ test "a multi-layer electromigration row gives every layer its blech limit" {
 }
 
 test "an em_thermal row reads into its columns" {
-    // Oracle: construct-from-answer, against docs/deck.md's `em_thermal`:
-    // every value lands in its column in the engine's unit (A/m, µA, K,
-    // W/(m·K), fractions), the rule set carries the deck's `pex` heights,
-    // and a characterisation at 100 % failed or a negative spreading is
-    // refused.
+    // Oracle: construct-from-answer, against `em_thermal` in
+    // docs/src/reference/erc/electromigration.md (ERC-E13): every value lands
+    // in its column in the engine's unit (A/m, µA, K, W/(m·K), fractions), the
+    // rule set carries the deck's `pex` heights, and a characterisation at
+    // 100 % failed or a negative spreading is refused.
     const Case = struct {
         fn text(limit: []const u8, spreading: []const u8) ![]u8 {
             const a = try std.mem.replaceOwned(u8, gpa, thermal_deck, "{limit}", limit);

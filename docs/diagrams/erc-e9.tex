@@ -1,0 +1,24 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.25cm, y=0.25cm]
+  % from above: met2 pad + one via1 cut on a met1 rail (the fed piece),
+  % a second VDD rail never joined, and an unlabelled met1 stub
+  \draw[layer a] (0,0) rectangle (40,1.2);
+  \draw[layer b] (0,0) rectangle (2.4,2.4);
+  \draw[layer d] (0.9,0.4) rectangle (1.5,1.0);
+  \draw[marker] (29.6,-0.4) rectangle (30.4,0.4);
+  \node[caption, anchor=west] at (41,0.6) {met1 \texttt{VDD}, fed: met2 pad and via1};
+  \draw[layer a] (0,10) rectangle (40,11.2);
+  \draw[marker] (29.6,9.6) rectangle (30.4,10.4);
+  \node[caption, anchor=west] at (41,10.6) {met1 \texttt{VDD}, not joined};
+  \draw[layer a] (0,20) rectangle (10,21.2);
+  \node[caption, anchor=west] at (11,20.6) {met1, no label};
+  \node[caption, anchor=south] at (30,1.6) {load};
+  \node[caption, anchor=south] at (30,11.6) {load};
+  \draw[violation] (-0.6,9.4) rectangle (40.6,11.8);
+  \node[violation label, anchor=north west] at (0,9.2) {\texttt{floating\_supply}: a \texttt{VDD} piece the feed does not reach};
+  \draw[violation] (-0.6,19.4) rectangle (10.6,21.8);
+  \node[violation label, anchor=south west] at (0,22.2) {\texttt{unconnected\_pin}: reaches no device};
+\end{circuitikz}
+\end{document}

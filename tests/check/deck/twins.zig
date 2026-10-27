@@ -36,9 +36,10 @@ fn buildTwin(c: *common.Compiled, parts: anytype) !check.deck.CompiledDeck {
 
 test "every shipped deck equals its twin" {
     // Oracle: differential against the parser, of a twin translated from the
-    // deck text by a reader of docs/deck.md independent of the parser (the
-    // Rust twin, translated mechanically here). Both compile into one string
-    // table, so their ids compare.
+    // deck text by a reader of the deck language
+    // (docs/src/reference/deck/README.md) independent of the parser (the Rust
+    // twin, translated mechanically here). Both compile into one string table,
+    // so their ids compare.
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     inline for (twins) |twin| {

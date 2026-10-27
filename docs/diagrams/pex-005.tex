@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Cross-section: met1 wires a and b, 0.14 um wide and 0.14 um apart, over the substrate.
+  \fill[layer a] (0,1.6) rectangle (1,2.8);
+  \fill[layer a] (2,1.6) rectangle (3,2.8);
+  \node[caption] at (0.5,2.2) {a};
+  \node[caption] at (2.5,2.2) {b};
+  \node[caption,anchor=south] at (1.5,2.9) {met1, $\varepsilon_r = 4.5$};
+  \draw[dim] (1,1.35) -- (2,1.35) node[dim label,midway,below=2pt] {\SI{0.14}{\micro\metre}};
+  \draw[line width=0.8pt] (-0.3,0) -- (3.3,0);
+  \node[caption,anchor=north] at (1.5,-0.05) {substrate (ground)};
+  \draw[dim] (3.25,0) -- (3.25,1.6) node[dim label,midway,right=2pt] {\SI{1.376}{\micro\metre}};
+  % The network: closed form above each value, field solve below.
+  \draw (7.8,2.2) node[circ,label=above:{a}]{}
+    to[C, l=closed \SI{1.025}{\femto\farad}, a=field \SI{1.543}{\femto\farad}] (11.8,2.2) node[circ,label=above:{b}]{};
+  \draw (7.8,2.2) to[C, l_={\begin{tabular}{r}closed \SI{0.859}{\femto\farad}\\ field \SI{0.542}{\femto\farad}\end{tabular}}] (7.8,0) node[ground]{};
+  \draw (11.8,2.2) to[C, l={\begin{tabular}{l}closed \SI{0.859}{\femto\farad}\\ field \SI{0.542}{\femto\farad}\end{tabular}}] (11.8,0) node[ground]{};
+\end{circuitikz}
+\end{document}

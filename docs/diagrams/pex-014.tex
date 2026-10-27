@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % A DEF ROUTED segment drawn as a met1 wire: the centre line, extended by half the width.
+  \fill[layer a] (-0.2,-0.2) rectangle (6.2,0.2);
+  \draw[marker] (0,0) -- (6,0);
+  \node[circ] at (0,0) {}; \node[circ] at (6,0) {};
+  \node[caption,anchor=south] at (0,0.25) {( 0 0 )};
+  \node[caption,anchor=south] at (6,0.25) {( 100000 0 )};
+  \node[caption,anchor=east] at (-0.3,0) {met1 a};
+  \draw[dim] (-0.2,-0.5) -- (6.2,-0.5) node[dim label,midway] {\SI{100.2}{\micro\metre}};
+  \draw (6.5,-0.2) -- (6.7,-0.2); \draw (6.5,0.2) -- (6.7,0.2); \draw (6.6,-0.2) -- (6.6,0.2);
+  \node[caption,anchor=west] at (6.75,0) {\SI{0.2}{\micro\metre}};
+  \fill[layer a] (-0.2,1.0) rectangle (6.2,1.4);
+  \node[caption,anchor=east] at (-0.3,1.2) {met1 b};
+  % The network GPurify extracts for a.
+  \draw (0,-1.8) node[circ,label=above:{a}]{} to[R, l=\SI{50.1}{\ohm}] (3,-1.8) node[circ,label=above:{a:1}]{};
+  \draw (0,-1.8) to[C, l=\SI{8.633}{\femto\farad}] (0,-3.4) node[ground]{};
+  \draw (0,-1.8) -- (-1.8,-1.8) to[C, l_=\SI{0.433}{\femto\farad}] (-1.8,-3.4) node[circ,label=below:{b}]{};
+\end{circuitikz}
+\end{document}

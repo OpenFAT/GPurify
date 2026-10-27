@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Cross-section: two taps on a two-layer silicon profile.
+  \fill[layer a] (0,0) rectangle (8,-0.9);
+  \fill[layer b] (0,-0.9) rectangle (8,-2.6);
+  \draw[line width=1.2pt] (0,-2.6) -- (8,-2.6);
+  \node[caption,anchor=west] at (8.1,-0.45) {\SI{3}{\micro\metre}, \SI{10}{\ohm.cm}};
+  \node[caption,anchor=west] at (8.1,-1.75) {\SI{300}{\micro\metre}, \SI{0.01}{\ohm.cm}};
+  \node[caption,anchor=west] at (8.1,-2.6) {backside (ground)};
+  \fill[layer c] (1.5,0) rectangle (2.5,0.3);
+  \fill[layer c] (5.5,0) rectangle (6.5,0.3);
+  \node[caption,above] at (2,0.3) {t1 (tap)};
+  \node[caption,above] at (6,0.3) {t2 (tap)};
+  \draw[dim] (2.5,0.15) -- (5.5,0.15) node[dim label,midway] {\SI{10}{\micro\metre}};
+  % The port network GPurify extracts.
+  \draw (1,-4) node[circ,label=above:{t1}]{} to[R, l=\SI{1.78}{\mega\ohm}] (7,-4) node[circ,label=above:{t2}]{};
+  \draw (1,-4) to[R, l_=\SI{47.3}{\kilo\ohm}] (1,-5.8) node[ground]{};
+  \draw (7,-4) to[R, l=\SI{47.3}{\kilo\ohm}] (7,-5.8) node[ground]{};
+\end{circuitikz}
+\end{document}

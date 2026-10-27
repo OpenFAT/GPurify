@@ -1,0 +1,39 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small,
+    dev/.style={draw,rectangle,minimum width=1.2cm,minimum height=0.7cm,fill=gray!20},
+    net/.style={draw,circle,minimum size=0.95cm,inner sep=1pt},
+    shared/.style={net,fill=gray!45},
+    role/.style={font=\footnotesize,fill=white,inner sep=1pt}]
+  % Each side as a graph: two transistors whose channels share one net.
+  \node[font=\bfseries] at (2.6,3.2) {Reference netlist};
+  \node[net] (r1) at (0,1.2) {tail};
+  \node[dev] (rm1) at (1.3,1.2) {M1};
+  \node[shared] (r2) at (2.6,1.2) {outp};
+  \node[dev] (rm2) at (3.9,1.2) {M2};
+  \node[net] (r3) at (5.2,1.2) {outn};
+  \node[net] (rg1) at (1.3,2.4) {inp};
+  \node[net] (rg2) at (3.9,2.4) {inn};
+  \draw (r1) -- (rm1) -- (r2) -- (rm2) -- (r3);
+  \draw (rm1) -- (rg1);
+  \draw (rm2) -- (rg2);
+
+  \node[font=\bfseries] at (9.6,3.2) {Layout, extracted};
+  \node[net] (l1) at (7,1.2) {outp};
+  \node[dev] (lm1) at (8.3,1.2) {M1};
+  \node[shared] (l2) at (9.6,1.2) {tail};
+  \node[dev] (lm2) at (10.9,1.2) {M2};
+  \node[net] (l3) at (12.2,1.2) {outn};
+  \node[net] (lg1) at (8.3,2.4) {inp};
+  \node[net] (lg2) at (10.9,2.4) {inn};
+  \draw (l1) -- (lm1) -- (l2) -- (lm2) -- (l3);
+  \draw (lm1) -- (lg1);
+  \draw (lm2) -- (lg2);
+
+  % The pairing refinement finds: same shape, two nets renamed.
+  \draw[<->,dashed] (r2.south) to[bend right=12] node[caption,below] {paired} (l2.south);
+  \draw[<->,dashed] (r1.south) to[bend right=14] (l1.south);
+  \node[caption,align=center] at (6.1,-1.0) {the same graph once \texttt{outp} and \texttt{tail} trade names: \texttt{Match}};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % diff (0,0)-(1000,200), tap (1000,0)-(1300,600); 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (10,2);
+  \node[caption] at (5,1) {diff};
+  \draw[layer c] (10,0) rectangle (13,6);
+  \node[caption,fill=white,inner sep=1pt] at (11.5,5) {tap};
+  \draw[violation] (10,0) -- (10,2);
+  \draw[dim] (10.6,0) -- (10.6,2);
+  \node[dim label,anchor=west] at (10.7,1) {\SI{200}{\nano\metre}};
+  \node[violation label,anchor=north] at (10,-0.2) {butt: \SI{200}{\nano\metre} < \SI{290}{\nano\metre}};
+\end{circuitikz}
+\end{document}

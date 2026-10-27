@@ -1,0 +1,41 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% One netlist line: node name #1 at height #2, text #3.
+\newcommand{\nl}[3]{\node[anchor=west,font=\ttfamily\footnotesize,inner sep=1pt] (#1) at (0,#2) {#3};}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries,anchor=west] at (0,5.0) {Reference netlist, hierarchical};
+  \nl{c0}{4.4}{.subckt pd D G S}
+  \nl{c1}{3.95}{M1 D G S S nfet W=1u L=0.15u}
+  \nl{c2}{3.5}{.ends}
+  \nl{c3}{3.05}{.subckt pu D G S}
+  \nl{c4}{2.6}{M1 D G S S pfet W=3u L=0.15u}
+  \nl{c5}{2.15}{.ends}
+  \nl{c6}{1.7}{.subckt inv A Y VDD VSS}
+  \nl{c7}{1.25}{X1 Y A VSS pd}
+  \nl{c8}{0.8}{X2 Y A VDD pu}
+  \nl{c9}{0.35}{.ends}
+  \node[caption,anchor=west] at (2.9,1.25) {top: nothing places inv};
+
+  \node[font=\bfseries] at (10.4,5.6) {Flattened below the top};
+  \node[pmos] (p) at (10.4,3.2) {};
+  \node[right=2pt,align=left] at (p.east) {X2.M1 pfet\\ w \SI{3}{\micro\metre}};
+  \draw (p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (n) at (10.4,1.0) {};
+  \node[right=2pt,align=left] at (n.east) {X1.M1 nfet\\ w \SI{1}{\micro\metre}};
+  \draw (p.D) -- (n.D);
+  \draw (p.D) ++(0,-0.35) -- ++(1.6,0) node[right] {Y};
+  \draw (n.S) node[ground] {} node[right=6pt,yshift=-4pt] {VSS};
+  \draw (p.G) -- ++(-0.6,0) coordinate (a) -- (a |- n.G) -- (n.G);
+  \draw (a |- p.G) node[left] {A};
+  \draw[marker] (9.0,-0.55) rectangle (12.4,1.85);
+  \node[caption,anchor=south east] at (12.4,-0.55) {X1 (pd)};
+  \draw[violation] (9.0,2.3) rectangle (12.4,4.1);
+  \node[caption,anchor=north east] at (12.4,4.1) {X2 (pu)};
+  \node[violation label,anchor=west,align=left] at (12.6,3.2) {w \SI{3}{\micro\metre}\\ against the drawn\\ \SI{2}{\micro\metre} pfet};
+
+  \nl{r0}{-1.0}{X9 D G S pd2 \textrm{in pd, and} X8 D G S pd \textrm{in pd2}}
+  \draw[violation] (-0.15,-1.35) rectangle (7.9,-0.65);
+  \node[violation label,anchor=north west] at (-0.15,-1.5) {refused: subcircuit pd places itself through its instances};
+\end{circuitikz}
+\end{document}

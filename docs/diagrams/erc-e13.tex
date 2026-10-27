@@ -1,0 +1,24 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=1.4cm, y=1.4cm]
+  % cross-section: a 1 um met1 wire 1.376 um above the substrate; its heat
+  % spreads down through the dielectric over W + phi t
+  \draw[layer b] (-3,-0.5) rectangle (4,0);
+  \node[caption] at (3.3,-0.25) {substrate};
+  \draw[layer a] (0,1.376) rectangle (1,1.736);
+  \node[caption, anchor=west] at (1.1,1.556) {met1, $W = \SI{1}{\micro\metre}$, carrying \SI{10}{\milli\ampere}};
+  \draw[dashed] (0,1.376) -- (-0.605,0);
+  \draw[dashed] (1,1.376) -- (1.605,0);
+  \draw[dim] (-0.4,0) -- (-0.4,1.376);
+  \node[dim label, anchor=east] at (-0.5,0.69) {$t = \SI{1.376}{\micro\metre}$};
+  \draw[dim] (-0.605,-0.75) -- (1.605,-0.75);
+  \node[dim label, below] at (0.5,-0.8) {$W + \varphi t = \SI{2.21}{\micro\metre}$};
+  \node[caption, align=left, anchor=north west] at (-3,-1.35) {%
+    $\Delta T = I^2 R_\mathrm{s}\, t / \bigl(K W (W + \varphi t)\bigr) = \SI{5.56}{\kelvin}$,
+    so the wire runs at \SI{110.6}{\celsius}, not \SI{105}{\celsius}};
+  \node[violation label, align=left, anchor=north west] at (-3,-1.85) {%
+    allowed at \SI{110.6}{\celsius}: \SI{9397}{\micro\ampere} $<$ \SI{10000}{\micro\ampere} carried
+    (\SI{10978}{\micro\ampere} at \SI{105}{\celsius} would pass)};
+\end{circuitikz}
+\end{document}

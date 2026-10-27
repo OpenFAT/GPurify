@@ -1,0 +1,28 @@
+% LVS-049 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.2,2.9) {Layout, drawn};
+  \node[font=\bfseries] at (7.199999999999999,2.9) {Layout, reduced};
+  \node[font=\bfseries] at (12.0,2.9) {Reference netlist};
+  \node[caption,anchor=west,font=\small\itshape] at (-0.8,2.2) {lvs topology relaxed};
+  \draw (0.0,1.4000000000000001) to[R, l={\SI{3}{\kilo\ohm}}] (0.0,-0.8);
+  \draw (2.2,1.4000000000000001) to[R, l={\SI{3}{\kilo\ohm}}] (2.2,-0.8);
+  \draw (0.0,1.4000000000000001) -- node[above] {A} (2.2,1.4000000000000001);
+  \draw (0.0,-0.8) -- node[below] {B} (2.2,-0.8);
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (3.6,0.3) -- node[above,caption,align=center] {parallel merge\\1/(1/r + 1/r)} (5.0,0.3);
+  \draw (6.6,1.4000000000000001) node[above] {A} to[R, l={r \SI{1.5}{\kilo\ohm}}] (6.6,-0.8) node[below] {B};
+  \draw (11.2,1.4000000000000001) node[above] {A} to[R] (11.2,-0.8) node[below] {B};
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (12.0,-1.4) {R1 A B rpoly r=1.5k};
+  \node[caption,anchor=west,font=\small\itshape] at (-0.8,-1.65) {lvs topology strict, the default};
+  \draw (0.0,-2.65) to[R, l={\SI{3}{\kilo\ohm}}] (0.0,-4.85);
+  \draw (2.2,-2.65) to[R, l={\SI{3}{\kilo\ohm}}] (2.2,-4.85);
+  \draw (0.0,-2.65) -- node[above] {A} (2.2,-2.65);
+  \draw (0.0,-4.85) -- node[below] {B} (2.2,-4.85);
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (3.6,-3.75) -- node[above,caption,align=center] {parallel merge\\(count)} (5.0,-3.75);
+  \draw (6.6,-2.65) node[above] {A} to[R, l={\shortstack[l]{r \SI{3}{\kilo\ohm}\\m 2}}] (6.6,-4.85) node[below] {B};
+  \draw[violation] (5.8999999999999995,-5.35) rectangle (8.5,-2.1);
+  \node[violation label,align=center,anchor=north] at (7.199999999999999,-5.45) {r and m differ from the card:\\\SI{3}{\kilo\ohm}, m 2 against \SI{1.5}{\kilo\ohm}, m 1};
+\end{circuitikz}
+\end{document}
