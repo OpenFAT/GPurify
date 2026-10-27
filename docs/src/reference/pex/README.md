@@ -19,8 +19,9 @@ gpurify pex <layout> --deck <deck> --format spef > layout.spef
   `coupling_halo`, in thicknesses of each layer. Every type but `r` needs the reach. Without it,
   GPurify refuses the run, because no reach suits every process. The shipped decks state
   `extraction rcc coupling_halo 10`.
-- **Text labels on the nets.** SPEF and DSPF name each net by its label. A net with no label has
-  no name to write, so GPurify refuses the file rather than invent one.
+- **Text labels on the nets.** SPEF names each net by its label. A net with no label has no name
+  to write, so GPurify refuses the SPEF file rather than invent one. DSPF and SPICE name such a net
+  `n<number>`.
 - **Optionally, a reference netlist.** With `--reference`, `pex` also runs LVS. The
   `--format spice` netlist then uses the reference's subcircuit name, pin order, net names and
   device names.
@@ -56,8 +57,8 @@ The same inputs always give a byte-identical file.
 | [Resistance extraction](resistance.md) | Wire resistance from sheet resistance and squares, and via resistance per cut |
 | [Capacitance extraction](capacitance.md) | Capacitance to the substrate, coupling between nets, and the substrate resistance network |
 | [Inductance extraction](inductance.md) | Self and mutual inductance of field-solved nets |
-| [Accuracy and field solving](accuracy.md) | The field solver, process corners, temperature, qualification against another extractor, device-region, fill and through-silicon via effects |
-| [PEX output formats](output.md) | Extraction types, SPEF and DSPF, routed DEF designs, point-to-point reports and the simulator-ready netlist |
+| [Accuracy and field solving](accuracy.md) | What is closed form and what is field-solved, the measured accuracy, process corners, temperature, device-region, fill and through-silicon via effects |
+| [PEX output formats](output.md) | Extraction types, comparing two extractions, SPEF and DSPF, routed DEF designs, point-to-point reports and the simulator-ready netlist |
 
 To understand how GPurify models a wire before reading the entries, see
 [How parasitics are modelled](../../explanation/parasitics.md).
