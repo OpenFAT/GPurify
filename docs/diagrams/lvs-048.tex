@@ -1,0 +1,52 @@
+% LVS-048 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.8,5.0) {Layout, drawn};
+  \node[font=\bfseries] at (8.6,5.0) {Layout, compared};
+  \node[font=\bfseries] at (13.2,5.0) {Reference netlist};
+
+  \node[pmos] (ap) at (0.4,2.8) {};
+  \node[right=2pt,font=\footnotesize] at (ap.east) {pfet};
+  \draw (ap.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (an) at (0.4,0.6) {};
+  \node[right=2pt,font=\footnotesize] at (an.east) {nfet};
+  \draw (ap.D) -- (an.D);
+  \draw (ap.D) ++(0,-0.35) -- ++(1.2,0) node[right] {Y};
+  \draw (an.S) -- ++(0,-0.25) node[below] {VSS};
+  \draw (ap.G) -- ++(-0.6,0) coordinate (aa) -- (aa |- an.G) -- (an.G);
+  \draw (aa |- ap.G) node[left] {A};
+
+  \node[nmos] (dum) at (3.4,0.6) {};
+  \draw (dum.G) -- ++(-0.3,0) node[left] {VSS};
+  \draw (dum.S) -- ++(0,-0.25) node[below] {VSS};
+  \draw (dum.D) to[short,-o] ++(0,0.35) node[above,font=\footnotesize] {floating};
+  \draw[marker] (2.2,-1.0) rectangle (4.2,2.45);
+  \node[caption,align=center,anchor=north] at (3.2,-1.1) {gate on supply VSS,\\drain floating: left out};
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (4.4,1.6) -- node[above,caption,align=center] {filter\_unused c} (6.6,1.6);
+
+  \node[pmos] (bp) at (8.2,2.8) {};
+  \node[right=2pt,font=\footnotesize] at (bp.east) {pfet};
+  \draw (bp.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (bn) at (8.2,0.6) {};
+  \node[right=2pt,font=\footnotesize] at (bn.east) {nfet};
+  \draw (bp.D) -- (bn.D);
+  \draw (bp.D) ++(0,-0.35) -- ++(1.2,0) node[right] {Y};
+  \draw (bn.S) -- ++(0,-0.25) node[below] {VSS};
+  \draw (bp.G) -- ++(-0.6,0) coordinate (ba) -- (ba |- bn.G) -- (bn.G);
+  \draw (ba |- bp.G) node[left] {A};
+
+  \node[pmos] (cp) at (12.799999999999999,2.8) {};
+  \node[right=2pt,font=\footnotesize] at (cp.east) {pfet};
+  \draw (cp.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (cn) at (12.799999999999999,0.6) {};
+  \node[right=2pt,font=\footnotesize] at (cn.east) {nfet};
+  \draw (cp.D) -- (cn.D);
+  \draw (cp.D) ++(0,-0.35) -- ++(1.2,0) node[right] {Y};
+  \draw (cn.S) -- ++(0,-0.25) node[below] {VSS};
+  \draw (cp.G) -- ++(-0.6,0) coordinate (ca) -- (ca |- cn.G) -- (cn.G);
+  \draw (ca |- cp.G) node[left] {A};
+  \node[violation label,align=center,anchor=north] at (8.799999999999999,-2.2) {with filter\_unused u instead: only the drain floats,\\the nfet stays and the layout has one device too many};
+\end{circuitikz}
+\end{document}

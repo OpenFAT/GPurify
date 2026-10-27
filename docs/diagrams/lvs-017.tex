@@ -1,0 +1,32 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2, pfet text #3, nfet text #4.
+\newcommand{\inv}[4]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {#3};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt] at (#2n.east) {#4};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2p.D) ++(0,-0.35) -- ++(1.6,0) node[right] {Y};
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+
+  \node[font=\bfseries] at (2.6,5.1) {Reference hierarchy};
+  \node[font=\bfseries] at (8.0,5.1) {Layout, extracted};
+  \node[draw,minimum width=1.4cm] (top) at (2.6,3.7) {top};
+  \node[draw] (x1) at (1.2,2.4) {X1 (inv)};
+  \node[draw] (x2) at (4.0,2.4) {X2 (bias)};
+  \node[draw] (xr) at (4.0,1.1) {XR (load)};
+  \node (r1) at (4.0,-0.1) {R1 rpoly};
+  \node (m12) at (1.2,1.1) {M1, M2};
+  \draw (top) -- (x1); \draw (top) -- (x2); \draw (x2) -- (xr); \draw (xr) -- (r1); \draw (x1) -- (m12);
+  \draw[violation] (2.9,-0.5) rectangle (5.1,2.85);
+  \node[violation label,align=center] at (4.0,-1.0) {named: X2 (bias),\\ the outermost unpaired};
+  \inv{7.4}{l}{pfet}{nfet}
+\end{circuitikz}
+\end{document}

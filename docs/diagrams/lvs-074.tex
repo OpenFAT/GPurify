@@ -1,0 +1,27 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference card with sa and sb. Right: the drawn transistor,
+  % sa and sb from the gate's two edges to the diffusion's (od) ends.
+  \node[font=\bfseries] at (1.2,3.6) {Reference netlist};
+  \node[nmos] (n) at (1.0,1.6) {};
+  \draw (n.G) -- ++(-0.3,0) node[left] {G};
+  \draw (n.D) -- ++(0,0.3) node[above] {D};
+  \draw (n.S) -- ++(0,-0.3) node[below] {S};
+  \node[right] at (1.5,2.1) {M1 nfet};
+  \node[right,violation] at (1.5,1.55) {sa \SI{0.5}{\micro\metre}};
+  \node[right] at (1.5,1.0) {sb \SI{0.7}{\micro\metre}};
+
+  \node[font=\bfseries] at (7.0,3.6) {Layout, extracted};
+  \draw[layer a] (5.1,0.6) rectangle (8.9,2.6);
+  \draw[layer c] (6.75,0.2) rectangle (7.25,3.0);
+  \draw[marker] (6.75,0.6) rectangle (7.25,2.6);
+  \node[font=\footnotesize,right] at (5.1,2.35) {od: diff};
+  \draw[dim] (5.1,0.0) -- node[dim label,below] {sa \SI{0.7}{\micro\metre}} (6.75,0.0);
+  \draw[dim] (7.25,0.0) -- node[dim label,below] {sb \SI{0.7}{\micro\metre}} (8.9,0.0);
+  \draw[violation] (4.95,-0.55) rectangle (6.9,0.25);
+  \node[violation label] at (7.0,-0.95) {sa \SI{0.7}{\micro\metre} against \SI{0.5}{\micro\metre}};
+  \node[caption] at (4.6,-1.6) {grey: diffusion; hatched: poly; dashed: the gate marker \texttt{ngate}};
+\end{circuitikz}
+\end{document}

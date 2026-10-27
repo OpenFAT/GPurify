@@ -1,0 +1,44 @@
+% LVS-040 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.2,2.6) {Layout, drawn};
+  \node[font=\bfseries] at (7.199999999999999,2.6) {Layout, reduced};
+  \node[font=\bfseries] at (12.0,2.6) {Reference netlist};
+  \node[nmos] (d1) at (0.0,0.6) {};
+  \draw (d1.G) -- ++(-0.3,0) node[left] {G};
+  \node[nmos] (d2) at (2.3,0.6) {};
+  \draw (d2.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d1.D) -- ++(0,0.25) coordinate (d1d) -- (d1d -| d2.D) -- (d2.D);
+  \draw (d1d) -- ++(1.15,0) node[above] {D};
+  \draw (d1.S) -- ++(0,-0.25) coordinate (d1s) -- (d1s -| d2.S) -- (d2.S);
+  \draw (d1s) -- ++(1.15,0) node[below] {S};
+  \node[below=12pt,font=\footnotesize,align=center] at (d1.S) {W \SI{1}{\micro\metre}\\L \SI{0.15}{\micro\metre}};
+  \node[below=12pt,font=\footnotesize,align=center] at (d2.S) {W \SI{1}{\micro\metre}\\L \SI{0.15}{\micro\metre}};
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (3.6,0.6) -- node[above,caption,align=center] {parallel\\merge} (5.0,0.6);
+  \node[nmos] (d3) at (6.6,0.6) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d3.east) {W \SI{2}{\micro\metre}\\L \SI{0.15}{\micro\metre}};
+  \draw (d3.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d3.D) -- ++(0,0.25) node[above] {D};
+  \draw (d3.S) -- ++(0,-0.25) node[below] {S};
+  \node[nmos] (d4) at (11.2,0.6) {};
+  \draw (d4.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d4.D) -- ++(0,0.25) node[above] {D};
+  \draw (d4.S) -- ++(0,-0.25) node[below] {S};
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (12.0,-0.9) {M1 D G S S nfet\\W=2u L=0.15u};
+  \node[caption,anchor=west,font=\small\itshape] at (-0.8,-2.0) {A second layout: the two lengths differ};
+  \node[nmos] (d5) at (0.0,-3.9) {};
+  \draw (d5.G) -- ++(-0.3,0) node[left] {G};
+  \node[nmos] (d6) at (2.3,-3.9) {};
+  \draw (d6.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d5.D) -- ++(0,0.25) coordinate (d5d) -- (d5d -| d6.D) -- (d6.D);
+  \draw (d5d) -- ++(1.15,0) node[above] {D};
+  \draw (d5.S) -- ++(0,-0.25) coordinate (d5s) -- (d5s -| d6.S) -- (d6.S);
+  \draw (d5s) -- ++(1.15,0) node[below] {S};
+  \node[below=12pt,font=\footnotesize,align=center] at (d5.S) {W \SI{1}{\micro\metre}\\L \SI{0.15}{\micro\metre}};
+  \node[below=12pt,font=\footnotesize,align=center] at (d6.S) {W \SI{1}{\micro\metre}\\L \SI{0.3}{\micro\metre}};
+  \draw[violation] (-1.25,-6.1) rectangle (3.6,-2.45);
+  \node[violation label,align=center,anchor=center] at (7.199999999999999,-3.9) {L differs: no merge,\\two devices against one};
+\end{circuitikz}
+\end{document}

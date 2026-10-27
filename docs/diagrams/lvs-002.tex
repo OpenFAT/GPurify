@@ -1,0 +1,25 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Two inverters whose VSS rails are separate met1 pieces, both labelled
+  % VSS; lvs connect_implicit "VSS" joins them for the comparison only.
+  \node[font=\bfseries] at (3.6,3.6) {Layout};
+  \draw[layer a] (0,1.2) rectangle (2.4,2.4);
+  \node at (1.2,1.8) {inverter 1};
+  \draw[layer a] (4.8,1.2) rectangle (7.2,2.4);
+  \node at (6.0,1.8) {inverter 2};
+  \draw[layer b] (0,0.2) rectangle (2.4,0.6);
+  \draw[layer b] (4.8,0.2) rectangle (7.2,0.6);
+  \node[font=\bfseries\footnotesize] at (1.2,0.4) {VSS};
+  \node[font=\bfseries\footnotesize] at (6.0,0.4) {VSS};
+  \draw (1.2,0.6) -- (1.2,1.2);
+  \draw (6.0,0.6) -- (6.0,1.2);
+  \draw (2.4,1.8) -- node[above,font=\footnotesize] {Y} (4.8,1.8);
+  \node[right,font=\footnotesize] at (7.2,0.4) {met1};
+  \draw[violation] (2.5,0.4) -- (4.7,0.4);
+  \node[violation label] at (3.6,0.05) {open};
+  \draw[<->,dashed] (1.2,0.15) to[bend right=25] node[caption,below] {joined by \texttt{lvs connect\_implicit "VSS"}: one net to compare} (6.0,0.15);
+  \node[caption,align=center] at (3.6,-1.65) {\texttt{lvs.label\_conflict} stays, as a warning};
+\end{circuitikz}
+\end{document}

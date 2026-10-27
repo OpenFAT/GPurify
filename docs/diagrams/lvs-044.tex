@@ -1,0 +1,25 @@
+% LVS-044 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.2,2.4) {Layout, drawn};
+  \node[font=\bfseries] at (7.199999999999999,2.4) {Layout, reduced};
+  \node[font=\bfseries] at (12.0,2.4) {Reference netlist};
+  \draw (0.0,1.7000000000000002) to[cC, l={\SI{50}{\femto\farad}}] (0.0,-0.5000000000000001);
+  \draw (2.2,1.7000000000000002) to[cC, l={\SI{50}{\femto\farad}}] (2.2,-0.5000000000000001);
+  \draw (0.0,1.7000000000000002) -- node[above] {T} (2.2,1.7000000000000002);
+  \draw (0.0,-0.5000000000000001) -- node[below] {B} (2.2,-0.5000000000000001);
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (3.6,0.6) -- node[above,caption,align=center] {parallel merge\\(relaxed)} (5.0,0.6);
+  \draw (6.6,1.7000000000000002) node[above] {T} to[cC, l={c \SI{100}{\femto\farad}}] (6.6,-0.5000000000000001) node[below] {B};
+  \draw (11.2,1.7000000000000002) node[above] {T} to[cC] (11.2,-0.5000000000000001) node[below] {B};
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (12.0,-1.1) {C1 T B cmim c=100f};
+  \node[caption,anchor=west,font=\small\itshape] at (-0.8,-1.75) {A second layout: the second capacitor's plates the other way};
+  \draw (0.0,-2.8) to[cC, l={\SI{50}{\femto\farad}}] (0.0,-5.0);
+  \draw (2.2,-5.0) to[cC, l_={\SI{50}{\femto\farad}}] (2.2,-2.8);
+  \draw (0.0,-2.8) -- node[above] {T} (2.2,-2.8);
+  \draw (0.0,-5.0) -- node[below] {B} (2.2,-5.0);
+  \draw[violation] (-0.7,-5.7) rectangle (3.75,-2.2);
+  \node[violation label,align=center,anchor=center] at (7.199999999999999,-3.9) {plates reversed: no merge,\\two devices against one};
+\end{circuitikz}
+\end{document}

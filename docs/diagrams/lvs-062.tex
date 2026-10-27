@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference card. Right: the MiM capacitor from above,
+  % 5 um x 5 um of capm, c = 2 fF/um2 x 25 um2 = 50 fF.
+  \node[font=\bfseries] at (1.0,4.0) {Reference netlist};
+  \draw (1.0,3.2) node[above] {T} to[C] (1.0,1.6) node[below] {B};
+  \node[right] at (0,0.8) {C1 cmim};
+  \node[right,violation] at (0,0.3) {c \SI{40}{\femto\farad}};
+
+  \node[font=\bfseries] at (6.0,4.0) {Layout, extracted};
+  \draw[layer a] (4.5,0.5) rectangle (7.8,3.0);
+  \draw[layer b] (4.5,0.5) rectangle (7.0,3.0);
+  \draw[marker] (4.5,0.5) rectangle (7.0,3.0);
+  \node[font=\footnotesize,align=center] at (5.75,1.75) {met2 over met1\\ \texttt{capm}};
+  \node[font=\footnotesize,right] at (7.0,2.7) {met1: B};
+  \node[font=\footnotesize,above] at (5.75,3.0) {met2: T};
+  \draw[dim] (4.5,0.15) -- node[dim label,below] {\SI{5}{\micro\metre}} (7.0,0.15);
+  \draw[dim] (4.15,0.5) -- node[dim label,left] {\SI{5}{\micro\metre}} (4.15,3.0);
+  \node[violation label,align=center] at (6.0,-0.95) {c = \SI[per-mode=symbol]{2}{\femto\farad\per\square\micro\metre} $\times$ \SI{25}{\square\micro\metre} = \SI{50}{\femto\farad}\\ against \SI{40}{\femto\farad}};
+\end{circuitikz}
+\end{document}

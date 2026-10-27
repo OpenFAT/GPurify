@@ -1,0 +1,38 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small,
+    dev/.style={draw,rectangle,minimum width=1.5cm,minimum height=0.7cm,fill=gray!20},
+    net/.style={draw,circle,minimum size=0.85cm,inner sep=1pt},
+    role/.style={font=\footnotesize,fill=white,inner sep=1pt}]
+  % Left: the inverter as drawn in a schematic.
+  \node[font=\bfseries] at (1.2,5.2) {Inverter};
+  \node[pmos] (p) at (1.2,3.0) {};
+  \node[right=2pt] at (p.east) {M2 pfet};
+  \draw (p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (n) at (1.2,0.9) {};
+  \node[right=2pt] at (n.east) {M1 nfet};
+  \draw (p.D) -- (n.D);
+  \draw (p.D) ++(0,-0.3) coordinate (y) -- ++(1.3,0) node[right] {Y};
+  \draw (n.S) node[ground] {};
+  \node[right] at ($(n.S)+(0.25,-0.3)$) {VSS};
+  \draw (p.G) -- ++(-0.5,0) coordinate (a) -- (a |- n.G) -- (n.G);
+  \draw (a |- p.G) node[left] {A};
+
+  % Right: the same circuit as GPurify's graph.
+  \node[font=\bfseries] at (7.6,5.2) {As a graph};
+  \node[net] (vdd) at (7.6,3.7) {VDD};
+  \node[dev] (m2) at (7.6,2.5) {M2 pfet};
+  \node[net] (a2) at (5.4,1.6) {A};
+  \node[net] (y2) at (9.8,1.6) {Y};
+  \node[dev] (m1) at (7.6,0.7) {M1 nfet};
+  \node[net] (vss) at (7.6,-0.5) {VSS};
+  \draw (m2) -- node[role] {channel} (vdd);
+  \draw (m2) -- node[role,pos=0.45] {gate} (a2);
+  \draw (m2) -- node[role,pos=0.45] {channel} (y2);
+  \draw (m1) -- node[role,pos=0.45] {gate} (a2);
+  \draw (m1) -- node[role,pos=0.45] {channel} (y2);
+  \draw (m1) -- node[role] {channel} (vss);
+  \node[caption,align=left] at (7.6,-1.4) {devices are boxes, nets are circles,\\ each edge a terminal with its role};
+\end{circuitikz}
+\end{document}

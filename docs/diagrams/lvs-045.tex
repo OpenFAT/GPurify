@@ -1,0 +1,54 @@
+% LVS-045 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.2,2.6) {Layout, drawn};
+  \node[font=\bfseries] at (7.199999999999999,2.6) {Layout, reduced};
+  \node[font=\bfseries] at (12.0,2.6) {Reference netlist};
+  \node[pmos, bulk] (pa0) at (0.0,0.6) {};
+  \draw (pa0.G) -- ++(-0.3,0) node[left] {G};
+  \draw (pa0.bulk) -- ++(0.3,0) node[right] {VB};
+  \draw (pa0.S) -- ++(0,0.25) coordinate (pa0s);
+  \draw (pa0.D) -- ++(0,-0.25) coordinate (pa0d);
+  \node[font=\footnotesize,below=14pt] at (pa0.D) {W \SI{1}{\micro\metre}};
+  \node[pmos, bulk] (pa1) at (3.0,0.6) {};
+  \draw (pa1.G) -- ++(-0.3,0) node[left] {G};
+  \draw (pa1.bulk) -- ++(0.3,0) node[right] {VB};
+  \draw (pa1.S) -- ++(0,0.25) coordinate (pa1s);
+  \draw (pa1.D) -- ++(0,-0.25) coordinate (pa1d);
+  \node[font=\footnotesize,below=14pt] at (pa1.D) {W \SI{1}{\micro\metre}};
+  \draw (pa0s) -- node[above] {S} (pa1s);
+  \draw (pa0d) -- node[below] {D} (pa1d);
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (4.1,0.6) -- node[above,caption,align=center] {parallel\\merge} (5.0,0.6);
+  \node[pmos, bulk] (pr) at (6.6,0.6) {};
+  \draw (pr.G) -- ++(-0.3,0) node[left] {G};
+  \draw (pr.bulk) -- ++(0.3,0) node[right] {VB};
+  \draw (pr.S) -- ++(0,0.25) node[above] {S};
+  \draw (pr.D) -- ++(0,-0.25) node[below] {D};
+  \node[font=\footnotesize,below=20pt] at (pr.D) {W \SI{2}{\micro\metre}};
+  \node[pmos, bulk] (pf) at (11.2,0.6) {};
+  \draw (pf.G) -- ++(-0.3,0) node[left] {G};
+  \draw (pf.bulk) -- ++(0.3,0) node[right] {VB};
+  \draw (pf.S) -- ++(0,0.25) node[above] {S};
+  \draw (pf.D) -- ++(0,-0.25) node[below] {D};
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (11.6,-1.0) {M1 D G S VB pfet\\W=2u L=0.15u};
+  \node[caption,anchor=west,font=\small\itshape] at (-0.8,-2.2) {A second layout: the second well tied to VB2};
+  \node[pmos, bulk] (pb0) at (0.0,-4.1) {};
+  \draw (pb0.G) -- ++(-0.3,0) node[left] {G};
+  \draw (pb0.bulk) -- ++(0.3,0) node[right] {VB};
+  \draw (pb0.S) -- ++(0,0.25) coordinate (pb0s);
+  \draw (pb0.D) -- ++(0,-0.25) coordinate (pb0d);
+  \node[font=\footnotesize,below=14pt] at (pb0.D) {W \SI{1}{\micro\metre}};
+  \node[pmos, bulk] (pb1) at (3.0,-4.1) {};
+  \draw (pb1.G) -- ++(-0.3,0) node[left] {G};
+  \draw (pb1.bulk) -- ++(0.3,0) node[right] {VB2};
+  \draw (pb1.S) -- ++(0,0.25) coordinate (pb1s);
+  \draw (pb1.D) -- ++(0,-0.25) coordinate (pb1d);
+  \node[font=\footnotesize,below=14pt] at (pb1.D) {W \SI{1}{\micro\metre}};
+  \draw (pb0s) -- node[above] {S} (pb1s);
+  \draw (pb0d) -- node[below] {D} (pb1d);
+  \draw[violation] (-1.45,-6.0) rectangle (4.1,-2.55);
+  \node[violation label,align=center,anchor=center] at (7.199999999999999,-4.1) {bulks differ: no merge,\\two devices against one};
+\end{circuitikz}
+\end{document}

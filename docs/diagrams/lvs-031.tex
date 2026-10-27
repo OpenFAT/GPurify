@@ -1,0 +1,29 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2, nfet text #3, the nfet's upper
+% channel end (on Y) marked #4 and its lower end (on VSS) #5.
+\newcommand{\inv}[5]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {pfet};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt] at (#2n.east) {#3};
+  \node[left=1pt,font=\footnotesize\bfseries] at ($(#2n.D)+(0,-0.12)$) {#4};
+  \node[left=1pt,font=\footnotesize\bfseries] at ($(#2n.S)+(0,0.12)$) {#5};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2p.D) ++(0,-0.35) -- ++(1.6,0) node[right] {Y};
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.8,5.1) {Reference netlist};
+  \node[font=\bfseries] at (8.8,5.1) {Layout, extracted};
+  \inv{1.2}{r}{M1 nfet}{S}{D}
+  \inv{8.2}{l}{nfet}{D}{S}
+  \draw[violation] (0.1,-0.45) rectangle (2.7,1.45);
+  \draw[violation] (7.1,-0.45) rectangle (9.3,1.45);
+  \node[violation label,align=center] at (5.3,-1.2) {lvs asymmetric "nfet": source on Y against source on VSS};
+\end{circuitikz}
+\end{document}

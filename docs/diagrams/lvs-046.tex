@@ -1,0 +1,45 @@
+% LVS-046 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.2,2.6) {Layout, drawn};
+  \node[font=\bfseries] at (7.199999999999999,2.6) {Layout, reduced};
+  \node[font=\bfseries] at (12.0,2.6) {Reference netlist};
+  \node[nmos] (d13) at (0.0,0.6) {};
+  \draw (d13.G) -- ++(-0.3,0) node[left] {G};
+  \node[nmos] (d14) at (2.3,0.6) {};
+  \draw (d14.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d13.D) -- ++(0,0.25) coordinate (d13d) -- (d13d -| d14.D) -- (d14.D);
+  \draw (d13d) -- ++(1.15,0) node[above] {D};
+  \draw (d13.S) -- ++(0,-0.25) coordinate (d13s) -- (d13s -| d14.S) -- (d14.S);
+  \draw (d13s) -- ++(1.15,0) node[below] {S};
+  \node[below=12pt,font=\footnotesize,align=center] at (d13.S) {finger 1\\W \SI{1}{\micro\metre}, nf 1};
+  \node[below=12pt,font=\footnotesize,align=center] at (d14.S) {finger 2\\W \SI{1}{\micro\metre}, nf 1};
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (3.6,0.6) -- node[above,caption,align=center] {parallel\\merge} (5.0,0.6);
+  \node[nmos] (d15) at (6.6,0.6) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d15.east) {W \SI{2}{\micro\metre}\\nf 2};
+  \draw (d15.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d15.D) -- ++(0,0.25) node[above] {D};
+  \draw (d15.S) -- ++(0,-0.25) node[below] {S};
+  \node[nmos] (d16) at (11.2,0.6) {};
+  \draw (d16.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d16.D) -- ++(0,0.25) node[above] {D};
+  \draw (d16.S) -- ++(0,-0.25) node[below] {S};
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (12.0,-0.8) {M1 D G S S nfet\\W=0.5u L=0.15u m=4};
+  \node[caption,align=left,anchor=north] at (12.0,-1.65) {m folds in: W \SI{2}{\micro\metre}};
+  \node[caption,anchor=west,font=\small\itshape] at (-0.8,-2.4) {The same layout against a reference stating nf=3};
+  \node[nmos] (d17) at (6.6,-4.2) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d17.east) {W \SI{2}{\micro\metre}\\nf 2};
+  \draw (d17.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d17.D) -- ++(0,0.25) node[above] {D};
+  \draw (d17.S) -- ++(0,-0.25) node[below] {S};
+  \node[nmos] (d18) at (11.2,-4.2) {};
+  \draw (d18.G) -- ++(-0.3,0) node[left] {G};
+  \draw (d18.D) -- ++(0,0.25) node[above] {D};
+  \draw (d18.S) -- ++(0,-0.25) node[below] {S};
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (12.0,-5.7) {M1 D G S S nfet\\W=2u L=0.15u nf=3};
+  \draw[violation] (5.1,-6.55) rectangle (14.6,-2.75);
+  \node[violation label,align=center,anchor=north] at (9.6,-6.65) {nf 2 against 3, compared exactly};
+\end{circuitikz}
+\end{document}

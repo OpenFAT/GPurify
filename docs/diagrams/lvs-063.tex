@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference card. Right: the n diode from above,
+  % 2 um x 2 um of nsd under dmark: area 4 um2, perim 8 um.
+  \node[font=\bfseries] at (1.0,4.0) {Reference netlist};
+  \draw (1.0,1.6) node[below] {VSS} to[D] (1.0,3.2) node[above] {K};
+  \node[right] at (0,0.8) {D1 dn};
+  \node[right,violation] at (0,0.3) {area \SI{3}{\square\micro\metre}};
+  \node[right] at (1.9,0.3) {perim \SI{8}{\micro\metre}};
+
+  \node[font=\bfseries] at (6.2,4.0) {Layout, extracted};
+  \draw[layer a] (4.5,0.8) rectangle (6.7,3.0);
+  \draw[marker] (4.5,0.8) rectangle (6.7,3.0);
+  \node[font=\footnotesize,align=center] at (5.6,1.9) {nsd: K\\ \texttt{dmark}};
+  \draw[layer b] (7.4,0.8) rectangle (8.0,3.0);
+  \node[font=\footnotesize,right] at (8.0,1.9) {tap: VSS};
+  \draw[dim] (4.5,0.45) -- node[dim label,below] {\SI{2}{\micro\metre}} (6.7,0.45);
+  \draw[dim] (4.15,0.8) -- node[dim label,left] {\SI{2}{\micro\metre}} (4.15,3.0);
+  \node[violation label] at (6.2,-0.55) {area \SI{4}{\square\micro\metre} against \SI{3}{\square\micro\metre}};
+\end{circuitikz}
+\end{document}

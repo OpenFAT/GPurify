@@ -1,0 +1,45 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% A bump, 0.6 um square at 2 cm per um, centred at (#2,#3), style #1.
+\newcommand{\bump}[3]{\draw[#1] (#2-0.6,#3-0.6) rectangle (#2+0.6,#3+0.6);}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the system netlist, two inverter dies joined by bumps.
+  \node[font=\bfseries] at (3.2,4.4) {System netlist};
+  \node[not port] (xa) at (1.4,2.4) {};
+  \node[not port] (xb) at (5.1,2.4) {};
+  \draw (xa.in) -- ++(-0.5,0) node[left] {IN};
+  \draw (xa.out) -- node[above] {mid} (xb.in);
+  \draw (xb.out) -- ++(0.5,0) node[right] {OUT};
+  \draw[marker] (0.2,0.6) rectangle (2.7,3.4);
+  \node[caption,anchor=south west] at (0.2,3.4) {die Xa};
+  \draw[marker] (3.8,0.6) rectangle (6.3,3.4);
+  \node[caption,anchor=south west] at (3.8,3.4) {die Xb};
+  \draw (0.5,1.0) node[above right] {VSS} -- (2.7,1.0);
+  \draw (3.8,1.0) -- (6.1,1.0) node[above left] {VSS};
+  \draw[violation] (2.55,0.7) rectangle (3.95,1.3);
+  \node[violation label] at (3.25,0.2) {VSS open};
+
+  % Right: the bumps from above, in the assembly's coordinates.
+  \node[font=\bfseries] at (10.0,4.4) {Bumps on met2, from above};
+  \bump{layer a}{8}{1}
+  \bump{layer a}{10}{1}
+  \bump{layer a}{12}{1}
+  \bump{layer c,fill=none}{8}{1}
+  \bump{layer c,fill=none}{10}{1}
+  \bump{layer c,fill=none}{12}{2.6}
+  \node[caption] at (8,2.0) {VDD};
+  \node[caption,align=center] at (10,2.25) {Xa.Y\\ Xb.A};
+  \node[caption] at (12,3.85) {VSS};
+  \draw[dim] (13.0,1) -- node[dim label,right] {\SI{0.8}{\micro\metre}} (13.0,2.6);
+  \draw[densely dotted] (12.6,1) -- (13.1,1);
+  \draw[densely dotted] (12.6,2.6) -- (13.1,2.6);
+  \draw[violation] (11.2,0.2) rectangle (12.8,3.4);
+  \node[violation label,align=center] at (12.0,-0.45) {two unbonded bumps};
+  \node[caption] at (8,-0.2) {(\SI{-3}{\micro\metre}, \SI{-2}{\micro\metre})};
+  \draw[layer a] (7.0,-1.15) rectangle (7.3,-0.85);
+  \node[caption,anchor=west] at (7.35,-1.0) {Xa bump};
+  \draw[layer c] (9.0,-1.15) rectangle (9.3,-0.85);
+  \node[caption,anchor=west] at (9.35,-1.0) {Xb bump, die mirrored};
+\end{circuitikz}
+\end{document}

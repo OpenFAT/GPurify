@@ -1,0 +1,31 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2, nfet text #3, with a capacitor from
+% Y to ground whose upper plate is #4 and lower plate #5.
+\newcommand{\invcap}[5]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {pfet};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (#2n.east) {#3};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2p.D) ++(0,-0.35) coordinate (#2y) -- ++(3.4,0) coordinate (#2c) -- ++(0.6,0) node[right] {Y};
+  \draw (#2c) to[C] ++(0,-1.6) coordinate (#2cb) node[ground] {};
+  \node[anchor=south west,font=\footnotesize] at ($(#2c)+(0.3,-0.75)$) {#4};
+  \node[anchor=north west,font=\footnotesize] at ($(#2c)+(0.3,-0.85)$) {#5};
+  \node[anchor=south,font=\footnotesize] at ($(#2c)+(0,0.05)$) {cmim};
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (2.6,5.1) {Reference netlist};
+  \node[font=\bfseries] at (11.6,5.1) {Layout, extracted};
+  \invcap{1.0}{r}{M1: drain VSS,\\source Y}{bottom}{top}
+  \invcap{10.0}{l}{nfet: drain Y,\\source VSS}{top}{bottom}
+  \draw[violation] (3.6,-0.6) rectangle (6.5,1.45);
+  \node[violation label,align=center] at (5.05,-1.05) {C1: top plate on VSS};
+  \node[caption,align=center] at (0.9,-1.1) {M1's source and drain\\swapped: paired};
+\end{circuitikz}
+\end{document}
