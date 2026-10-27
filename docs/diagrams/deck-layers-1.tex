@@ -1,0 +1,35 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Three panels: the drawn layers, `met1 and met2`, `met1 not met2`.
+  % met1 is (0,0)-(3,1), met2 is (2,-0.5)-(3.5,1.5).
+  \begin{scope}
+    \fill[layer a] (0,0) rectangle (3,1);
+    \fill[layer c] (2,-0.5) rectangle (3.5,1.5);
+    \draw[layer a,fill=none] (0,0) rectangle (3,1);
+    \node[caption,anchor=west] at (0.1,0.5) {met1};
+    \node[caption,anchor=south] at (2.75,1.5) {met2};
+    \node[caption,anchor=north] at (1.75,-0.9) {drawn};
+  \end{scope}
+  \begin{scope}[xshift=4.5cm]
+    \draw[marker] (0,0) rectangle (3,1);
+    \draw[marker] (2,-0.5) rectangle (3.5,1.5);
+    \fill[layer b] (2,0) rectangle (3,1);
+    \node[caption,anchor=north] at (1.75,-0.9) {\texttt{met1 and met2}};
+  \end{scope}
+  \begin{scope}[xshift=9cm]
+    \draw[marker] (0,0) rectangle (3,1);
+    \draw[marker] (2,-0.5) rectangle (3.5,1.5);
+    \fill[layer b] (0,0) rectangle (2,1);
+    \node[caption,anchor=north] at (1.75,-0.9) {\texttt{met1 not met2}};
+  \end{scope}
+  \begin{scope}[xshift=13.5cm]
+    \fill[layer b] (-0.45,-0.45) rectangle (3.45,1.45);
+    \draw[marker] (0,0) rectangle (3,1);
+    \draw[dim] (3,0.5) -- (3.45,0.5);
+    \node[dim label,anchor=west] at (3.5,0.5) {$d$};
+    \node[caption,anchor=north] at (1.5,-0.9) {\texttt{met1.sized(}$d$\texttt{)}};
+  \end{scope}
+\end{circuitikz}
+\end{document}
