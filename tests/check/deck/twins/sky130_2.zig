@@ -2,8 +2,9 @@
 //! statement order). Translated mechanically from
 //! crates/check/tests/deck/twins/sky130.rs, itself translated from the deck
 //! text by a reader independent of the parser; its `for` loops unrolled
-//! and its `let` bindings substituted. tests/check/deck/twins.zig holds
-//! it to the parsed text.
+//! and its `let` bindings substituted; its `matching` statements, which
+//! the Rust twin has none of, read off the deck text by hand.
+//! tests/check/deck/twins.zig holds it to the parsed text.
 //!
 //! Contents:
 //! - `pub fn build(b: *DeckBuilder) Allocator.Error!void`
@@ -99,6 +100,9 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.doc.devices.append(a, .{ .kind = .capacitor, .marker = "cap_var_lvt", .model = "sky130_fd_pr__cap_var_lvt", .terminals = &.{ "poly_c", "ntap" } });
     try b.doc.devices.append(a, .{ .kind = .capacitor, .marker = "cap_var_hvt", .model = "sky130_fd_pr__cap_var_hvt", .terminals = &.{ "poly_c", "ntap" } });
     try b.doc.devices.append(a, .{ .kind = .capacitor, .marker = "cap_var_5v", .model = "sky130_fd_pr__cap_var", .terminals = &.{ "poly_c", "ntap" } });
+    // `matching`, read off the deck text by hand: 1 %·um is 1e-8 m.
+    try b.matching(.{ .model = "sky130_fd_pr__res_high_po", .basis = .single, .stated = .{ .ar = 3.552e-8 } });
+    try b.matching(.{ .model = "sky130_fd_pr__res_xhigh_po", .basis = .single, .stated = .{ .ar = 3.47e-8 } });
     try b.doc.pex.append(a, .{ .layer = "nsd", .row = .{ .thickness_nm = 120.0, .height_nm = 206.2, .sheet_res_ohm_sq = 120.0, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 3.9 } });
     try b.doc.pex.append(a, .{ .layer = "psd", .row = .{ .thickness_nm = 120.0, .height_nm = 206.2, .sheet_res_ohm_sq = 197.0, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 3.9 } });
     try b.doc.pex.append(a, .{ .layer = "ntap", .row = .{ .thickness_nm = 120.0, .height_nm = 206.2, .sheet_res_ohm_sq = 120.0, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 3.9 } });

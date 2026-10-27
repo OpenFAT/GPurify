@@ -176,7 +176,7 @@ pub fn param(p: *Parser, v: Val, prm: Param, out: *std.ArrayList(NamedSource)) P
             if (!(f >= 0.0 and f <= 1.0)) return p.fail(v.span(), "`{s}` is a fraction: 0 to 1, or 0% to 100%", .{label});
             break :blk .{ .ratio = f };
         },
-        .voltage, .current, .current_per_width, .resistance, .temperature, .energy, .thermal_conductivity, .time, .field, .cap_per_area, .cap_per_length, .per_kelvin, .per_kelvin2, .capacitance, .inductance, .angle, .scalar, .frequency => .{ .ratio = try convert.physical(p, v, prm.dim, label) },
+        .voltage, .current, .current_per_width, .resistance, .temperature, .energy, .thermal_conductivity, .time, .field, .cap_per_area, .cap_per_length, .per_kelvin, .per_kelvin2, .capacitance, .inductance, .voltage_length, .fraction_length, .voltage_per_length, .angle, .scalar, .frequency => .{ .ratio = try convert.physical(p, v, prm.dim, label) },
     };
     return pushValue(p, out, engine, one);
 }

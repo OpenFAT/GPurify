@@ -136,6 +136,9 @@ pub const Parser = struct {
     ignored_at: std.ArrayList(struct { pair: [2]u16, span: Span }) = .empty,
     /// `.in_cells` and `.not_in_cells` parsed so far.
     cell_selections: usize = 0,
+    /// Where each `matching` statement's model is written, by `out.matching`
+    /// row: a second statement for the model names the first one's line.
+    matching_at: std.ArrayList(u32) = .empty,
     out: DeckSource = .{},
 
     pub fn init(arena: Allocator, scratch: Allocator, src: []const u8, toks: []const Token, layout: Grid, errors: std.ArrayList(Diagnostic)) Allocator.Error!Parser {

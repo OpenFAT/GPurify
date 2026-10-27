@@ -20,6 +20,7 @@
 //!   `RuleTable.findParam(t: RuleTable, rule: RuleSpec, name: StrId) ?ParamValue`
 //! - `pub const Connectivity`, `pub const Waiver`
 //! - `pub const DeviceRecognition`, `DeviceValue`, `DeviceKind`
+//! - `pub const Matching`, `MatchingBasis`, `MatchingRow`, `matching_keys`
 //! - `pub const LvsControls`, `ModelParam`, `Permute`, `SameNets`, `UnusedFilter`,
 //!   `UnusedFilter.all`, `UnusedFilter.name(f: UnusedFilter) []const u8`,
 //!   `LvsLde`, `LdeWell`, `LvsCount`, `LvsRange`, `LvsLimit`, `LvsLimit.less(a: LvsLimit, b: LvsLimit) bool`,
@@ -36,6 +37,7 @@ const LayerId = geom.LayerId;
 const StrId = geom.StrId;
 const Qty = geom.Qty;
 const LayerTable = @import("layers.zig").LayerTable;
+const Dim = @import("kinds.zig").Dim;
 
 /// A parsed, validated, grid-resolved deck, built by `parseDeck` or by
 /// `lower` from a `DeckSource`. Only meaningful with a layout on the grid it
@@ -49,6 +51,9 @@ pub const Deck = struct {
     connectivity: Connectivity = .{},
     /// The `device` statements.
     devices: DeviceRecognition = .{},
+    /// The `matching` statements: a device model's mismatch coefficients, as
+    /// stated, at most one row per model.
+    matching: []const MatchingRow = &.{},
     /// The `pex` statements: the parasitic stack, per layer.
     stack: ProcessStack = .{},
     /// The `temperature` statement's operating temperature, absolute; null
@@ -343,6 +348,40 @@ pub const DeviceValue = struct {
 /// The device families, in the deck as `mos`, `bjt`, `resistor`,
 /// `capacitor`, `diode`, `inductor`; `cell` is a black box no statement declares.
 pub const DeviceKind = enum { mos, bjt, resistor, capacitor, diode, inductor, cell };
+
+/// A device model's mismatch coefficients in SI, each positive, null where
+/// the deck states none: unknown, never zero. W, L and A_E are drawn.
+pub const Matching = struct {
+    /// V·m: σ(ΔV_T) = avt / √(W·L).
+    avt: ?f64 = null,
+    /// m (a fraction times a length): σ(Δβ/β) = abeta / √(W·L).
+    abeta: ?f64 = null,
+    /// m: a resistor body's σ(ΔR/R) = ar / √(W·L).
+    ar: ?f64 = null,
+    /// V/m: the threshold-voltage gradient, σ(ΔV_T) = svt · D for two
+    /// devices D apart.
+    svt: ?f64 = null,
+    /// m: σ(ΔI_S/I_S) = ka / √A_E, A_E the emitter area.
+    ka: ?f64 = null,
+};
+
+/// What a `matching` statement's area coefficients (all but `svt`) are of:
+/// the difference between two identical devices (`pair`, Pelgrom's), or
+/// one device (`single`, a SPICE mismatch model's), √2 times smaller.
+pub const MatchingBasis = enum { pair, single };
+
+/// One `matching` statement, its model interned, its values as stated.
+pub const MatchingRow = struct { model: StrId, basis: MatchingBasis, stated: Matching };
+
+/// The `matching` keys, each a `Matching` field: what it measures, the
+/// device kind whose model it belongs to, and the unit it is printed in.
+pub const matching_keys = [_]struct { name: []const u8, dim: Dim, kind: DeviceKind, unit: []const u8 }{
+    .{ .name = "avt", .dim = .voltage_length, .kind = .mos, .unit = "mV·um" },
+    .{ .name = "abeta", .dim = .fraction_length, .kind = .mos, .unit = "%·um" },
+    .{ .name = "ar", .dim = .fraction_length, .kind = .resistor, .unit = "%·um" },
+    .{ .name = "svt", .dim = .voltage_per_length, .kind = .mos, .unit = "uV/um" },
+    .{ .name = "ka", .dim = .fraction_length, .kind = .bjt, .unit = "%·um" },
+};
 
 /// The `lvs` statements, models interned.
 pub const LvsControls = struct {

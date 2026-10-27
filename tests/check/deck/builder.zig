@@ -227,3 +227,33 @@ test "every builder refusal has the parser's words" {
         }
     }
 }
+
+test "the builder adds a matching statement or overrides the deck's own" {
+    // Oracle: construct-from-answer: what the builder was given is what the
+    // query reads back, the deck's own statement replaced in place; and the
+    // refusal docs/deck.md states for text, a model no `device mos` declares.
+    var c = try common.compileText(
+        \\grid 1nm
+        \\layer poly = gds(66, 20)
+        \\layer diff = gds(65, 20)
+        \\layer gate = poly and diff
+        \\device mos gate model "nfet" terminals [poly, diff, diff]
+        \\device resistor poly model "rpoly" terminals [poly, poly]
+        \\matching "nfet" pair avt 5mV·um
+        \\
+    , 1000);
+    defer c.deinit();
+    var b = try DeckBuilder.fromDeck(c.arena.allocator(), &c.cd, &c.strings);
+    try b.matching(.{ .model = "nfet", .basis = .pair, .stated = .{ .avt = 6e-9 } });
+    try b.matching(.{ .model = "rpoly", .basis = .pair, .stated = .{ .ar = 1e-8 } });
+    var diag: deck.compile.Diag = .{};
+    var built = try b.finish(gpa, &diag);
+    defer built.deinit(gpa);
+    try testing.expectEqual(@as(usize, 2), built.deck.matching.len);
+    try testing.expectEqual(@as(?f64, 6e-9), deck.query.matching(&built, c.strings.get("nfet").?).?.avt);
+    try testing.expectEqual(@as(?f64, 1e-8), deck.query.matching(&built, c.strings.get("rpoly").?).?.ar);
+    var refused = try DeckBuilder.fromDeck(c.arena.allocator(), &c.cd, &c.strings);
+    try refused.matching(.{ .model = "pfet", .basis = .pair, .stated = .{ .avt = 6e-9 } });
+    try testing.expectError(error.Malformed, refused.finish(gpa, &diag));
+    try testing.expectEqualStrings("matching \"pfet\": avt needs a `device mos` statement with that model", diag.deck.malformed);
+}

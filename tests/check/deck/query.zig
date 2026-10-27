@@ -293,6 +293,69 @@ test "the queries keep to the layers they are asked about" {
     try testing.expectEqual(@as(usize, 0), rows.items.len);
 }
 
+test "the matching query answers for a pair in SI" {
+    // Oracle: docs/deck.md, Matching, by hand: 5 mV·µm is 5e-9 V·m. And a
+    // law: a `single` coefficient is one device's σ, and the difference of
+    // two independent devices has twice one's variance, so the pair's
+    // coefficient squared is twice it squared; `svt`, a gradient between
+    // two devices, is a pair's already. A model with no statement is null.
+    var c = try common.compileText(
+        \\grid 1nm
+        \\layer poly = gds(66, 20)
+        \\layer diff = gds(65, 20)
+        \\layer gate = poly and diff
+        \\device mos gate model "nfet" terminals [poly, diff, diff]
+        \\device mos gate model "pfet" terminals [poly, diff, diff]
+        \\device mos gate model "plain" terminals [poly, diff, diff]
+        \\matching "nfet" pair avt 5mV·um svt 0.3uV/um
+        \\matching "pfet" single avt 3.9mV·um abeta 0.5%·um svt 0.3uV/um
+        \\
+    , 1000);
+    defer c.deinit();
+    const n = q.matching(&c.cd, c.strings.get("nfet").?).?;
+    try testing.expectEqual(@as(?f64, 5e-9), n.avt);
+    try testing.expectEqual(@as(?f64, 0.3), n.svt);
+    try testing.expectEqual(@as(?f64, null), n.abeta);
+    const p = q.matching(&c.cd, c.strings.get("pfet").?).?;
+    try testing.expectApproxEqRel(2.0, p.avt.? * p.avt.? / (3.9e-9 * 3.9e-9), 1e-15);
+    try testing.expectApproxEqRel(2.0, p.abeta.? * p.abeta.? / (5e-9 * 5e-9), 1e-15);
+    try testing.expectEqual(@as(?f64, 0.3), p.svt);
+    try testing.expect(q.matching(&c.cd, c.strings.get("plain").?) == null);
+}
+
+test "the shipped decks' matching lines read as their sources state them" {
+    // Oracle: the sources the decks cite, converted by hand. IHP SG13G2
+    // process spec §2.8/§2.9: MATRPPD 15 nm and MATRHIGH 48 nm, k of
+    // s(dR/R) = k·A^-0.5 over resistor pairs: 1.5e-8 m and 4.8e-8 m. IHP
+    // sg13g2_moslv_mismatch.lib: delvto_mm 0.0039 V·µm per device, so a
+    // pair's avt² is 2·(3.9e-9 V·m)². sky130 res_high_po: body_pelgrom
+    // 0.03552 per device, a pair's ar² 2·(3.552e-8 m)². gf180mcu states no
+    // coefficient in a form the deck can carry, so nfet_03v3 has none.
+    var arena: std.heap.ArenaAllocator = .init(gpa);
+    defer arena.deinit();
+    {
+        var c = try common.compileText(try common.shippedText(arena.allocator(), "ihp_sg13g2"), 1000);
+        defer c.deinit();
+        try testing.expectEqual(@as(?f64, 1.5e-8), q.matching(&c.cd, c.strings.get("rppd").?).?.ar);
+        try testing.expectEqual(@as(?f64, 4.8e-8), q.matching(&c.cd, c.strings.get("rhigh").?).?.ar);
+        const lv = q.matching(&c.cd, c.strings.get("sg13_lv_nmos").?).?;
+        try testing.expectApproxEqRel(2.0, lv.avt.? * lv.avt.? / (3.9e-9 * 3.9e-9), 1e-15);
+        try testing.expect(q.matching(&c.cd, c.strings.get("rsil").?) == null);
+    }
+    {
+        var c = try common.compileText(try common.shippedText(arena.allocator(), "sky130"), 1000);
+        defer c.deinit();
+        const r = q.matching(&c.cd, c.strings.get("sky130_fd_pr__res_high_po").?).?;
+        try testing.expectApproxEqRel(2.0, r.ar.? * r.ar.? / (3.552e-8 * 3.552e-8), 1e-15);
+        try testing.expect(q.matching(&c.cd, c.strings.get("sky130_fd_pr__nfet_01v8").?) == null);
+    }
+    {
+        var c = try common.compileText(try common.shippedText(arena.allocator(), "gf180mcu"), 1000);
+        defer c.deinit();
+        try testing.expectEqual(@as(usize, 0), c.cd.deck.matching.len);
+    }
+}
+
 test "the electrical queries read what the deck states" {
     // Oracle: the deck text, pdks/sky130.deck's `ar.met1.1`, `EM.met1_mcon`,
     // `vgs.esd_nfet`, `vds.d10v5`, `vgs.01v8` and `vds.01v8`.

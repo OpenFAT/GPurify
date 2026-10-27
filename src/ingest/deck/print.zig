@@ -18,6 +18,7 @@ const source = @import("source.zig");
 const DeckSource = source.DeckSource;
 const RuleSource = source.RuleSource;
 const kinds = @import("kinds.zig");
+const tables = @import("tables.zig");
 const print_layers = @import("print_layers.zig");
 const Printer = print_layers.Printer;
 const PrintError = print_layers.PrintError;
@@ -27,8 +28,8 @@ const devices = @import("parse_statements.zig").devices;
 /// Writes `doc`, read for the layout grid `grid`, as deck text in `arena`:
 /// the grid, drawn layers, ignored pairs, derived layers and rules in
 /// declaration order (each rule where its first inline layer was made),
-/// then connectivity, devices, `lvs`, the stack, corners, waivers and the
-/// rest. `for` loops and `let` bindings are not reconstructed.
+/// then connectivity, devices, `matching`, `lvs`, the stack, corners,
+/// waivers and the rest. `for` loops and `let` bindings are not reconstructed.
 /// `Unprintable` for what the language cannot state; `why` says what.
 pub fn print(arena: Allocator, doc: *const DeckSource, grid: Grid, why: *[]const u8) PrintError![]const u8 {
     const p: Printer = .{ .arena = arena, .source = doc, .grid = grid, .why = why };
@@ -64,6 +65,7 @@ pub fn print(arena: Allocator, doc: *const DeckSource, grid: Grid, why: *[]const
     if (doc.temperature) |t| try out.print(arena, "temperature {s}K nominal {s}K\n", .{ try p.number(t.operating_k), try p.number(t.nominal_k) });
     try connectivity(&p, &out);
     try deviceLines(&p, &out);
+    try matchingLines(&p, &out);
     try lvs(&p, &out);
     for (doc.pex.items) |row| {
         const r = row.row;
@@ -133,6 +135,26 @@ fn deviceLines(p: *const Printer, out: *std.ArrayList(u8)) PrintError!void {
             .{ "on_gate_max", v.on_gate_max_mv, "mV" },
         };
         for (values) |row| if (row[1]) |x| try out.print(a, " {s} {s}{s}", .{ row[0], try p.number(x), row[2] });
+        try out.append(a, '\n');
+    }
+}
+
+/// The `matching` statements. A value is stored in SI and written in its
+/// key's unit: the SI value's shortest decimal with its exponent moved by
+/// the unit's power of ten, which is exact, so the text reads back to it.
+fn matchingLines(p: *const Printer, out: *std.ArrayList(u8)) PrintError!void {
+    const a = p.arena;
+    for (p.source.matching.items) |row| {
+        try out.print(a, "matching {s} {s}", .{ try p.quoted(row.model), @tagName(row.basis) });
+        inline for (tables.matching_keys) |k| if (@field(row.stated, k.name)) |si| {
+            const shift = comptime for (kinds.units) |u| {
+                if (std.mem.eql(u8, u.name, k.unit)) break u.shift;
+            } else unreachable;
+            const e = try p.number(si);
+            const at = std.mem.indexOfScalar(u8, e, 'e').?;
+            const exponent = std.fmt.parseInt(i32, e[at + 1 ..], 10) catch unreachable;
+            try out.print(a, " {s} {s}e{d}{s}", .{ k.name, e[0..at], exponent - shift, k.unit });
+        };
         try out.append(a, '\n');
     }
 }

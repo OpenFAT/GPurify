@@ -38,6 +38,13 @@
 #   [S11] Cadence's SKY130 Pegasus DRC deck v0.0_2.12 and its rule manual dated 2025-07-22
 #        (Sky130_DRM_July_22_2025.pdf; Cadence Public License 1.0, released without NDA),
 #        read from neu-ucb-tvip/tvip-analog-workspace at commit 956db25, Sky130_DRC/
+#   [S12] The same volare build's resistor models, sky130A/libs.ref/sky130_fd_pr/spice/
+#        sky130_fd_pr__res_high_po.model.spice (line 31) and
+#        sky130_fd_pr__res_xhigh_po.model.spice (line 42): `body_pelgrom`, applied as
+#        res_match = body_pelgrom/sqrt(w*l*mult) times sky130_fd_pr__res_high_po__slope_spectre,
+#        which the statistics block of sky130A/libs.tech/ngspice/
+#        sky130_fd_pr__model__linear.model.spice varies as a mismatch, "dist=gauss std=1.0"
+#        (ngspice holds it at 0): one resistor body's σ(R)/R over its drawn W·L in µm²
 #
 # Rule ids are the manual's: nwell.1, licon.5a, m1.4. The n+/p+ implant rules,
 # which the manual groups as "n/psd.x", are nsd.x and psd.x here, as [S3] names them.
@@ -733,6 +740,16 @@ device capacitor cap2m model "sky130_fd_pr__cap_mim_m3_2" terminals [met5, met4]
 device capacitor cap_var_lvt model "sky130_fd_pr__cap_var_lvt" terminals [poly_c, ntap]
 device capacitor cap_var_hvt model "sky130_fd_pr__cap_var_hvt" terminals [poly_c, ntap]
 device capacitor cap_var_5v model "sky130_fd_pr__cap_var" terminals [poly_c, ntap]
+
+# --- Matching [S12] ---
+# The models state one resistor body's σ, so the lines are `single`. Not
+# stated: any MOS coefficient (the models vary vth0, voff, toxe, nfactor, lint
+# and wint, each with a slope per bin, so no one A_VT or A_beta is stated), the
+# resistor heads' mismatch (head_pelgrom, over (W + 0.525 um) times the contact rows),
+# and k_A, since the deck declares no bipolar device.
+matching "sky130_fd_pr__res_high_po" single ar 3.552%·um    # [S12] res_high_po body_pelgrom = 0.03552
+matching "sky130_fd_pr__res_xhigh_po" single ar 3.47%·um    # [S12] res_xhigh_po body_pelgrom = 0.0347
+
 # VPP capacitors have no marker: Magic's sky130 techfile represents them
 # "only by script-generated subcells" and recognises them by cell name, so
 # LVS compares each placement by its pins (catalog LVS-067). The schematic

@@ -7,7 +7,8 @@
 //! one kind's table (SoA) in deck order. Ported from
 //! crates/check/src/deck/query.rs and drc/ruleset.rs
 //! (`Rule::required_spacing`, `SpacingQuery`), and the ERC queries
-//! (`antenna`, `em_limit`, `fet_limits`).
+//! (`antenna`, `em_limit`, `fet_limits`). A device model's mismatch
+//! coefficients (`matching`) are its `matching` statement's, for a pair.
 //!
 //! Contents:
 //! - `pub const Enclosure = struct`, `pub const DensityLimit = struct`, `pub const SpacingQuery = struct`
@@ -25,6 +26,7 @@
 //! - `pub fn antennaInto(gpa: Allocator, cd: *const CompiledDeck, collector: LayerId, out: *std.ArrayList(AntennaLimit)) Allocator.Error!void`
 //! - `pub fn emLimitInto(gpa: Allocator, cd: *const CompiledDeck, layer: LayerId, out: *std.ArrayList(EmLimit)) Allocator.Error!void`
 //! - `pub fn fetLimits(cd: *const CompiledDeck, model: StrId) FetLimits`
+//! - `pub fn matching(cd: *const CompiledDeck, model: StrId) ?Matching`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -44,6 +46,7 @@ const Millivolts = @import("../report.zig").Millivolts;
 const Microamps = @import("../report.zig").Microamps;
 const ModelLimitTable = @import("../erc/domain_tables.zig").ModelLimitTable;
 const CompiledDeck = @import("compile.zig").CompiledDeck;
+const Matching = @import("ingest").deck.Matching;
 
 /// The enclosure rules between one inner and one outer layer. A rule with
 /// a wire band counts as if it held every wire: the strictest it can be.
@@ -352,6 +355,23 @@ pub fn emLimitInto(gpa: Allocator, cd: *const CompiledDeck, layer: LayerId, out:
 /// The voltage limits on device model `model` (an interned model name).
 pub fn fetLimits(cd: *const CompiledDeck, model: StrId) FetLimits {
     return .{ .gate_oxide = smallest(&cd.erc.tables.gate_oxide, model), .drain_source = smallest(&cd.erc.tables.drain_source, model) };
+}
+
+/// The mismatch coefficients of device model `model` (an interned model
+/// name), in SI, each for a pair of devices: a `single` statement's area
+/// coefficients times √2, since two independent devices' difference has
+/// twice one's variance. Null when no `matching` statement names it.
+pub fn matching(cd: *const CompiledDeck, model: StrId) ?Matching {
+    for (cd.deck.matching) |row| if (row.model == model) {
+        var pair = row.stated;
+        if (row.basis == .single) {
+            inline for (.{ "avt", "abeta", "ar", "ka" }) |f| if (@field(pair, f)) |v| {
+                @field(pair, f) = v * std.math.sqrt2;
+            };
+        }
+        return pair;
+    };
+    return null;
 }
 
 // ---- private ----

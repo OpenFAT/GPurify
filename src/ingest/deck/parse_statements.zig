@@ -1,16 +1,17 @@
 //! The deck's one-line statements other than rules, `lvs` and the parasitic
-//! stack: `grid`, `let`, `layer`, `ignore`, `connect`, `device`, `fill`,
-//! `widen`, `report`, `waive`, `boundary`, `netlist_scale` → rows of the
-//! `DeckSource`. Grammar: docs/deck.md. Ported from
+//! stack: `grid`, `let`, `layer`, `ignore`, `connect`, `device`, `matching`,
+//! `fill`, `widen`, `report`, `waive`, `boundary`, `netlist_scale` → rows of
+//! the `DeckSource`. Grammar: docs/deck.md. Ported from
 //! crates/ingest/src/deck/parse.rs (the statement methods of those names,
-//! `bind`, `unbound`, `check_ignored`, `gds_pair`, `net_name`).
+//! `bind`, `unbound`, `check_ignored`, `gds_pair`, `net_name`); `matching`
+//! is new in the rewrite (UW-ASIC/GPurify#84).
 //!
 //! Contents:
 //! - `pub fn grid(p: *Parser, span: Span) PErr!void`, `pub fn let_(p: *Parser) PErr!void`
 //! - `pub fn bind(p: *Parser, name: []const u8, span: Span, v: Val) PErr!void`
 //! - `pub fn layer(p: *Parser) PErr!void`, `pub fn ignore(p: *Parser) PErr!void`,
 //!   `pub fn checkIgnored(p: *Parser) Allocator.Error!void`
-//! - `pub fn connect(p: *Parser) PErr!void`, `pub fn device(p: *Parser) PErr!void`
+//! - `pub fn connect(p: *Parser) PErr!void`, `pub fn device(p: *Parser) PErr!void`, `pub fn matching(p: *Parser) PErr!void`
 //! - `pub fn fill(p: *Parser) PErr!void`, `pub fn widen(p: *Parser) PErr!void`, `pub fn report(p: *Parser) PErr!void`
 //! - `pub fn waive(p: *Parser) PErr!void`, `pub fn boundary(p: *Parser, span: Span) PErr!void`,
 //!   `pub fn netlistScale(p: *Parser, span: Span) PErr!void`
@@ -37,6 +38,14 @@ pub const devices = [_]struct { []const u8, DeviceKind }{
     .{ "mos", .mos },             .{ "bjt", .bjt },     .{ "resistor", .resistor },
     .{ "capacitor", .capacitor }, .{ "diode", .diode }, .{ "inductor", .inductor },
 };
+
+/// The `matching` keys, as `keyed` takes them.
+const matching_names = blk: {
+    var names: [tables.matching_keys.len][]const u8 = undefined;
+    for (tables.matching_keys, &names) |k, *n| n.* = k.name;
+    break :blk names;
+};
+const matching_list = "avt, abeta, ar, svt or ka";
 
 pub fn grid(p: *Parser, span: Span) PErr!void {
     const v = try p.value();
@@ -170,6 +179,41 @@ pub fn device(p: *Parser) PErr!void {
         slot[1].* = number;
     }
     try p.out.devices.append(p.arena, .{ .kind = kind, .marker = marker, .model = model, .terminals = terminals, .value = value });
+}
+
+/// `matching "<model>" pair|single <key> <value> ..`: a device model's
+/// mismatch coefficients, at least one, each positive and given once; one
+/// statement per model.
+pub fn matching(p: *Parser) PErr!void {
+    const at = p.peek();
+    const model = try p.model();
+    for (p.out.matching.items, p.matching_at.items) |row, first| if (eql(row.model, model)) {
+        const line = std.mem.count(u8, p.src[0..first], "\n") + 1;
+        return p.failTok(at, "matching \"{s}\" is already stated on line {d}", .{ model, line });
+    };
+    const word = try p.ident("pair or single");
+    const basis = std.meta.stringToEnum(tables.MatchingBasis, word.name) orelse
+        return p.fail(word.span, "unknown basis `{s}`; expected pair or single", .{word.name});
+    const Reader = struct {
+        values: [tables.matching_keys.len]?f64 = @splat(null),
+        pub fn read(r: *@This(), q: *Parser, key_at: usize, key: []const u8) PErr!bool {
+            const v = try q.value();
+            const si = (try convert.quantity(q, v, tables.matching_keys[key_at].dim, key)).toF64();
+            if (!(si > 0.0 and std.math.isFinite(si))) return q.fail(v.span(), "{s} must be positive", .{key});
+            const was = r.values[key_at];
+            r.values[key_at] = si;
+            return was == null;
+        }
+    };
+    var r: Reader = .{};
+    try p.keyed("matching", &matching_names, "a matching key", matching_list, &r);
+    for (r.values) |v| {
+        if (v != null) break;
+    } else return p.failTok(at, "matching \"{s}\" states nothing; expected {s}", .{ model, matching_list });
+    var stated: tables.Matching = .{};
+    inline for (tables.matching_keys, r.values) |k, v| @field(stated, k.name) = v;
+    try p.matching_at.append(p.scratch, at.start);
+    try p.out.matching.append(p.arena, .{ .model = model, .basis = basis, .stated = stated });
 }
 
 /// `fill <layer> for <layer> size <l> space <l> keep <l> avoid [..]`, every

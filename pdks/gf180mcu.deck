@@ -642,6 +642,16 @@ device resistor rm2_r model "rm2" terminals [metal2_con, metal2_con]
 device resistor rm3_r model "rm3" terminals [metal3_con, metal3_con]
 device resistor tm9k_r model "tm9k" terminals [metaltop_con, metaltop_con]
 
+# --- Matching: no line ---
+# No public source states a coefficient the `matching` statement carries.
+# The model documentation (google/gf180mcu-pdk @ df0f549,
+# docs/analog/model_parameters/LV/LV_9_4.rst to LV_9_6.rst) plots sigma(dVtlin),
+# sigma(dIdsat), sigma(dRS), sigma(dIb) and sigma(dVbe) against 1/sqrt(W*L) and
+# states no slope. The ngspice model ([KL]'s repository, models/ngspice/
+# sm141064.ngspice) states the MOS par_vth of a pair over an effective area
+# (L - 0.15 um, W + 0.1 um for the 3.3 V devices), not the drawn one, and its
+# resistors' par_r are commented out, with mis_r = 0.
+
 # --- Parasitic stack ---
 # thickness: [SPEC 3] typical (MetalTop 9 kA 1.0025 um, M1..M5 0.55, Poly 0.2);
 #   diffusion and cut thickness and every height: [MAG] `height` lines.

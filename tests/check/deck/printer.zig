@@ -232,6 +232,37 @@ test "a deck with pex models survives printing" {
     try expectRefusals(text, &swaps);
 }
 
+test "a deck with matching statements survives printing" {
+    // Oracle: round trip, each value written in its key's unit (3.9e-9 V·m
+    // is 3.9e0mV·um, 5e-9 m is 5e-1%·um, by hand); and the refusals
+    // `docs/deck.md` states (a model no device declares, a key of another
+    // kind's or unit, a basis other than pair or single, a value that is
+    // not positive, a statement of nothing).
+    const text =
+        \\grid 1nm
+        \\layer poly = gds(66, 20)
+        \\layer diff = gds(65, 20)
+        \\layer gate = poly and diff
+        \\device mos gate model "nfet" terminals [poly, diff, diff]
+        \\device resistor poly model "rpoly" terminals [poly, poly]
+        \\matching "nfet" single avt 3.9mV·um abeta 0.5%·um svt 1.63uV/um
+        \\matching "rpoly" pair ar 1.5%.um
+        \\
+    ;
+    var c = try roundTripText("matching", text);
+    defer c.deinit();
+    try expectContains(try printOf(&c), &.{ "matching \"nfet\" single avt 3.9e0mV·um abeta 5e-1%·um svt 1.63e0uV/um\n", "matching \"rpoly\" pair ar 1.5e0%·um\n" });
+    const swaps = [_][2][]const u8{
+        .{ "matching \"rpoly\"", "matching \"cpoly\"" },
+        .{ "pair ar", "pair avt" },
+        .{ "\"rpoly\" pair ar", "\"rpoly\" pair ka" },
+        .{ "single", "double" },
+        .{ "3.9mV·um", "-3.9mV·um" },
+        .{ " ar 1.5%.um", "" },
+    };
+    try expectRefusals(text, &swaps);
+}
+
 test "a deck with report lines survives printing" {
     // Oracle: round trip; and the refusals `docs/deck.md` states (two or
     // more points, each `(x, y)`; a named net; a reach of zero or more,
