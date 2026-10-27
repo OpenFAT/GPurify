@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 triangle (0,0) (1000,0) (0,1000) and square (900,900)-(1900,1900) nm; 1 unit = 250 nm
+  \draw[layer a] (0,0) -- (4,0) -- (0,4) -- cycle;
+  \draw[layer a] (3.6,3.6) rectangle (7.6,7.6);
+  \node[caption] at (1.2,1.2) {met1};
+  \node[caption] at (5.6,5.6) {met1};
+  \draw[dim] (2,2) -- (3.6,3.6);
+  \node[dim label,anchor=north west] at (2.9,2.7) {$(\SI{1800}{\nano\metre} - \SI{1000}{\nano\metre})/\sqrt{2} \approx \SI{565.7}{\nano\metre}$};
+  \draw (2.15,1.85) -- (2.3,2) -- (2.15,2.15);
+\end{circuitikz}
+\end{document}

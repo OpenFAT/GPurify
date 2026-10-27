@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % left: met1 (0,0)-(1000,1000) and (0,1595)-(1000,2595) nm; right: (0,0)-(1000,1000) and (1300,1400)-(2300,2400) nm; 1 unit = 250 nm
+  \draw[layer a] (0,0) rectangle (4,4);
+  \draw[layer a] (0,6.38) rectangle (4,10.38);
+  \node[caption] at (2,2) {met1};
+  \node[caption] at (2,8.38) {met1};
+  \draw[dim] (2,4) -- (2,6.38);
+  \node[dim label,anchor=west] at (2.1,5.19) {\SI{595}{\nano\metre}, edge to edge};
+  \begin{scope}[xshift=9cm]
+    \draw[layer a] (0,0) rectangle (4,4);
+    \draw[layer a] (5.2,5.6) rectangle (9.2,9.6);
+    \node[caption] at (2,2) {met1};
+    \node[caption] at (7.2,7.6) {met1};
+    \draw[marker] (4,4) rectangle (5.2,5.6);
+    \draw[dim] (4,3.5) -- (5.2,3.5);
+    \node[dim label,anchor=north] at (4.6,3.4) {\SI{300}{\nano\metre}};
+    \draw[dim] (5.7,4) -- (5.7,5.6);
+    \node[dim label,anchor=west] at (5.8,4.8) {\SI{400}{\nano\metre}};
+    \draw[dim] (4,4) -- (5.2,5.6);
+    \node[dim label,anchor=east] at (4.5,5.1) {\SI{500}{\nano\metre}};
+  \end{scope}
+\end{circuitikz}
+\end{document}
