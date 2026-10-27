@@ -511,9 +511,10 @@ test {
 }
 
 test "a named gpu takes every call; auto on the cpu calibrates nothing" {
-    // Oracle: the selection rule (ARCHITECTURE.md GPU, Selection): `--backend
-    // cuda|hip` is the user's order, every class at 0; `auto` that resolved
-    // to the CPU has no GPU to measure, and its backend sends nothing there.
+    // Oracle: the selection rule of docs/src/explanation/cpu-and-gpu.md (How
+    // `--backend auto` decides): `--backend cuda|hip` is the user's order,
+    // every class at 0; `auto` that resolved to the CPU has no GPU to measure,
+    // and its backend sends nothing there.
     const gpa = std.testing.allocator;
     const io = std.testing.io;
     const always: gpurify.Device.MinWork = .always;

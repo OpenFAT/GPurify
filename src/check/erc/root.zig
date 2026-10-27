@@ -1,5 +1,4 @@
-//! erc: electrical rule checking (ARCHITECTURE.md, Spines: `erc`). Only
-//! re-exports.
+//! erc: electrical rule checking (the spine: check.zig). Only re-exports.
 //!
 //! Data decision. Rust's ERC already keeps one table per kind; here each
 //! is a struct of `ArrayList` columns (`RuleHead` first, CSR `*_start`

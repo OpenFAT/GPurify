@@ -1,8 +1,8 @@
 //! `lvs <control> ...` statements → the `LvsSrc` rows, each control as
-//! docs/deck.md ("LVS controls") spells it; models stay names until
-//! lowering. Ported from crates/ingest/src/deck/parse.rs (`lvs`,
-//! `model_once`, `lvs_range`, `lvs_lde`, `lvs_count`,
-//! `lvs_ignore_parameter`, `lvs_tolerance`, `absolute_dim`).
+//! docs/src/reference/deck/lvs-controls.md spells it; models stay names until
+//! lowering. Ported from crates/ingest/src/deck/parse.rs (`lvs`, `model_once`,
+//! `lvs_range`, `lvs_lde`, `lvs_count`, `lvs_ignore_parameter`,
+//! `lvs_tolerance`, `absolute_dim`).
 //!
 //! Contents:
 //! - `pub fn lvs(p: *Parser) PErr!void`

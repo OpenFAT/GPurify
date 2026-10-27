@@ -9,7 +9,8 @@
 //! lives where it is already stated: the grid in the layout's `UNITS`, the
 //! extra reports and temperature in the deck, `lib`'s accuracy in its spec;
 //! a flag that moved there is refused with where it went. `--backend` and
-//! `--threads` pick the `Device` (ARCHITECTURE.md, GPU: Selection).
+//! `--threads` pick the `Device` (docs/src/explanation/cpu-and-gpu.md, How
+//! `--backend auto` decides).
 //!
 //! Contents:
 //! - `pub const Format = enum { text, json, spef, dspf, spice }`, `pub const Edit = enum { fill, enhance }`
@@ -267,8 +268,9 @@ fn refusal(arena: Allocator, line: []const u8) ![]const u8 {
 }
 
 test "a full command line reaches every field" {
-    // Oracle: construct-from-answer, against docs/usage.md: every value reads
-    // back as given, --quasistatic repeats in order, and `all` selects all four checks.
+    // Oracle: construct-from-answer, against docs/src/reference/cli.md
+    // (Options): every value reads back as given, --quasistatic repeats in
+    // order, and `all` selects all four checks.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
@@ -282,14 +284,16 @@ test "a full command line reaches every field" {
     const all = try parseLine(a, "all t --deck d --reference r --intent i");
     try testing.expectEqual(gpurify.Checks.all, all.options.checks);
     try testing.expect(all.inputs.reference.len == 1 and all.inputs.intent != null);
-    // docs/usage.md: a Verilog top is given beside its cell library.
+    // docs/src/reference/cli.md (Options, `--reference`): a Verilog top is
+    // given beside its cell library.
     const two = try parseLine(a, "lvs t --deck d --reference cells.spice --reference top.v");
     try testing.expectEqualStrings("cells.spice", two.inputs.reference[0]);
     try testing.expectEqualStrings("top.v", two.inputs.reference[1]);
 }
 
 test "a simulator netlist with a reference also runs LVS for its names" {
-    // Oracle: docs/usage.md (Parasitics, PEX-017): `pex --reference
+    // Oracle: docs/src/reference/cli.md (Formats, Options) and
+    // docs/src/reference/pex/output.md (PEX-017): `pex --reference
     // --format spice` names the netlist through LVS's pairing; `-o` sends
     // the corners to files; DSPF's instance section takes the same names.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
@@ -306,8 +310,8 @@ test "a simulator netlist with a reference also runs LVS for its names" {
 }
 
 test "lib takes its spec, directory and macro lef and runs no check" {
-    // Oracle: docs/liberty.md: `lib` reads its spec, directory and macro LEF;
-    // docs/usage.md: `lib` runs no check.
+    // Oracle: docs/src/reference/cli.md (Commands, Options): `lib` reads its
+    // spec, directory and macro LEF, and runs no check.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const cli = try parseLine(arena.allocator(), "lib t --deck d --spec s.json --output-dir o --lef m.lef");
@@ -319,8 +323,9 @@ test "lib takes its spec, directory and macro lef and runs no check" {
 }
 
 test "system takes its description and netlist" {
-    // Oracle: docs/usage.md ("Multi-die systems"): the description is the one
-    // positional file, the system netlist `--reference`, and no single-die check runs.
+    // Oracle: docs/src/reference/cli.md (Synopsis, Options): the description is
+    // the one positional file, the system netlist `--reference`, and no
+    // single-die check runs.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const cli = try parseLine(arena.allocator(), "system stack.json --reference sys.spice --format json");
@@ -331,7 +336,8 @@ test "system takes its description and netlist" {
 }
 
 test "xor takes its two layouts in order, and no other check has a second" {
-    // Oracle: construct-from-answer, against docs/usage.md.
+    // Oracle: construct-from-answer, against docs/src/reference/cli.md
+    // (Synopsis, Commands).
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
@@ -343,7 +349,8 @@ test "xor takes its two layouts in order, and no other check has a second" {
 }
 
 test "a def layout takes its lefs in order" {
-    // Oracle: construct-from-answer, against docs/usage.md.
+    // Oracle: construct-from-answer, against docs/src/reference/cli.md
+    // (Options, `--lef`).
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const cli = try parseLine(arena.allocator(), "pex top.def --deck d --lef tech.lef --lef cells.lef");
@@ -352,8 +359,8 @@ test "a def layout takes its lefs in order" {
 }
 
 test "the defaults are text, auto and one thread per cpu" {
-    // Oracle: docs/usage.md: --format defaults to text; ARCHITECTURE.md (GPU:
-    // Selection): --backend defaults to auto, --threads to the CPU count (null here).
+    // Oracle: docs/src/reference/cli.md (Options): --format defaults to text,
+    // --backend to auto, --threads to one per CPU (null here).
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
@@ -367,9 +374,10 @@ test "the defaults are text, auto and one thread per cpu" {
 }
 
 test "an edit writes its second file and reports drc" {
-    // Oracle: construct-from-answer, against docs/usage.md: `fill` and
-    // `enhance` take the layout and the file to write, report DRC, and take no
-    // option of their own; without the output, or on a DEF, they are refused.
+    // Oracle: construct-from-answer, against docs/src/reference/cli.md
+    // (Commands): `fill` and `enhance` take the layout and the file to write,
+    // report DRC, and take no option of their own; without the output, or on a
+    // DEF, they are refused.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
@@ -386,9 +394,9 @@ test "an edit writes its second file and reports drc" {
 }
 
 test "every malformed command line is refused with its message" {
-    // Oracle: the command line docs/usage.md documents (Rust's args.rs table,
-    // plus --backend and --threads from ARCHITECTURE.md): each line breaks one
-    // rule, and the message names that rule.
+    // Oracle: the command line docs/src/reference/cli.md documents (Rust's
+    // args.rs table, plus --backend and --threads): each line breaks one rule,
+    // and the message names that rule.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();
@@ -451,8 +459,9 @@ test "every malformed command line is refused with its message" {
 }
 
 test "erc reads a current file with its reference" {
-    // Oracle: construct-from-answer, against docs/usage.md's `--currents`
-    // command line (catalog ERC-E14): both paths read back as given.
+    // Oracle: construct-from-answer, against the `--currents` row of
+    // docs/src/reference/cli.md (Options; catalog ERC-E14): both paths read
+    // back as given.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const cli = try parseLine(arena.allocator(), "erc top.gds --deck d --reference top.spice --intent i.json --currents hot.emir.json");

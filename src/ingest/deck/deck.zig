@@ -1,7 +1,8 @@
 //! The process deck's public surface; only re-exports. Deck text and the
-//! layout's grid → a `Deck` (layers, rules, connectivity, devices, PEX
-//! stack, lvs controls), every limit converted to grid units exactly or
-//! refused. The language: docs/deck.md. Ported from crates/ingest/src/deck.
+//! layout's grid → a `Deck` (layers, rules, connectivity, devices, PEX stack,
+//! lvs controls), every limit converted to grid units exactly or refused. The
+//! language: docs/src/reference/deck/README.md. Ported from
+//! crates/ingest/src/deck.
 //!
 //! Contents:
 //! - `parseDeck`, `parseSource` (parse.zig); `lower` (lower.zig); `print`, `PrintError` (print.zig)

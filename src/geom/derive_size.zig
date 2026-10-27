@@ -53,13 +53,14 @@ pub fn mergeInto(gpa: Allocator, a: *const ValidatedLayer, out: *ValidatedLayer)
     return boolean.unionInto(gpa, a, &.empty, out);
 }
 
-/// KLayout `sized(dx, dy)`: the Minkowski sum with the box `[-dx, dx] x
-/// [-dy, dy]` when both are at least 0, the erosion by it when both are at
-/// most 0; a part no wider than `2|dx|` across x (or `2|dy|` across y)
-/// shrinks away. A 45-degree or skew edge moves `dx` in x and `dy` in y (the
-/// box), where KLayout moves edges along their normals: the definition
-/// `docs/deck.md` gives. Asserts `dx` and `dy` do not differ in sign: one
-/// axis grown and the other shrunk is no one Minkowski operation.
+/// KLayout `sized(dx, dy)`: the Minkowski sum with the box
+/// `[-dx, dx] x [-dy, dy]` when both are at least 0, the erosion by it when
+/// both are at most 0; a part no wider than `2|dx|` across x (or `2|dy|`
+/// across y) shrinks away. A 45-degree or skew edge moves `dx` in x and `dy`
+/// in y (the box), where KLayout moves edges along their normals: the definition
+/// docs/src/reference/deck/layers.md (Angled edges) gives. Asserts `dx` and
+/// `dy` do not differ in sign: one axis grown and the other shrunk is no one
+/// Minkowski operation.
 pub fn sizedInto(gpa: Allocator, a: *const ValidatedLayer, dx: Dbu, dy: Dbu, out: *ValidatedLayer) Error!void {
     assert(std.math.sign(dx) * std.math.sign(dy) >= 0);
     if (dx >= 0 and dy >= 0) return growInto(gpa, a, dx, dy, out);

@@ -1,8 +1,8 @@
-//! Host threads for a row kernel: the CPU half of ARCHITECTURE.md's row
-//! kernels. In: a row count, a thread count and a body over a row range.
-//! Out: the body run over disjoint blocks of rows, every row once. Each
-//! block writes only its own rows, so the result is the same for any thread
-//! count and any interleaving.
+//! Host threads for a row kernel: the CPU half; the device runs the same bodies
+//! (gpu.zig). In: a row count, a thread count and a body over a row range. Out:
+//! the body run over disjoint blocks of rows, every row once. Each block writes
+//! only its own rows, so the result is the same for any thread count and any
+//! interleaving.
 //!
 //! Rung 5 (comptime body): five bodies today (potential rows, field rows,
 //! both near-pair passes, Henry's Zb rows), one runner.

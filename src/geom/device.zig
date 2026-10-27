@@ -1,6 +1,6 @@
-//! The backend choice: which device a kernel call runs on (ARCHITECTURE.md,
-//! GPU). Built once by the spine from `--backend` and passed down as a
-//! parameter; there is no global.
+//! The backend choice: which device a kernel call runs on
+//! (docs/src/explanation/cpu-and-gpu.md). Built once by the spine from
+//! `--backend` and passed down as a parameter; there is no global.
 //!
 //! Contents:
 //! - `pub const Device = struct`, `Device.Backend = enum`, `Device.MinWork = struct`,

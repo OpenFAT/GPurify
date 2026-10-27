@@ -1,5 +1,5 @@
 //! geom: coordinates, quantities, stored geometry, and exact integer geometry
-//! on it (ARCHITECTURE.md). Only re-exports; geom's Gompute kernel root.
+//! on it. Only re-exports; geom's Gompute kernel root.
 //!
 //! A layout coordinate is a `Dbu`, an `i64` count of database units within
 //! ±`max_abs_dbu` (`2^40`). Two coordinates multiply into a `DbuArea`

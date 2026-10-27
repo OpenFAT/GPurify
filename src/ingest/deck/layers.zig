@@ -1,8 +1,8 @@
-//! Layer names and stream pairs → dense `LayerId`s, and back; how each
-//! derived layer is computed. In: drawn `(name, layer, datatype)` rows and
-//! derived rows in declaration order. Out: the `LayerTable` the flattener
-//! maps stream pairs through and every rule resolves names against.
-//! Semantics of each operation: docs/deck.md, Layers. Ported from
+//! Layer names and stream pairs → dense `LayerId`s, and back; how each derived
+//! layer is computed. In: drawn `(name, layer, datatype)` rows and derived rows
+//! in declaration order. Out: the `LayerTable` the flattener maps stream pairs
+//! through and every rule resolves names against. Semantics of each operation:
+//! docs/src/reference/deck/layers.md (Derived layers). Ported from
 //! crates/ingest/src/deck/mod.rs (`LayerTable`, `DerivedOp`).
 //!
 //! Contents:

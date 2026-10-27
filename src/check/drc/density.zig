@@ -1,10 +1,9 @@
-//! The density windows' covered areas, a row kernel (ARCHITECTURE.md, GPU):
-//! one generic body per window sums the clipped areas of the disjoint
-//! rectangles binned to its window row. In: a window grid and disjoint
-//! rectangles. Out: one exact covered area per window, in row order (`iy`,
-//! then `ix`), bit-identical on the CPU threads and the GPU. Ported from
-//! crates/check/src/drc/rules/area.rs (`WindowGrid`, `window_areas`,
-//! `positions`).
+//! The density windows' covered areas, a row kernel: one generic body per
+//! window sums the clipped areas of the disjoint rectangles binned to its
+//! window row. In: a window grid and disjoint rectangles. Out: one exact
+//! covered area per window, in row order (`iy`, then `ix`), bit-identical on
+//! the CPU threads and the GPU. Ported from crates/check/src/drc/rules/area.rs
+//! (`WindowGrid`, `window_areas`, `positions`).
 //!
 //! Exactness decision: every area is an `i64`. A window side is refused at
 //! or past `max_side` (2^31), so a window's area, and the sum of the

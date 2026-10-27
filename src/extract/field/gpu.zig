@@ -1,8 +1,9 @@
 //! The field operator on the GPU: the host half of the row kernels
 //! `extract_potential_rows` (matvec.zig) and `extract_field_rows`
-//! (dielectric.zig). In: the operator's columns and near pairs, uploaded
-//! once per solve in one allocation and one copy (geom.bulk). Out: `y = A x` per GMRES iteration, `x` up and `y` down;
-//! `dot` and `nrm2` stay the host's strict folds (ARCHITECTURE.md, GPU).
+//! (dielectric.zig). In: the operator's columns and near pairs, uploaded once
+//! per solve in one allocation and one copy (geom.bulk). Out: `y = A x` per
+//! GMRES iteration, `x` up and `y` down; `dot` and `nrm2` stay the host's
+//! strict left folds, whose order decides GMRES convergence.
 //!
 //! The device runs the same row bodies as the host threads, so a GPU solve
 //! gives the CPU's bits. A build without device artifacts, or a machine

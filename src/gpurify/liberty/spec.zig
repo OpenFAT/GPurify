@@ -487,9 +487,10 @@ test "an inverter spec parses" {
 }
 
 test "the accuracy field reads a level or all" {
-    // Oracle: `docs/liberty.md`: `accuracy` defaults to `spice`, `"all"` is
-    // the five levels, `"2"` is `field` (levels 0 to 4 from `interface`),
-    // and anything else is refused with the levels named.
+    // Oracle: `docs/liberty.md` (in git history): `accuracy` defaults to
+    // `spice`; docs/src/how-to/characterise-a-library.md (Steps, 3): `"all"` is
+    // the five levels, `"2"` is `field` (levels 0 to 4 from `interface`), and
+    // anything else is refused with the levels named.
     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();

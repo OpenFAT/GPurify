@@ -284,15 +284,15 @@ fn pascal(tag: anytype) []const u8 {
 }
 
 test "a run renders to this exact text" {
-    // Oracle: golden, written by hand in the format docs/usage.md shows,
-    // with the units converted by hand: on a 2000 dbu/um grid (4200, 8600)
-    // is (2100 nm, 4300 nm), 4 dbu is 2 nm and 48 dbu^2 is 12 nm^2.
-    // Rust's row measured a length against an area, which a Zig row (one
-    // kind per row) cannot hold, so the area moved to a waived row with a
-    // fix hint, the two paths Rust's test left out. Layer names: id 3 is
-    // the fourth entry the table was built from, `met1`; the waived row is
-    // on `report.no_layer` and `report.no_shape`, so the doc says its line
-    // has neither a layer nor a shape clause.
+    // Oracle: golden, written by hand in the format
+    // docs/src/reference/report.md (Text report) shows, with the units
+    // converted by hand: on a 2000 dbu/um grid (4200, 8600) is (2100 nm, 4300
+    // nm), 4 dbu is 2 nm and 48 dbu^2 is 12 nm^2. Rust's row measured a length
+    // against an area, which a Zig row (one kind per row) cannot hold, so the
+    // area moved to a waived row with a fix hint, the two paths Rust's test
+    // left out. Layer names: id 3 is the fourth entry the table was built from,
+    // `met1`; the waived row is on `report.no_layer` and `report.no_shape`, so
+    // the doc says its line has neither a layer nor a shape clause.
     const gpa = std.testing.allocator;
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();

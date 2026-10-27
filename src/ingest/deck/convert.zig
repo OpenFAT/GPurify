@@ -1,9 +1,10 @@
 //! Values → engine units: a number and its unit → an exact decimal in its
 //! dimension's engine unit, a length on the deck grid → `Dbu` on the layout
-//! grid, an area → square grid units, a bare whole number → a count. A
-//! length off either grid is refused, never rounded (docs/deck.md, Basics).
-//! Ported from crates/ingest/src/deck/parse.rs (`physical`, `quantity`,
-//! `length`, `area`, `count`).
+//! grid, an area → square grid units, a bare whole number → a count. A length
+//! off either grid is refused, never rounded
+//! (docs/src/reference/deck/README.md, The grid). Ported from
+//! crates/ingest/src/deck/parse.rs (`physical`, `quantity`, `length`, `area`,
+//! `count`).
 //!
 //! Contents:
 //! - `pub fn physical(p: *Parser, v: Val, dim: Dim, label: []const u8) PErr!f64`

@@ -1,5 +1,5 @@
-//! gpurify: the spines, the report writers, Liberty and the shipped decks
-//! (ARCHITECTURE.md). Only re-exports.
+//! gpurify: the spines, the report writers, Liberty and the shipped decks.
+//! Only re-exports.
 //!
 //! Contents:
 //! - `Inputs`, `Loaded`, `DeckFn`, `NamedDeck`, `LoadError`, `LoadDiagnostic`, `load`, `loadBytes`,

@@ -1,9 +1,9 @@
 //! Deck text → `DeckSource` → `Deck`: the parser's spine. Lexes, reads
 //! statements one per line (continuing past an error to report up to 50),
 //! expands `let`, `for` and `if` in place, and lowers. The language:
-//! docs/deck.md. Ported from crates/ingest/src/deck/parse.rs (`parse_deck`,
-//! `parse_source`, `statements`, `statement`, `for_`, `if_`, `block_end`,
-//! `for_header`).
+//! docs/src/reference/deck/README.md. Ported from
+//! crates/ingest/src/deck/parse.rs (`parse_deck`, `parse_source`, `statements`,
+//! `statement`, `for_`, `if_`, `block_end`, `for_header`).
 //!
 //! Contents:
 //! - `pub fn parseDeck(arena: Allocator, gpa: Allocator, text: []const u8, layout: Grid, strings: *StrTable, diag: *Diag) Error!Deck`

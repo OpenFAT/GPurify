@@ -1,9 +1,10 @@
-//! Layer expressions: `a and b`, `(a or b) not c`, `met1.sized(1um).holes()`
-//! → `LExpr` trees, then rows of `DerivedSource` (nested operations become
-//! hidden layers `name#k`, numbered in post-order). One operator folds into
-//! one row; a parenthesised chain is its own row. Semantics: docs/deck.md,
-//! Layers. Ported from crates/ingest/src/deck/parse.rs (`layer_expr`,
-//! `layer_term`, `call`, `bounds`, `edges_of`, `lower_operands`, `LExpr`).
+//! Layer expressions: `a and b`, `(a or b) not c`, `met1.sized(1um).holes()` →
+//! `LExpr` trees, then rows of `DerivedSource` (nested operations become hidden
+//! layers `name#k`, numbered in post-order). One operator folds into one row; a
+//! parenthesised chain is its own row. Semantics:
+//! docs/src/reference/deck/layers.md (Derived layers). Ported from
+//! crates/ingest/src/deck/parse.rs (`layer_expr`, `layer_term`, `call`,
+//! `bounds`, `edges_of`, `lower_operands`, `LExpr`).
 //!
 //! Contents:
 //! - `pub const LExpr`, `pub const Fold`

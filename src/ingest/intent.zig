@@ -244,10 +244,10 @@ const DynamicSpec = struct {
 const pin_names = [_][]const u8{ "g", "s", "d", "b", "c", "e", "pos", "neg" };
 
 /// Parses and validates design intent, the schema of the Rust tool's
-/// `parse_intent` (docs/usage.md). Output and scratch go to `arena`; names
-/// are interned into `strings` with `gpa`. Every section is optional. On
-/// error nothing is returned, `diag` says why, and `strings` may have gained
-/// names.
+/// `parse_intent` (docs/src/reference/design-intent.md). Output and scratch go
+/// to `arena`; names are interned into `strings` with `gpa`. Every section is
+/// optional. On error nothing is returned, `diag` says why, and `strings` may
+/// have gained names.
 pub fn parseIntent(arena: Allocator, gpa: Allocator, source: []const u8, strings: *StrTable, diag: *Diagnostic) Error!DesignIntent {
     const file = blk: {
         var scanner: std.json.Scanner = .initCompleteInput(arena, source);

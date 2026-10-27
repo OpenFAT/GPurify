@@ -596,16 +596,16 @@ fn strs(w: *Writer, list: []const []const u8) Writer.Error!void {
 }
 
 test "a small deck dumps to the bytes worked out by hand from its text" {
-    // Oracle: hand-worked from `small_deck` and the language (docs/deck.md):
-    // drawn ids ascend by name (met1 0, poly 1, via 2), the derived layer
-    // follows (3); lengths are nm on the 1 nm grid (0.083 um2 is 83000
-    // nm2, 700 um is 700000); 77% is 0.77, 1.8 V is 1800 mV, 5 mV·um is
-    // 5e-9 V·m and 2% is 0.02; an enclosure's engine layers are outer then
-    // inner; a parser row lists named params, then the comparison's
-    // `limit`, then the kind's fixed flags, then `warning`. The answers
-    // follow each query's definition: met1's narrowest width 140, its one
-    // spacing 140 at either query, its density row a maximum; via in met1
-    // 30 on all sides; nfet's oxide limit 1800 mV and its pair coefficient
+    // Oracle: hand-worked from `small_deck` and the language
+    // (docs/src/reference/deck/README.md, Units): drawn ids ascend by name
+    // (met1 0, poly 1, via 2), the derived layer follows (3); lengths are nm on
+    // the 1 nm grid (0.083 um2 is 83000 nm2, 700 um is 700000); 77% is 0.77,
+    // 1.8 V is 1800 mV, 5 mV·um is 5e-9 V·m and 2% is 0.02; an enclosure's
+    // engine layers are outer then inner; a parser row lists named params, then
+    // the comparison's `limit`, then the kind's fixed flags, then `warning`.
+    // The answers follow each query's definition: met1's narrowest width 140,
+    // its one spacing 140 at either query, its density row a maximum; via in
+    // met1 30 on all sides; nfet's oxide limit 1800 mV and its pair coefficient
     // as stated. Every other answer is null or empty.
     const small_deck =
         \\grid 5nm

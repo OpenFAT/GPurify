@@ -1,5 +1,5 @@
-//! check: everything that reads a design and reports on it (ARCHITECTURE.md).
-//! Only re-exports; check's Gompute kernel root.
+//! check: everything that reads a design and reports on it. Only re-exports;
+//! check's Gompute kernel root.
 //!
 //! Files import only files above them in this order (a test in
 //! tests/check.zig greps for back edges): report → rects → proximity →
