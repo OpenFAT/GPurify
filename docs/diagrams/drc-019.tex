@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 1000 square with 300 square hole; 1 unit = 100 nm
+  \draw[layer a,even odd rule] (0,0) rectangle (10,10) (3.5,3.5) rectangle (6.5,6.5);
+  \node[caption,anchor=south] at (5,10.05) {met1};
+  \draw[dim] (3.5,3) -- (6.5,3);
+  \node[dim label,anchor=north] at (5,2.9) {\SI{0.30}{\micro\metre}};
+  \draw[violation] (3.5,3.5) rectangle (6.5,6.5);
+  \node[violation label,anchor=west] at (10.3,5.4) {hole \SI{0.09}{\micro\metre\squared}};
+  \node[violation label,anchor=west] at (10.3,4.6) {$<$ \SI{0.14}{\micro\metre\squared}};
+\end{circuitikz}
+\end{document}

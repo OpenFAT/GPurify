@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 (0,0)-(1000,1000) and (0,1595)-(1000,2595) nm; 1 unit = 250 nm
+  \draw[layer a] (0,0) rectangle (4,4);
+  \draw[layer a] (0,6.38) rectangle (4,10.38);
+  \node[caption] at (2,2) {met1};
+  \node[caption] at (2,8.38) {met1};
+  \draw[marker] (0,5.19) -- (4,5.19);
+  \draw[dim] (0,-0.5) -- (4,-0.5);
+  \node[dim label,anchor=north] at (2,-0.6) {run where the edges face};
+  \draw[dim] (-0.5,4) -- (-0.5,6.38);
+  \node[dim label,anchor=east] at (-0.6,5.19) {\SI{595}{\nano\metre}};
+  \fill[red!75!black] (2,5.19) circle (3pt);
+  \node[violation label,anchor=west,align=left] at (4.3,5.19) {reported at (\SI{500}{\nano\metre}, \SI{1297}{\nano\metre}):\\midway across, middle of the run};
+\end{circuitikz}
+\end{document}

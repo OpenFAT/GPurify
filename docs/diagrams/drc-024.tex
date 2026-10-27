@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % one met1 U: outline (0,0) (700,0) (700,2000) (400,2000) (400,500) (300,500) (300,2000) (0,2000) nm
+  % x: 1 unit = 100 nm; y: 1 unit = 400 nm
+  \draw[layer a] (0,0) -- (7,0) -- (7,5) -- (4,5) -- (4,1.25) -- (3,1.25) -- (3,5) -- (0,5) -- cycle;
+  \node[caption,anchor=south] at (3.5,5.05) {met1, one shape};
+  \draw[violation] (3,1.25) rectangle (4,5);
+  \draw[dim] (3,3.5) -- (4,3.5);
+  \node[dim label,anchor=south] at (3.5,3.6) {\SI{0.10}{\micro\metre}};
+  \node[violation label,anchor=west] at (7.3,3.1) {notch $<$ \SI{0.14}{\micro\metre}};
+\end{circuitikz}
+\end{document}

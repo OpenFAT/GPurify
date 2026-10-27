@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=0.5]
+  % m1 (0,0)-(40,800); m1_c1 (0,0)-(40,405); m1_c2 (0,400)-(40,800) nm; x: 1 unit = 10 nm, y: 1 unit = 50 nm, overlap drawn large
+  \draw[layer a] (0,0) rectangle (4,7.4);
+  \draw[layer c] (0,7.4) rectangle (4,8.6);
+  \draw[layer b] (0,8.6) rectangle (4,16);
+  \node[caption,anchor=west] at (4.2,3.7) {m1\_c1: mask 1};
+  \node[caption,anchor=west] at (4.2,12.3) {m1\_c2: mask 2};
+  \draw[violation] (-0.2,7.4) rectangle (4.2,8.6);
+  \draw[dim] (-0.8,7.4) -- (-0.8,8.6);
+  \node[dim label,anchor=east] at (-0.9,8) {\SI{5}{\nano\metre}};
+  \node[violation label,anchor=west] at (4.4,8) {stitch overlap $<$ \SI{10}{\nano\metre}};
+\end{circuitikz}
+\end{document}

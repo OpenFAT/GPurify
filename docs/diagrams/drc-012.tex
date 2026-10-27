@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 6 x 8 um filler, 1 unit = 1 um
+  \draw[layer a] (0,0) rectangle (3,4);
+  \node[caption,anchor=south] at (1.5,4.05) {activ\_filler};
+  \draw[dim] (0,2) -- (3,2);
+  \node[dim label,anchor=south] at (1.5,2.05) {\SI{6}{\micro\metre}};
+  \draw[marker] (0.25,0.75) rectangle (2.75,3.25);
+  \node[caption,anchor=north,align=center] at (1.5,0.7) {a \SI{5}{\micro\metre} square fits};
+  \node[violation label,anchor=west] at (3.2,2) {width $>$ \SI{5}{\micro\metre}};
+\end{circuitikz}
+\end{document}

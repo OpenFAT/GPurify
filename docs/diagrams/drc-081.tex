@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % nwell (0,0)-(2000,2000) on VDDH under hvi (-500,-500)-(2500,2500); nwell (3500,0)-(5500,2000) on VDD; 1 unit = 500 nm
+  \draw[layer c] (-1,-1) rectangle (5,5);
+  \node[caption,anchor=south] at (2,5.05) {hvi};
+  \draw[layer a] (0,0) rectangle (4,4);
+  \node[caption,align=center,fill=gray!20] at (2,2) {hv\_nwell\\net VDDH};
+  \draw[layer a] (7,0) rectangle (11,4);
+  \node[caption,align=center] at (9,2) {nwell\\net VDD};
+  \draw[violation] (4,0) rectangle (7,4);
+  \draw[dim] (4,2) -- (7,2);
+  \node[dim label,anchor=south] at (5.5,2.1) {\SI{1.5}{\micro\metre}};
+  \node[violation label,anchor=north] at (8,-0.3) {different nets: space $<$ \SI{2}{\micro\metre}};
+\end{circuitikz}
+\end{document}

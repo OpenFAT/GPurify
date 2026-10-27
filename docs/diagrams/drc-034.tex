@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % via1 cuts 150 nm square at x = 0, 1000 and 5000 nm; 1 unit = 500 nm
+  \draw[layer b] (0,0) rectangle (0.3,0.3);
+  \draw[layer b] (2,0) rectangle (2.3,0.3);
+  \draw[layer b] (10,0) rectangle (10.3,0.3);
+  \node[caption,anchor=north] at (1.15,-0.1) {via1};
+  \draw[dim] (0.15,0.9) -- (2.15,0.9);
+  \node[dim label,anchor=south] at (1.15,1) {\SI{1}{\micro\metre}: passes};
+  \draw[dim] (2.15,-4.4) -- (10.15,-4.4);
+  \node[dim label] at (6.15,-4.4) {\SI{4}{\micro\metre}, centre to centre};
+  \draw[violation] (10.15,0.15) circle (4);
+  \node[violation label,anchor=south] at (10.15,1.6) {no cut within \SI{2}{\micro\metre}};
+\end{circuitikz}
+\end{document}

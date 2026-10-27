@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=0.4]
+  % m1 (0,0)-(40,400) and (100,0)-(140,400) nm, both under m1_c1; 1 unit = 20 nm
+  \draw[layer a] (0,0) rectangle (2,20);
+  \draw[layer a] (5,0) rectangle (7,20);
+  \node[caption,anchor=south,align=center] at (1,20.1) {m1\\mask 1};
+  \node[caption,anchor=south,align=center] at (6,20.1) {m1\\mask 1};
+  \draw[violation] (2,0) rectangle (5,20);
+  \draw[dim] (2,10) -- (5,10);
+  \node[dim label,anchor=south] at (3.5,10.2) {\SI{60}{\nano\metre}};
+  \node[violation label,anchor=west,align=left] at (7.4,10) {conflict under \SI{80}{\nano\metre},\\both anchored\\to mask 1};
+\end{circuitikz}
+\end{document}

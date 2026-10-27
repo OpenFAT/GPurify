@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % metal1 (0,0) (300,0) (1300,1000) (1000,1000) and (550,0) (850,0) (1850,1000) (1550,1000) nm; 1 unit = 200 nm
+  \draw[layer a] (0,0) -- (1.5,0) -- (6.5,5) -- (5,5) -- cycle;
+  \draw[layer a] (2.75,0) -- (4.25,0) -- (9.25,5) -- (7.75,5) -- cycle;
+  \node[caption,anchor=south] at (5.75,5.05) {metal1};
+  \node[caption,anchor=south] at (8.5,5.05) {metal1};
+  \draw[dim] (1.5,-0.4) -- (2.75,-0.4);
+  \node[dim label,anchor=north] at (2.1,-0.5) {\SI{0.25}{\micro\metre} along x};
+  \draw[violation] (4,2.5) -- (4.625,1.875);
+  \draw[dim] (4,2.5) -- (4.625,1.875);
+  \node[violation label,anchor=west,align=left] at (6.0,0.9) {\SI{0.25}{\micro\metre}$/\sqrt{2}$ = \SI{0.177}{\micro\metre}\\$<$ \SI{0.22}{\micro\metre}};
+\end{circuitikz}
+\end{document}

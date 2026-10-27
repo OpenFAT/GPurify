@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=0.4]
+  % GATE (0,0)-(20,500); GCUT (-20,200)-(40,240) and (100,200)-(160,240) nm; 1 unit = 20 nm
+  \draw[layer a] (0,0) rectangle (1,25);
+  \node[caption,anchor=south] at (0.5,25.05) {GATE};
+  \draw[layer c] (-1,10) rectangle (2,12);
+  \node[caption,anchor=east] at (-1.2,11) {GCUT: passes};
+  \draw[layer c] (5,10) rectangle (8,12);
+  \node[caption,anchor=south] at (6.5,12.4) {GCUT};
+  \draw[violation] (4.8,9.8) rectangle (8.2,12.2);
+  \node[violation label,anchor=north,align=center] at (6.5,9.5) {touches no gate:\\\SI{2400}{\nano\metre\squared}};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % diff 1000 x 360, poly 130 wide crossing it; scale 1 unit = 200 nm
+  \draw[layer a] (0,0) rectangle (5,1.8);
+  \node[caption,anchor=north west] at (0,-0.05) {diff};
+  \draw[layer c] (2,-1) rectangle (2.65,2.8);
+  \node[caption,anchor=south] at (2.325,2.85) {poly};
+  \draw[marker] (2,0) rectangle (2.65,1.8);
+  % channel length between the poly edges
+  \draw[dim] (2,2.2) -- (2.65,2.2);
+  \node[dim label,anchor=east] at (1.9,2.3) {L = \SI{0.13}{\micro\metre}};
+  % channel width between the diff edges
+  \draw[dim] (-0.4,0) -- (-0.4,1.8);
+  \node[dim label,anchor=east] at (-0.5,0.9) {W = \SI{0.36}{\micro\metre}};
+  \node[violation label,anchor=west] at (5.3,1.5) {L $<$ \SI{0.15}{\micro\metre}};
+  \node[violation label,anchor=west] at (5.3,0.9) {W $<$ \SI{0.42}{\micro\metre}};
+  \node[caption,anchor=west] at (5.3,0.3) {gate = poly and diff (dashed)};
+\end{circuitikz}
+\end{document}

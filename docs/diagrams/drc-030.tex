@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met2 wire (0,0)-(80,1000), intruder (100,1050)-(600,1130) nm; box x -50..130, y 1000..1150; 1 unit = 40 nm
+  \draw[layer a] (0,0) rectangle (2,5);
+  \node[caption,anchor=north] at (1,-0.05) {met2};
+  \draw[layer a] (2.5,6.25) rectangle (9,8.25);
+  \node[caption,anchor=west] at (9.1,7.25) {met2};
+  \draw[marker] (-1.25,5) rectangle (3.25,8.75);
+  \node[caption,anchor=south] at (1,8.8) {keep-out box};
+  \draw[dim] (-1.25,4.4) -- (0,4.4);
+  \node[dim label,anchor=north] at (-0.6,4.3) {\SI{0.05}{\micro\metre}};
+  \draw[dim] (-1.8,5) -- (-1.8,8.75);
+  \node[dim label,anchor=east] at (-1.9,6.9) {forward \SI{0.15}{\micro\metre}};
+  \draw[violation] (2.5,6.25) rectangle (3.25,8.25);
+  \node[violation label,anchor=north west,align=left] at (3.4,6.1) {\SI{30}{\nano\metre} by \SI{80}{\nano\metre} inside:\\\SI{2400}{\nano\metre\squared}};
+\end{circuitikz}
+\end{document}

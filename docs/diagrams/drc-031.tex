@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % M1 (0,0)-(200,18) and (225,0)-(400,18) nm; x not to scale; y: 1 unit = 10 nm
+  \draw[layer a] (0,0) rectangle (5,1.8);
+  \draw[layer a] (7.5,0) rectangle (12.5,1.8);
+  \node[caption,anchor=south] at (2.5,1.85) {M1};
+  \node[caption,anchor=south] at (10,1.85) {M1};
+  \draw[dim] (-0.4,0) -- (-0.4,1.8);
+  \node[dim label,anchor=east] at (-0.5,0.9) {tip \SI{18}{\nano\metre}};
+  \draw[violation] (5,0) rectangle (7.5,1.8);
+  \draw[dim] (5,0.9) -- (7.5,0.9);
+  \node[dim label,anchor=north] at (6.25,-0.1) {\SI{25}{\nano\metre}};
+  \node[violation label,anchor=south] at (6.25,2.4) {tip to tip $<$ \SI{31}{\nano\metre}};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met2 wire (0,0)-(80,1000), crossing wire (-500,1080)-(600,1160) nm; 1 unit = 40 nm, wires cut short
+  \draw[layer a] (0,0) rectangle (2,5);
+  \draw[layer a] (-4,7) rectangle (6,9);
+  \node[caption,anchor=west] at (6.1,8) {met2};
+  \node[caption,anchor=north] at (1,-0.05) {met2};
+  \draw[marker] (-0.625,5) rectangle (2.625,7.5);
+  \node[caption,anchor=east] at (-0.7,6.2) {keep-out};
+  \draw[dim] (0,4.4) -- (2,4.4);
+  \node[dim label,anchor=north] at (1,4.3) {end \SI{0.08}{\micro\metre}};
+  \draw[violation] (0,5) rectangle (2,7);
+  \draw[dim] (1,5) -- (1,7);
+  \node[dim label] at (1,6) {\SI{0.08}{\micro\metre}};
+  \node[violation label,anchor=west] at (2.9,6) {end space $<$ \SI{0.10}{\micro\metre}};
+\end{circuitikz}
+\end{document}

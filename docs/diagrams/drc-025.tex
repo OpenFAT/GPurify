@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 plate (0,0)-(4000,4000) nm and wire (4200,0)-(4400,4000) nm; not to scale
+  \draw[layer a] (0,0) rectangle (5,5);
+  \node[caption,anchor=south] at (2.5,5.05) {met1 plate, \SI{4}{\micro\metre}};
+  \draw[marker] (0.4,0.4) rectangle (4.15,4.15);
+  \node[caption,align=center] at (2.3,2.3) {a \SI{3}{\micro\metre} square\\fits: wide};
+  \draw[layer a] (6,0) rectangle (6.6,5);
+  \node[caption,anchor=south] at (6.3,5.05) {met1};
+  \draw[violation] (5,0) rectangle (6,5);
+  \draw[dim] (5,2.5) -- (6,2.5);
+  \node[dim label,anchor=south] at (5.5,2.6) {\SI{0.20}{\micro\metre}};
+  \node[violation label,anchor=west] at (6.9,2.5) {space $<$ \SI{0.28}{\micro\metre}};
+\end{circuitikz}
+\end{document}

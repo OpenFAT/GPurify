@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % capm 1 x 25 um drawn sideways; 1 unit = 0.5 um
+  \draw[layer a] (0,0) rectangle (12.5,0.5);
+  \node[caption,anchor=south] at (6.25,0.55) {capm};
+  \draw[dim] (0,-0.4) -- (12.5,-0.4);
+  \node[dim label,anchor=north] at (6.25,-0.5) {\SI{25}{\micro\metre}};
+  \draw[dim] (13,0) -- (13,0.5);
+  \node[dim label,anchor=west] at (13.1,0.25) {\SI{1}{\micro\metre}};
+  \node[violation label,anchor=north] at (6.25,-1.2) {25 / 1 = 25 $>$ 20};
+\end{circuitikz}
+\end{document}

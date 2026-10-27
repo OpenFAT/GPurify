@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % two vias: 150 square passes, 200 square fails; 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (1.5,1.5);
+  \node[caption,anchor=north] at (0.75,-0.1) {\SI{0.15}{\micro\metre}: passes};
+  \draw[layer a] (4,0) rectangle (6,2);
+  \node[caption,anchor=south] at (5,2.25) {via};
+  \node[caption,anchor=north] at (5,-0.1) {\SI{0.20}{\micro\metre}};
+  \draw[violation] (3.85,-0.15) rectangle (6.15,2.15);
+  \node[violation label,anchor=west,align=left] at (6.4,1) {not 0.15, 0.23\\or \SI{0.28}{\micro\metre}};
+\end{circuitikz}
+\end{document}
