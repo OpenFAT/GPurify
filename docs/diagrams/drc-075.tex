@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 0.08 cm per um: plates 3.2 cm; the second plate drawn 20 um right of the first
+  \draw[layer a] (0,0) rectangle (3.2,3.2);
+  \node[caption] at (1.6,1.6) {metal1};
+  \draw[violation] (-0.08,-0.08) rectangle (3.28,3.28);
+  \node[violation label,align=center,anchor=north] at (1.6,-0.9) {\SI{40}{\micro\metre} wide, no slot:\\fails Slt.c.M1, m1.slot,\\m1.slit\_density};
+  \draw[layer a] (4.8,0) rectangle (8,3.2);
+  \draw[fill=white,draw=black,line width=0.6pt] (6.24,0.4) rectangle (6.48,2.8);
+  \node[caption,anchor=north] at (6.4,-0.9) {slit \SI{3}{\micro\metre}: passes};
+  \draw[->] (6.4,-0.9) -- (6.36,0.38);
+  \node[caption,anchor=west] at (8.1,1.6) {metal1\_slit};
+  \draw[->] (8.1,1.6) -- (6.5,1.6);
+  \draw[dim] (0,3.6) -- node[dim label,above=1pt] {\SI{40}{\micro\metre}} (3.2,3.6);
+  \draw[dim] (4.8,3.6) -- node[dim label,above=1pt] {\SI{40}{\micro\metre}} (8,3.6);
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % two 10 x 100 um plates, 3 um apart, drawn lying down; 0.06 cm per um along,
+  % 0.15 cm per um across
+  \draw[layer a] (0,0) rectangle (6,1.5);
+  \draw[layer a] (0,1.95) rectangle (6,3.45);
+  \node[caption] at (3,0.75) {topmetal2};
+  \node[caption] at (3,2.7) {topmetal2};
+  \draw[violation] (0,1.725) -- (6,1.725);
+  \draw[dim] (6.3,1.5) -- (6.3,1.95);
+  \node[violation label,align=left,anchor=west] at (6.6,1.725) {TM2.bR warning: gap \SI{3}{\micro\metre} $<$ \SI{5}{\micro\metre}\\(both wider than \SI{5}{\micro\metre}, run over \SI{50}{\micro\metre})};
+  \node[caption,anchor=west] at (6.6,0.5) {TM2.b: \SI{3}{\micro\metre} $\ge$ \SI{2}{\micro\metre}, passes};
+  \draw[dim] (0,-0.4) -- node[dim label,below=1pt] {\SI{100}{\micro\metre}} (6,-0.4);
+  \draw[dim] (-0.4,0) -- node[dim label,left=1pt] {\SI{10}{\micro\metre}} (-0.4,1.5);
+\end{circuitikz}
+\end{document}

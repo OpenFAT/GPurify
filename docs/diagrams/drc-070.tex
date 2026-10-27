@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 100 x 100 um die (prboundary), metal1 over its lower 30 um; 0.05 cm per um
+  \draw[marker] (0,0) rectangle (5,5);
+  \node[caption,anchor=south west] at (0.1,4.4) {prboundary};
+  \draw[layer a] (0,0) rectangle (5,1.5);
+  \node[caption] at (2.5,0.75) {metal1};
+  \draw[violation] (-0.08,-0.08) rectangle (5.08,1.58);
+  \draw[dim] (0,-0.5) -- node[dim label,below=1pt] {\SI{100}{\micro\metre}} (5,-0.5);
+  \draw[dim] (-0.5,0) -- node[dim label,left=1pt] {\SI{30}{\micro\metre}} (-0.5,1.5);
+  \draw[dim] (5.5,0) -- node[dim label,right=1pt] {\SI{100}{\micro\metre}} (5.5,5);
+  \node[violation label,align=center] at (2.5,2.9) {M1.j: $D = 3000/10000 = 0.30$\\below the 35\,\% minimum};
+\end{circuitikz}
+\end{document}

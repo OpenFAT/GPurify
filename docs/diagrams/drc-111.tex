@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % metal1 lines 1 um x 200 nm; 2 cm per um along, 4 cm per um across; pairs 3.5 cm apart
+  \foreach \x/\g in {0/0.76, 3.5/0.80, 7/0.84} {
+    \draw[layer a] (\x,0) rectangle (\x+2,0.8);
+    \draw[layer a] (\x,0.8+\g) rectangle (\x+2,1.6+\g);
+    \draw[dim] (\x+2.3,0.8) -- (\x+2.3,0.8+\g);
+  }
+  \node[dim label,anchor=north] at (1,-0.1) {\SI{190}{\nano\metre}: $s = 0.25$};
+  \node[dim label,anchor=north] at (4.5,-0.1) {\SI{200}{\nano\metre}: $s = 0.5$};
+  \node[dim label,anchor=north] at (8,-0.1) {\SI{210}{\nano\metre}: $s = 0.75$};
+  \draw[violation] (-0.1,-0.07) rectangle (2.1,2.43);
+  \node[caption,anchor=south] at (1,2.45) {metal1};
+  \node[violation label,anchor=north] at (4.5,-0.7) {$F = 0.9925 \times 0.995 \times 0.9975 = 0.985 < 0.99$, reported at the \SI{190}{\nano\metre} gap};
+  \node[caption,anchor=north] at (4.5,-1.2) {required \SI{180}{\nano\metre} scores 0, recommended \SI{220}{\nano\metre} scores 1, rate 1\,\%};
+\end{circuitikz}
+\end{document}

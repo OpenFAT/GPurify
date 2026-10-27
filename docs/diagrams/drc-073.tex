@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 0.8 cm per um
+  \draw[layer a] (0,0) rectangle (8,0.8);
+  \node[caption] at (6,0.4) {metal1};
+  \draw[layer c] (0,1.04) rectangle (1.6,2.64);
+  \node[caption,anchor=south] at (0.8,2.64) {metal1\_filler};
+  \draw[layer c] (3.2,1.2) rectangle (3.84,1.84);
+  \node[caption,anchor=south] at (3.52,1.84) {metal1\_filler};
+  % 300 nm gap
+  \draw[violation] (0,0.92) -- (1.6,0.92);
+  \node[violation label,anchor=west] at (4.3,2.5) {M1Fil.c: gap \SI{300}{\nano\metre} $<$ \SI{420}{\nano\metre}};
+  \draw[->] (4.3,2.45) -- (1.65,0.95);
+  % 800 nm filler
+  \draw[dim] (3.2,1.0) -- node[dim label,below=1pt] {\SI{800}{\nano\metre}} (3.84,1.0);
+  \node[violation label,anchor=west] at (4.3,1.55) {M1Fil.a1: \SI{800}{\nano\metre} $<$ \SI{1}{\micro\metre}};
+  \draw[violation] (3.15,1.15) rectangle (3.89,1.89);
+  \draw[dim] (-0.3,1.04) -- node[dim label,left=1pt] {\SI{2}{\micro\metre}} (-0.3,2.64);
+\end{circuitikz}
+\end{document}

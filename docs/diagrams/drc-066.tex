@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.3cm,y=0.3cm]
+  % 1 unit = 100 nm. A 1.2 um wide met2 plate with a single-cut via to met1
+  % on the left and a two-cut via on the right.
+  \draw[layer a] (0,0) rectangle (30,12);
+  \node[above left] at (30,12) {met2, \SI{1.2}{\micro\metre} wide};
+  \draw[layer c] (4,4) rectangle (8,8);
+  \draw[layer c] (20,4) rectangle (28,8);
+  \draw[layer b] (5,5) rectangle (7,7);
+  \draw[layer b] (21,5) rectangle (23,7);
+  \draw[layer b] (25,5) rectangle (27,7);
+  \node[below] at (6,4) {met1};
+  \node[below] at (24,4) {met1};
+  \draw[violation] (4.6,4.6) rectangle (7.4,7.4);
+  \node[violation label,align=center,below] at (8,-0.4) {M2.MINCUT: 1 via1 cut $<$ 2};
+  \node[caption,below] at (24,-0.4) {2 cuts: passes};
+  \draw[dim] (-1,0) -- (-1,12) node[midway,left,dim label] {\SI{1.2}{\micro\metre}};
+\end{circuitikz}
+\end{document}

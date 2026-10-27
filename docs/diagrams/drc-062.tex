@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.6cm,y=0.6cm]
+  % 1 unit = 100 nm. via1 cuts 150 nm wide, 100 nm apart: a 2 x 2 and a 2 x 3 array.
+  \foreach \x in {0,2.5} \foreach \y in {0,2.5} \draw[layer a] (\x,\y) rectangle ++(1.5,1.5);
+  \node[caption,align=center,below] at (2,-0.3) {2 $\times$ 2: two neighbours\\within \SI{120}{\nano\metre} each, passes};
+  \foreach \x in {8,10.5,13} \foreach \y in {0,2.5} \draw[layer a] (\x,\y) rectangle ++(1.5,1.5);
+  % The middle cuts have three neighbours closer than 120 nm, so their pairs are held.
+  \draw[violation] (10.3,-0.2) rectangle (12.2,4.2);
+  \draw[dim] (9.5,4.6) -- (10.5,4.6) node[left=0.6cm,dim label] {\SI{100}{\nano\metre}};
+  \node[violation label,align=center,below] at (11.25,-0.3) {V1.ADJ: middle cuts have three\\neighbours, \SI{100}{\nano\metre} $<$ \SI{120}{\nano\metre}};
+  \node[caption] at (11.25,5.4) {via1};
+  \node[caption] at (2,5.4) {via1};
+\end{circuitikz}
+\end{document}

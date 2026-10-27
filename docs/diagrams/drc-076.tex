@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 1400 x 700 um die, 0.006 cm per um: 8.4 x 4.2 cm
+  \draw[layer d] (0,0) rectangle (4.2,3.78);
+  \draw[layer d] (4.2,0) rectangle (8.4,2.1);
+  \draw[layer c] (0,0) rectangle (2.1,4.2);
+  \draw[layer c] (4.2,0) rectangle (6.0,4.2);
+  \draw[marker] (0,0) rectangle (8.4,4.2);
+  \draw[violation] (0,0) rectangle (4.2,4.2);
+  \node[caption,fill=white,inner sep=1pt] at (1.05,3.1) {met1};
+  \node[caption,fill=white,inner sep=1pt] at (3.15,1.9) {cmm1\_waffle};
+  \node[violation label,align=center,anchor=south] at (2.1,4.3) {left: $c = 0.9 \ge 0.8$, needs 65\,\%;\\$d = 0.5$: fails};
+  \node[caption,align=center,anchor=south] at (6.3,4.3) {right: $c = 0.5$,\\in no band};
+  \draw[dim] (0,-0.4) -- node[dim label,below=1pt] {window \SI{700}{\micro\metre}} (4.2,-0.4);
+  \draw[dim] (4.2,-0.4) -- node[dim label,below=1pt] {step \SI{700}{\micro\metre}} (8.4,-0.4);
+  \draw[dim] (-0.4,0) -- node[dim label,left=1pt] {\SI{630}{\micro\metre}} (-0.4,3.78);
+  \draw[dim] (8.8,0) -- node[dim label,right=1pt] {\SI{350}{\micro\metre}} (8.8,2.1);
+\end{circuitikz}
+\end{document}

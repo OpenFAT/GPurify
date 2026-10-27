@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.25cm,y=0.25cm]
+  % Left, 1 unit = 100 nm: an L-shaped capm. Right, not to scale (the growth
+  % drawn wide): a 2 um capm over met3, grown 140 nm in x, sticking 40 nm past
+  % met3's left edge.
+  \draw[layer b] (0,0) -- (20,0) -- (20,10) -- (10,10) -- (10,20) -- (0,20) -- cycle;
+  \node at (6,6) {capm};
+  \draw[violation] (-0.4,-0.4) -- (20.4,-0.4) -- (20.4,10.4) -- (10.4,10.4) -- (10.4,20.4) -- (-0.4,20.4) -- cycle;
+  \node[violation label,align=center,below] at (10,-1) {capm.7: not a rectangle};
+  \draw[layer a] (38,-2) rectangle (64,22);
+  \node[above] at (51,22) {met3};
+  \draw[layer b] (40,0) rectangle (60,20);
+  \node at (50,10) {capm};
+  \draw[marker] (36,0) rectangle (64,20);
+  \draw[violation] (36,0) rectangle (38,20);
+  \draw[dim] (36,-4) -- (40,-4) node[midway,below,dim label] {\SI{140}{\nano\metre}};
+  \node[violation label,align=center,below] at (51,-6.5) {capm.side: \SI{40}{\nano\metre} $\times$ \SI{2}{\micro\metre}\\outside met3};
+  \node[caption,align=left,right] at (65,14) {dashed:\\capm grown\\\SI{140}{\nano\metre} in x};
+\end{circuitikz}
+\end{document}

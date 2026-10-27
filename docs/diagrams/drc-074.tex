@@ -1,0 +1,16 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 0.4 cm per um
+  \draw[layer d] (0,0) rectangle (4,4);
+  \node[caption,fill=white,inner sep=1pt] at (2,2) {metal1\_nofill};
+  \draw[layer c] (3.6,1.6) rectangle (4.4,2.4);
+  \draw[layer c] (4.8,1.6) rectangle (5.6,2.4);
+  \node[caption,anchor=south] at (5.2,2.4) {metal1\_filler};
+  \draw[violation] (3.6,1.6) rectangle (4,2.4);
+  \node[violation label,anchor=west] at (4.5,0.6) {M1.nofill: overlap \SI{1}{\micro\metre} $\times$ \SI{2}{\micro\metre} = \SI{2}{\micro\metre\squared}};
+  \draw[->] (4.5,0.65) -- (3.8,1.55);
+  \node[caption,anchor=north] at (5.2,1.5) {passes};
+\end{circuitikz}
+\end{document}
