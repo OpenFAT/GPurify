@@ -58,13 +58,13 @@ feature tag (`deck:`, `drc:`, `erc:`, `lvs:`, `pex:`, `ingest:`, `lib:`).
 | `MR` | Metamorphic relation (plan L5) |
 | `NV` | Naive reference implementation (dense nodal solve, BFS, brute-force colouring) |
 
-**Snapshot, 2026-10-10** (261 rows):
+**Snapshot, 2026-10-10** (262 rows):
 
 | Domain | implemented | expressible | partial | missing | verify | out of scope |
 |---|---:|---:|---:|---:|---:|---:|
 | DRC | 56 | 6 | 44 | 0 | 0 | 0 |
 | LVS | 31 | 1 | 15 | 1 | 0 | 0 |
-| ERC | 64 | 4 | 13 | 0 | 0 | 0 |
+| ERC | 64 | 4 | 14 | 0 | 0 | 0 |
 | PEX | 9 | 0 | 7 | 0 | 0 | 0 |
 | Flow | 2 | 0 | 8 | 0 | 0 | 0 |
 
@@ -376,6 +376,7 @@ single oracle is a named gap that ledger P1 closes.
 | ERC-E11 | Dynamic / vectorless IR | partial | RH; VOL; MP; TOT; Najm2003; WH | CF; NV; MR; SY |
 | ERC-E12 | Stress voiding / slotting | partial | JEP139; JESD214; GF:14.6,MSLOT.1-10; IHP:Slt.a-i | FR; MR; SY |
 | ERC-E13 | Thermal-aware / statistical EM, self-heating | implemented | RH; TOT; VOL; Banerjee1999; Black1969; JEP122; JESD63; Kitchin1995 | CF; SE; MR; SY |
+| ERC-E14 | Simulation-driven EM and IR drop: per-terminal currents from a simulator, mapped through LVS | partial | VOL; CAL:PERC; ESPice#237 | CF; NV; MR; SY |
 | ERC-F1 | Static voltage propagation, conditional on gate voltage | implemented | CAL:WP 81822; SKY:hv.X.1; patents P5,P9 | SE:Siemens WP; SY; NV |
 | ERC-F2 | Gate-oxide overstress | implemented | GF:14.1.4.2; SKY:hv; TR22:4.1; CAL | FR; CF; SY |
 | ERC-F3 | Junction / drain-source overstress | implemented | SKY:hv; IHP:process spec | FR; SY |

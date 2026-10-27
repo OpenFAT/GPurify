@@ -38,6 +38,7 @@ test {
     _ = @import("gpurify/lvs_relations.zig");
     _ = @import("gpurify/lvs_relations_runs.zig");
     _ = @import("gpurify/lvs_system.zig");
+    _ = @import("gpurify/erc_currents.zig");
     _ = @import("gpurify/lvs_system_stacks.zig");
     _ = @import("gpurify/lvs_system_esd.zig");
     _ = @import("gpurify/drc_common.zig");

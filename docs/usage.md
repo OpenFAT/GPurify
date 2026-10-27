@@ -7,7 +7,7 @@ gpurify <command> <layout.gds> --deck <process.deck> [options] > report
 | Command | Checks | Needs |
 |---|---|---|
 | `drc` | Design rules: width, spacing, enclosure, area, density, grid, angle, vias | the deck |
-| `erc` | Electrical rules: antenna, ties, floating gates and wells, shorts, power grid | the deck; `--intent` for the voltage, ESD and power-grid rules |
+| `erc` | Electrical rules: antenna, ties, floating gates and wells, shorts, power grid | the deck; `--intent` for the voltage, ESD and power-grid rules; `--currents` with `--reference` for simulated currents |
 | `lvs` | The layout's devices and connections against your schematic | `--reference <netlist>` |
 | `pex` | Parasitic resistance and capacitance; inductance for field-solved nets | the deck's `pex` lines |
 | `all` | All four | a check whose input is missing is reported as skipped, never as passed |
@@ -33,6 +33,7 @@ own. The report goes to standard output.
 | `--deck <file>` | The process deck. Required. See [deck.md](deck.md). |
 | `--reference <file>` | The schematic netlist for LVS (SPICE or Spectre). Repeat it to give a structural Verilog top level (`.v`) beside the SPICE or Spectre cell library its modules place; see below. |
 | `--intent <file>` | Design intent: supply voltages and per-net limits. See below. |
+| `--currents <file>` | A simulator's per-terminal currents (`espice-emir/1`) for the power-grid rules, placed on the layout through LVS. `erc` and `all`; needs `--reference`. See [below](#simulated-currents). |
 | `--format text\|json\|spef\|dspf` | Report format. `spef` and `dspf` need a `pex` run. Default `text`. |
 | `--quasistatic <net>` | Field-solve this net's capacitance and inductance instead of using the closed-form estimate. Repeat for more nets. |
 | `--lef <file>` | A LEF a DEF layout reads (technology first, then cells). Repeat for more. Only with a `.def` layout. |
@@ -388,6 +389,69 @@ supply at its voltage (a ground at 0 V). Voltages are propagated again for
 each state, gate conditions included, so a disabled tristate driver leaves its
 output floating. A state may only turn off a declared supply, names are
 unique, and an input is held once per state.
+
+### Simulated currents
+
+```sh
+gpurify erc top.gds --deck sky130 --reference top.spice --intent intent.json --currents hot.emir.json
+```
+
+A budget spreads one current per net evenly over the net's loads, every load
+in phase: a supply-grid model. In an analog block a bias line feeds a 1:10
+mirror and a source line carries one branch's current, so the per-load
+currents decide a wire. `--currents FILE` reads them from a simulator's
+per-terminal current file (`espice-emir/1`, written by ESPice's `--emir`):
+for each schematic instance terminal, its average, electromigration-average,
+RMS and peak current at one corner (catalog ERC-E14).
+
+1. LVS runs first, as `lvs` compares the layout with the reference. Its
+   device and net pairing places each terminal: on the layout device LVS
+   pairs the instance with, on that device's terminals on the net LVS pairs
+   the terminal's net with (so a resistor's interchangeable ends, or a
+   transistor's source and drain, land where the layout has them). A
+   parallel or series group LVS reduced to one device shares the current
+   evenly over its terminals on that net.
+2. Each net's resistive grid, as `ir_drop` extracts it, is solved with every
+   terminal current drawn at its device's tap. The net's port takes the
+   return: one feed point, the centre of its highest, then widest, shape,
+   held at the supply's voltage (0 V on a net that is no supply). This
+   replaces spreading a budget over the loads.
+3. `em_current_density`, `electromigration` and `em_thermal` check each wire
+   and cut with the electromigration-average current through it; `em_rms`
+   and `em_peak` with the RMS and peak values, combined over a net's loads
+   by the in-phase sum the budget model already assumes, an upper bound.
+4. `ir_drop` checks each node's drop to its net's port with the average
+   currents: the supply's limits on a supply, and `max_drop_mv` alone, by
+   magnitude, on any other net the currents load.
+
+- A net that has both terminal currents and a budget uses the currents: an
+  `erc.budget_unused` warning on the net says so, measured the net's
+  simulated current (the sum of its average currents, by magnitude) against
+  the budget no rule read. Nets the file does not reach keep their budgets.
+- Each grid finding names the instance and terminal whose current loads it
+  most (`loaded most by xdut.mn1 d` in the text report, `"load"` in JSON),
+  found by one adjoint solve per finding.
+- The file's instances are the reference's devices by their flattened names
+  (`x1.mn1`; case does not matter), each with its terminals in card order as
+  ESPice writes them. A name under a device names it too: `xm1.msky130_...`
+  is the device inside a PDK wrapper subcircuit the simulator expanded. The
+  names may sit under one testbench instance (`xdut.x1.mn1`); instances
+  outside it are the testbench's and are left out.
+- Refused, each naming the cause: `--currents` without `--reference`; a
+  comparison that could not be made or did not conclude; a terminal whose
+  instance or net LVS left unmatched; a current file whose instance set does
+  not match the reference (an instance that is no reference device, a
+  reference device with no current, one device listed as several, a
+  terminal count that is not the card's: another netlist); an instance LVS
+  pairs with a black box; a terminal on a net with no label (no port) whose
+  average currents do not sum to zero within 0.1 %, so nothing returns them.
+  A net with no label whose currents balance (a mirror's inner node) needs
+  no port.
+- A device the deck's `lvs ignore` leaves out carries no current into the
+  grid, nor does a net LVS reduction consumes (a series stack's inner node).
+- The intent file is unchanged and still refuses unknown fields. Currents
+  travel in their own file, so one simulator output serves GPurify and
+  Philis 2.0 alike.
 
 ## Multi-die systems
 

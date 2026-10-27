@@ -257,6 +257,8 @@ pub const Fixture = struct {
     verilog: []const []const u8 = &.{},
     /// Design-intent JSON for the intent-gated ERC rules.
     intent: ?[]const u8 = null,
+    /// A simulator's terminal currents (`espice-emir/1`), placed through LVS.
+    currents: ?[]const u8 = null,
     /// Nets to field-solve.
     quasistatic: []const []const u8 = &.{},
     checks: Checks,
@@ -359,6 +361,10 @@ pub fn run(arena: Allocator, f: *const Fixture) !gpurify.Run {
     if (f.intent) |text| {
         try dir.writeFile(io, .{ .sub_path = "intent.json", .data = text });
         inputs.intent = "intent.json";
+    }
+    if (f.currents) |text| {
+        try dir.writeFile(io, .{ .sub_path = "currents.json", .data = text });
+        inputs.currents = "currents.json";
     }
     var diag: gpurify.RunDiagnostic = .{};
     return gpurify.run(gpa, arena, io, dir, inputs, .{ .checks = f.checks, .quasistatic_nets = f.quasistatic }, &.{}, &diag);

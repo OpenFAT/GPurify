@@ -116,5 +116,6 @@ test {
     _ = @import("check/erc/exhaustive_rails.zig");
     _ = @import("check/erc/exhaustive_ir.zig");
     _ = @import("check/erc/exhaustive_em.zig");
+    _ = @import("check/erc/simulated_currents.zig");
     _ = @import("check/erc/exhaustive_reliability.zig");
 }

@@ -2,14 +2,17 @@
 //! graphs to a verdict. In: the layout graph (black boxes added, must-
 //! connect nets joined) and one reference subcircuit's graph, the options,
 //! the deck's `lvs` controls. Out: a `Traced` (verdict, discrepancies,
-//! merges per side, and the reference rows each reduced reference device
-//! stands for). Neither input is modified; the verdict is deterministic.
+//! merges per side, the given rows each reduced device stands for, each
+//! reduced net's given row, and the pairing: the correspondence a
+//! simulator's terminal currents are placed through, catalog ERC-E14).
+//! Neither input is modified; the verdict is deterministic.
 //! Ported from crates/check/src/lvs/compare.rs (`compare_traced`, `origin`,
 //! `models_aside`, `CompareOptions`, `Traced`).
 //!
 //! Contents:
 //! - `pub const CompareOptions = struct`
-//! - `pub const Traced = struct`, `deinit(t: *Traced, gpa: Allocator) void`, `referenceRowsOf(t: *const Traced, device: u32) []const u32`
+//! - `pub const Traced = struct`, `deinit(t: *Traced, gpa: Allocator) void`, `referenceRowsOf(t: *const Traced, device: u32) []const u32`,
+//!   `layoutRowsOf(t: *const Traced, device: u32) []const u32`, `pub const unpaired: u32`
 //! - `pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Graph, options: CompareOptions, controls: *const LvsControls, out: *Traced) Allocator.Error!void`
 
 const std = @import("std");
@@ -48,6 +51,9 @@ pub const CompareOptions = struct {
     params: ParamNames = .{},
 };
 
+/// A reduced node `Traced.reference_mate` pairs with nothing.
+pub const unpaired: u32 = std.math.maxInt(u32);
+
 /// What `compareTraced` concluded.
 pub const Traced = struct {
     verdict: Verdict = .match,
@@ -61,17 +67,29 @@ pub const Traced = struct {
     /// row the deck's `lvs ignore` left out is in none.
     reference_row_start: std.ArrayList(u32) = .empty,
     reference_row: std.ArrayList(u32) = .empty,
+    /// The same for each reduced layout device: rows of the layout graph
+    /// given, a row `lvs filter_unused` or `lvs ignore` left out in none.
+    layout_row_start: std.ArrayList(u32) = .empty,
+    layout_row: std.ArrayList(u32) = .empty,
+    /// Each reduced net's row in the graph given, per side.
+    reference_net_origin: std.ArrayList(u32) = .empty,
+    layout_net_origin: std.ArrayList(u32) = .empty,
+    /// The pairing the verdict read: reduced reference node `n` (devices,
+    /// then nets at `deviceCount() + net`) pairs with reduced layout node
+    /// `reference_mate[n]` (numbered alike), or `unpaired`. Empty when the
+    /// comparison did not conclude.
+    reference_mate: std.ArrayList(u32) = .empty,
 
     pub fn deinit(t: *Traced, gpa: Allocator) void {
-        t.found.deinit(gpa);
-        t.layout_merges.deinit(gpa);
-        t.reference_merges.deinit(gpa);
-        t.reference_row_start.deinit(gpa);
-        t.reference_row.deinit(gpa);
+        inline for (@typeInfo(Traced).@"struct".field_names) |f| if (comptime !std.mem.eql(u8, f, "verdict")) @field(t, f).deinit(gpa);
     }
 
     pub fn referenceRowsOf(t: *const Traced, device: u32) []const u32 {
         return t.reference_row.items[t.reference_row_start.items[device]..t.reference_row_start.items[device + 1]];
+    }
+
+    pub fn layoutRowsOf(t: *const Traced, device: u32) []const u32 {
+        return t.layout_row.items[t.layout_row_start.items[device]..t.layout_row_start.items[device + 1]];
     }
 };
 
@@ -103,6 +121,7 @@ pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Gra
     options.params.gates = options.params.gates or controls.recognize_gates;
     out.verdict = .match;
     out.found.clearRetainingCapacity();
+    out.reference_mate.clearRetainingCapacity();
     const names = options.params;
     const values: [2]?StrId = .{ names.values[0], names.values[1] };
     var w: Work = .{};
@@ -111,11 +130,13 @@ pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Gra
     // The reference's own ports, before a label makes another net a port.
     if (controls.ports_by_name) try controls_mod.portNamesInto(gpa, reference, &w.ports);
     w.declared = try reference.clone(gpa);
+    try identityInto(gpa, reference.netCount(), &w.declared.net_origin);
     try prepare.dropUnextractedBulk(gpa, layout, &w.declared);
     const ref_dropped = try retain.dropIgnoredDevices(gpa, &w.declared, controls, values, &w.ref_kept);
     prepare.sortStressPair(&w.declared, names.stress);
     try prepare.protectLabelled(gpa, layout, &w.declared);
     w.measured = try layout.clone(gpa);
+    try identityInto(gpa, layout.netCount(), &w.measured.net_origin);
     // Unused transistors are judged as drawn, before anything else leaves;
     // a threshold reads the layout's own value, so devices go before measures.
     const filtered = try retain.filterUnused(gpa, &w.measured, controls, &w.filter_kept);
@@ -131,8 +152,18 @@ pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Gra
     if (ignored) retain.restoreRows(out.layout_merges.device.items, w.ignore_kept.items);
     if (filtered) retain.restoreRows(out.layout_merges.device.items, w.filter_kept.items);
     if (ref_dropped) retain.restoreRows(out.reference_merges.device.items, w.ref_kept.items);
-    try originInto(gpa, reference.deviceCount(), if (ref_dropped) w.ref_kept.items else null, &out.reference_merges, out);
+    try originInto(gpa, reference.deviceCount(), if (ref_dropped) w.ref_kept.items else null, &out.reference_merges, &out.reference_row_start, &out.reference_row);
     assert(out.reference_row_start.items.len == @as(usize, w.reference.deviceCount()) + 1);
+    // The layout's kept rows through both drops: the ignore drop's rows are
+    // rows of the filter's output.
+    if (ignored and filtered) retain.restoreRows(w.ignore_kept.items, w.filter_kept.items);
+    const layout_kept: ?[]const u32 = if (ignored) w.ignore_kept.items else if (filtered) w.filter_kept.items else null;
+    try originInto(gpa, layout.deviceCount(), layout_kept, &out.layout_merges, &out.layout_row_start, &out.layout_row);
+    assert(out.layout_row_start.items.len == @as(usize, w.layout.deviceCount()) + 1);
+    for ([_]*std.ArrayList(u32){ &out.reference_net_origin, &out.layout_net_origin }, [_]*const Graph{ &w.reference, &w.layout }) |origin, g| {
+        origin.clearRetainingCapacity();
+        try origin.appendSlice(gpa, g.net_origin.items);
+    }
     // Reduction returns graphs that keep the invariants refinement reads.
     w.layout.assertValid();
     w.reference.assertValid();
@@ -147,7 +178,7 @@ pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Gra
         out.verdict = .{ .inconclusive = .round_limit };
         return;
     }
-    out.verdict = try interpretInto(gpa, &w.layout, &w.reference, &w.partition, options.param_tolerance, names, controls, &out.found);
+    out.verdict = try interpretInto(gpa, &w.layout, &w.reference, &w.partition, options.param_tolerance, names, controls, &out.found, &out.reference_mate);
     if (out.verdict == .mismatch and unpairedOnBothSides(out.found.items)) {
         try modelsAside(gpa, &w, options, controls, out);
     }
@@ -156,10 +187,11 @@ pub fn compareTraced(gpa: Allocator, layout: *const Graph, reference: *const Gra
 
 // ---- private ----
 
-/// The given rows each reduced reference device stands for: the `kept`
-/// rows (every one of `devices` when null) grouped by the merges that
-/// joined them, in the order `reduceWith` emits its groups.
-fn originInto(gpa: Allocator, devices: u32, kept: ?[]const u32, merges: *const Merges, out: *Traced) Allocator.Error!void {
+/// The given rows each reduced device of one side stands for, CSR into
+/// `start` and `rows`: the `kept` rows (every one of `devices` when null)
+/// grouped by the merges that joined them, in the order `reduceWith` emits
+/// its groups.
+fn originInto(gpa: Allocator, devices: u32, kept: ?[]const u32, merges: *const Merges, start: *std.ArrayList(u32), out: *std.ArrayList(u32)) Allocator.Error!void {
     const root = try gpa.alloc(u32, devices);
     defer gpa.free(root);
     for (root, 0..) |*r, d| r.* = @intCast(d);
@@ -174,7 +206,13 @@ fn originInto(gpa: Allocator, devices: u32, kept: ?[]const u32, merges: *const M
         break :root_rows all;
     };
     defer if (kept == null) gpa.free(rows);
-    try graph.groupsByRootInto(gpa, root, rows, &out.reference_row_start, &out.reference_row);
+    try graph.groupsByRootInto(gpa, root, rows, start, out);
+}
+
+/// `0, 1, .., n - 1` into `out`.
+fn identityInto(gpa: Allocator, n: u32, out: *std.ArrayList(u32)) Allocator.Error!void {
+    out.clearRetainingCapacity();
+    for (0..n) |i| try out.append(gpa, @intCast(i));
 }
 
 /// An unpaired device on each side: what a device whose model alone
@@ -199,7 +237,7 @@ fn modelsAside(gpa: Allocator, w: *Work, options: CompareOptions, controls: *con
     if (!try refine.refineInto(gpa, &w.layout, &w.reference, options.max_rounds, options.param_tolerance, options.params, controls, w.seeds.items, true, &partition)) return;
     var found: std.ArrayList(Discrepancy) = .empty;
     defer found.deinit(gpa);
-    const v = try interpretInto(gpa, &w.layout, &w.reference, &partition, options.param_tolerance, options.params, controls, &found);
+    const v = try interpretInto(gpa, &w.layout, &w.reference, &partition, options.param_tolerance, options.params, controls, &found, null);
     if (v != .mismatch) return;
     for (found.items) |d| if (d != .model_mismatch) return;
     std.mem.swap(std.ArrayList(Discrepancy), &out.found, &found);

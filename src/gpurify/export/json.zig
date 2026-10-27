@@ -5,8 +5,9 @@
 //!
 //! Keys in this order: `header` (`tool_version`, `deck_path`,
 //! `layout_path`, `timestamp` or `null`); `violations`, one object per row
-//! (`rule`, `layer`, `severity`, `at`, `measured`, `limit`, `shapes`, and
-//! `fix` where the row has a hint); `waived`, only when non-empty; `runs`
+//! (`rule`, `layer`, `severity`, `at`, `measured`, `limit`, `shapes`,
+//! `fix` where the row has a hint, and `load`, the simulated `instance` and
+//! `terminal` loading it most, where the row has one); `waived`, only when non-empty; `runs`
 //! (`rule`, `outcome`, `examined`, `violations`). Units: `nm`, `nm^2`,
 //! `mV`, `uA`, `ohm`; a ratio or count has none. Floats are `{:.6}`
 //! (geom.float). Keys are fixed, never a map's, so the bytes are
@@ -125,6 +126,13 @@ fn writeRows(w: *Writer, strings: *const StrTable, grid: Grid, v: *const Violati
         if (v.fixOf(row)) |fix| {
             try w.writeAll(",\"fix\":");
             try writeMeasurement(w, grid, fix);
+        }
+        if (v.loadOf(row)) |load| {
+            try w.writeAll(",\"load\":{\"instance\":");
+            try writeString(w, strings.resolve(load.instance));
+            try w.writeAll(",\"terminal\":");
+            try writeString(w, strings.resolve(load.terminal));
+            try w.writeByte('}');
         }
         try w.writeByte('}');
     }

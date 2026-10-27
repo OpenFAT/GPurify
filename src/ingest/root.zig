@@ -16,6 +16,7 @@
 //!   (netlist_read.zig), `flattenTop`, `flattenTopWith` (netlist_flatten.zig),
 //!   `readVerilogInto` (verilog.zig)
 //! - `intent` (intent.zig): `parseIntent`, `readIntent`, `DesignIntent`
+//! - `currents` (currents.zig): `parseCurrents`, `readCurrents`, `Currents`
 //! - `system` (system.zig): `parseSystem`, `readSystem`, `System`
 //! - `lefdef` (lefdef.zig): `readLefInto`, `readDef`, `defUnits`, `flatten`, `toGds`
 //! - `provenance` (provenance.zig), `Provenance`; `resolveLabels`, `LabelError` (label_bind.zig)
@@ -33,6 +34,7 @@ const edit = @import("gds_edit.zig");
 pub const gds = @import("gds.zig");
 pub const deck = @import("deck/deck.zig");
 pub const intent = @import("intent.zig");
+pub const currents = @import("currents.zig");
 pub const system = @import("system.zig");
 pub const lefdef = @import("lefdef.zig");
 pub const provenance = @import("provenance.zig");
@@ -90,6 +92,7 @@ test {
     _ = @import("label_bind.zig");
     _ = @import("black_boxes.zig");
     _ = @import("intent.zig");
+    _ = @import("currents.zig");
     _ = @import("system.zig");
     _ = @import("lefdef_tests.zig");
     _ = @import("provenance.zig");

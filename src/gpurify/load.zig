@@ -4,7 +4,9 @@
 //! `load_bytes`, `load_from`, `is_def`, `intern_report_ids`, `LoadError`).
 //!
 //! Order fixes every `StrId`: the layout's names, then the deck's, the
-//! reference's, the intent's and the report rule ids. The layout's grid is
+//! reference's, the intent's, the report rule ids and the current file's
+//! instance and terminal names (last, so a run without one is unchanged
+//! by it). The layout's grid is
 //! read before the deck is compiled, because every deck length is converted
 //! onto it. Everything `Loaded` holds lives in the caller's `load_arena`;
 //! file bytes and the parsed GDSII library die in `gpa` before `load` returns.
@@ -49,6 +51,10 @@ pub const Inputs = struct {
     reference: []const []const u8 = &.{},
     /// The design-intent JSON. Null: the intent-gated ERC rules skip.
     intent: ?[]const u8 = null,
+    /// A simulator's per-terminal current file (`espice-emir/1`): the ERC
+    /// grid rules then read those currents, placed through LVS, in place of
+    /// the intent's budgets. Needs `reference`.
+    currents: ?[]const u8 = null,
 };
 
 /// Everything read from disk; every slice lives in the load arena.
@@ -68,6 +74,8 @@ pub const Loaded = struct {
     reference: ?ingest.netlist.Netlist,
     /// Non-null exactly when `Inputs.intent` is.
     intent: ?ingest.intent.DesignIntent,
+    /// Non-null exactly when `Inputs.currents` is.
+    currents: ?ingest.currents.Currents = null,
     /// The DEF and its LEFs, when the layout is a DEF.
     design: ?lefdef.Design,
 };
@@ -90,7 +98,7 @@ pub const DeckFn = *const fn (gpa: Allocator, arena: Allocator, grid: Grid, stri
 pub const NamedDeck = struct { name: []const u8, build: DeckFn };
 
 /// Which input a load error is about; its reader's field in `Diagnostic`.
-pub const Stage = enum(u8) { layout, deck, reference, intent, lefdef, labels };
+pub const Stage = enum(u8) { layout, deck, reference, intent, currents, lefdef, labels };
 
 /// Where a load failed: the stage, the path at fault, and that reader's detail.
 pub const Diagnostic = struct {
@@ -100,6 +108,7 @@ pub const Diagnostic = struct {
     deck: compile.Diag = .{},
     netlist: ingest.netlist.Diagnostic = .{},
     intent: ingest.intent.Diagnostic = .{},
+    currents: ingest.currents.Diagnostic = .{},
     lefdef: lefdef.Diagnostic = .{},
     /// The label that landed on no shape (`Unplaced`).
     label: ingest.provenance.PlacedLabel = undefined,
@@ -109,7 +118,7 @@ pub const Diagnostic = struct {
 /// (`Unreadable`), two non-Verilog reference netlists (`SeveralNetlists`,
 /// `path` the second), and a DEF unit that is not a grid (`BadUnits`).
 pub const Error = ingest.gds.Error || compile.Error || ingest.netlist.Error ||
-    ingest.intent.Error || lefdef.Error || ingest.LabelError ||
+    ingest.intent.Error || ingest.currents.Error || lefdef.Error || ingest.LabelError ||
     error{ Unreadable, SeveralNetlists, BadUnits };
 
 /// The deck to compile: a carried one, or file text named `path`.
@@ -157,12 +166,13 @@ pub fn isDef(layout: []const u8) bool {
     return std.ascii.endsWithIgnoreCase(layout, ".def");
 }
 
-/// Interns every LVS and integration report rule id, so the checks (which
+/// Interns every LVS, integration and ERC-E14 report rule id, so the checks (which
 /// read `Loaded` shared) find them. A `Loaded` built another way calls it
 /// before `runChecks`.
 pub fn internReportIds(gpa: Allocator, strings: *StrTable) Allocator.Error!void {
     try check.lvs.internRuleIds(gpa, strings);
     for (integration.rule_ids) |name| _ = try strings.intern(gpa, name);
+    _ = try strings.intern(gpa, check.erc.check_.budget_unused_id);
 }
 
 // ---- private ----
@@ -204,6 +214,10 @@ fn loadFrom(gpa: Allocator, arena: Allocator, io: std.Io, dir: std.Io.Dir, input
         out.intent = try ingest.intent.readIntent(arena, arena, io, dir, path, &out.strings, &diag.intent);
     }
     try internReportIds(arena, &out.strings);
+    if (inputs.currents) |path| {
+        diag.* = .{ .stage = .currents, .path = path };
+        out.currents = try ingest.currents.readCurrents(arena, arena, io, dir, path, &out.strings, &diag.currents);
+    }
     return out;
 }
 

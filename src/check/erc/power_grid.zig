@@ -1,7 +1,8 @@
 //! The resistive networks ERC extracts from layout and solves, as tables:
 //! the supply grid (`PowerGrid`), its solution (`PowerSolution`), the
-//! per-net networks (`NetNetworks`, CSR by net row), and what one run's
-//! rules read of the solve (`Power`). In: nothing (types only; the builders
+//! per-net networks (`NetNetworks`, CSR by net row), what one run's rules
+//! read of the solve (`Power`), and a simulator's terminal currents placed
+//! on layout devices (`TerminalCurrents`). In: nothing (types only; the builders
 //! are power_extract.zig and power_nets.zig, the solvers power_solve.zig,
 //! power_transient.zig and power_probe.zig). Ported from
 //! crates/check/src/erc/power.rs (`PowerError`, `Process`, `EdgeKind`,
@@ -21,6 +22,7 @@
 //! - `pub const PowerSolution = struct`, `deinit`, `isConsistentWith(s, g: *const PowerGrid) bool`
 //! - `pub const Solved = struct { grid: *const PowerGrid, solution: *const PowerSolution }`
 //! - `pub const Power = union(enum) { no_supply, solved: Solved, failed: PowerError }`
+//! - `pub const TerminalCurrents = struct`, `len(c) u32`, `pub const Loads = struct`, `loads(c, pick: Pick) Loads`, `pub const Pick`
 //! - `pub const ua_per_mv_ohm: f64`, `pub const not_a_node: u32`
 
 const std = @import("std");
@@ -39,6 +41,8 @@ const Millivolts = report.Millivolts;
 const Microamps = report.Microamps;
 const Ohms = report.Ohms;
 const NetId = @import("../topology/net.zig").NetId;
+const DeviceId = @import("../topology/device.zig").DeviceId;
+const Load = report.Load;
 
 /// Microamps per millivolt per ohm: the grid is mV, µA and Ω, so a
 /// conductance is `1000 / R`. Wrong here scales every drop and still passes
@@ -91,8 +95,9 @@ pub const EdgeKind = enum(u8) { metal, via, device };
 
 /// The supply grid, SoA. Invariant: every node column has `nodeCount()`
 /// rows, every edge column `edgeCount()`; `source_node` ascends and pairs
-/// with `source_voltage`. Nodes are taps on the declared supplies'
-/// conducting shapes; edges are resistors between them.
+/// with `source_voltage`; the `term_*` columns are parallel. Nodes are taps
+/// on the declared supplies' conducting shapes (and, loaded with simulated
+/// currents, on every net those reach); edges are resistors between them.
 pub const PowerGrid = struct {
     node_net: std.ArrayList(NetId) = .empty,
     /// Where a violation at this node is reported.
@@ -118,6 +123,11 @@ pub const PowerGrid = struct {
     /// The conductor's layer, or the cut layer for a via.
     edge_layer: std.ArrayList(LayerId) = .empty,
     edge_kind: std.ArrayList(EdgeKind) = .empty,
+    /// One row per simulated terminal load (empty on a budget grid): its
+    /// node, its share of that node's load, and whose it is, for reports.
+    term_node: std.ArrayList(u32) = .empty,
+    term_load: std.ArrayList(Microamps) = .empty,
+    term_name: std.ArrayList(Load) = .empty,
 
     /// One node's row.
     pub const Node = struct { net: NetId, at: Point, poly: PolyId, layer: LayerId, nominal: Millivolts, load: Microamps };
@@ -257,4 +267,50 @@ pub const Power = union(enum) {
     no_supply,
     solved: Solved,
     failed: PowerError,
+};
+
+/// A simulator's per-terminal currents placed on layout devices (catalog
+/// ERC-E14): one row per device terminal that carries current, ascending by
+/// net, then device. Units µA, positive drawn from the net (into the
+/// device). `em`, `rms` and `peak` are magnitudes signed as `avg` (zero
+/// reads as drawn), so a net's loads add in phase. Every net carries
+/// current on a conductor, and either has a port (a supply or a label) or
+/// its `avg` loads balance.
+pub const TerminalCurrents = struct {
+    net: []const NetId = &.{},
+    device: []const DeviceId = &.{},
+    avg: []const f64 = &.{},
+    em: []const f64 = &.{},
+    rms: []const f64 = &.{},
+    peak: []const f64 = &.{},
+    /// The simulator's instance and terminal each row came from.
+    name: []const Load = &.{},
+
+    pub fn len(c: *const TerminalCurrents) u32 {
+        return @intCast(c.net.len);
+    }
+
+    /// One quantity's loads, for one grid.
+    pub fn loads(c: *const TerminalCurrents, pick: Pick) Loads {
+        const value = switch (pick) {
+            .avg => c.avg,
+            .em => c.em,
+            .rms => c.rms,
+            .peak => c.peak,
+        };
+        return .{ .net = c.net, .device = c.device, .value = value, .name = c.name };
+    }
+};
+
+/// Which current a grid carries: the average (IR drop), the
+/// electromigration average (the DC EM rules), the RMS or the peak.
+pub const Pick = enum { avg, em, rms, peak };
+
+/// The loads one grid carries in place of the intent's budgets, rows as
+/// `TerminalCurrents`'; empty for a budget grid.
+pub const Loads = struct {
+    net: []const NetId = &.{},
+    device: []const DeviceId = &.{},
+    value: []const f64 = &.{},
+    name: []const Load = &.{},
 };

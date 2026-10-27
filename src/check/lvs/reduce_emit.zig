@@ -41,6 +41,7 @@ pub fn emitInto(gpa: Allocator, src: *const Graph, plan: *const Plan, names: Par
     for (src.net_name.items, plan.consumed.items) |name, dead| {
         if (!dead) try out.net_name.append(gpa, name);
     }
+    for (src.net_origin.items, 0..) |origin, n| if (!plan.consumed.items[n]) try out.net_origin.append(gpa, origin);
     for (src.port_net.items) |n| try out.port_net.append(gpa, plan.new_net.items[n]);
     try out.device_terminal_start.append(gpa, 0);
     try out.device_param_start.append(gpa, 0);
