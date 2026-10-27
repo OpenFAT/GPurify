@@ -94,10 +94,10 @@ const moved = std.StaticStringMap([]const u8).initComptime(.{
     .{ "--accuracy", "the macro spec's `accuracy` field" },
 });
 
-/// Parses `argv` (without the program name and never `compare`, which has
-/// its own command line).
+/// Parses `argv` (without the program name and never `compare` or `deck`,
+/// which have their own command lines).
 pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) Error!Cli {
-    if (argv.len == 0) return usage(arena, message, "expected a subcommand: drc, erc, lvs, pex, all, lib, xor, fill, enhance, system or compare", .{});
+    if (argv.len == 0) return usage(arena, message, "expected a subcommand: drc, erc, lvs, pex, all, lib, xor, fill, enhance, system, compare or deck", .{});
     const word = argv[0];
     var layouts: std.ArrayList([]const u8) = .empty;
     var reference: std.ArrayList([]const u8) = .empty;
@@ -156,7 +156,7 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
     }
 
     const sub = std.meta.stringToEnum(Subcommand, word) orelse
-        return usage(arena, message, "unknown subcommand {s}; expected drc, erc, lvs, pex, all, lib, xor, fill, enhance, system or compare", .{word});
+        return usage(arena, message, "unknown subcommand {s}; expected drc, erc, lvs, pex, all, lib, xor, fill, enhance, system, compare or deck", .{word});
     const takes: Takes = switch (sub) {
         // `xor` reports as the DRC stage; `fill` and `enhance` report DRC
         // on the layout they write.
@@ -393,8 +393,8 @@ test "every malformed command line is refused with its message" {
     defer arena.deinit();
     const a = arena.allocator();
     const cases = [_][2][]const u8{
-        .{ "", "expected a subcommand: drc, erc, lvs, pex, all, lib, xor, fill, enhance, system or compare" },
-        .{ "dcr t --deck d", "unknown subcommand dcr; expected drc, erc, lvs, pex, all, lib, xor, fill, enhance, system or compare" },
+        .{ "", "expected a subcommand: drc, erc, lvs, pex, all, lib, xor, fill, enhance, system, compare or deck" },
+        .{ "dcr t --deck d", "unknown subcommand dcr; expected drc, erc, lvs, pex, all, lib, xor, fill, enhance, system, compare or deck" },
         .{ "system s.json --deck d --reference r", "system takes no --deck: each die names its deck in the system file" },
         .{ "system --reference r", "system needs a system description: system <system.json> --reference <netlist>" },
         .{ "system s.json", "system requires one system netlist (--reference)" },
