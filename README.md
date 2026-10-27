@@ -49,7 +49,7 @@ solves stay on the CPU there, and move to the GPU on cards with fast f64.
 
 Rows of [tests/check-catalog.tsv](tests/check-catalog.tsv), the checks a
 signoff verifier is expected to handle, by how far GPurify covers them. Each
-row has its entry in the [check reference](https://omarsiwy.github.io/GPurify/reference/drc/index.html),
+row has its entry in the [check reference](https://omarsiwy.github.io/GPurify/reference/drc/README.html),
 which says what a `partial` or `missing` row lacks.
 
 | Domain | Implemented | Expressible | Partial | Missing |
@@ -80,7 +80,7 @@ Against other tools:
 
 A deck is a text file of layers, rules, connectivity and devices.
 There are 83 design-rule kinds and 57 electrical-rule kinds.
-The [deck language reference](https://omarsiwy.github.io/GPurify/reference/deck/index.html) covers the
+The [deck language reference](https://omarsiwy.github.io/GPurify/reference/deck/README.html) covers the
 language, and the check pages cover every rule.
 
 Four decks ship in `pdks/`:
