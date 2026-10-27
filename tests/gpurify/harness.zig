@@ -247,7 +247,7 @@ pub const Expect = union(enum) {
 pub const Fixture = struct {
     /// Unique and path-like: `min_width/l_shape/below/r90`.
     name: []const u8,
-    /// The catalog rows (docs/check-catalog.tsv) this fixture proves.
+    /// The catalog rows (tests/check-catalog.tsv) this fixture proves.
     catalog: []const []const u8,
     deck: []const u8,
     layout: Layout = .{},
