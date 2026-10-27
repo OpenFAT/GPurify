@@ -69,18 +69,24 @@ pub fn checkLayout(gpa: Allocator, layout: *const Graph, design: Design, ports: 
 /// step against the step count; two labels on one polygon are one row
 /// measured 1 against 1 (Calibre's `LVS ISOLATE SHORTS`, ICV's
 /// `ShortFinder`; catalog LVS-005). Refused when a path cannot be traced.
+/// Every row of both carries its pair's two names (`Violations.labelsOf`).
 /// The engine calls it alone when `checkLayout` does not run.
 pub fn checkNetSeedConflicts(gpa: Allocator, design: Design, ports: *const PortTable, strings: *const StrTable, out: *Violations, runs: *std.ArrayList(RuleRun)) Allocator.Error!void {
     const rule = report.ruleId(strings, "lvs.net_seed_conflict");
     const before = out.len();
     const nets = ports.net.items;
     const polys = ports.poly.items;
+    const names = ports.name.items;
     var shorts: std.ArrayList([2]PolyId) = .empty;
     defer shorts.deinit(gpa);
+    var shorted: std.ArrayList([2]StrId) = .empty;
+    defer shorted.deinit(gpa);
     for (1..@max(nets.len, 1)) |at| {
         if (nets[at] != nets[at - 1]) continue;
         try out.push(gpa, onFirstShape(design.store, graphViolation(rule, polys[at - 1], polys[at], 2, 1)));
+        try out.setLabels(gpa, out.len() - 1, .{ names[at - 1], names[at] });
         try shorts.append(gpa, .{ polys[at - 1], polys[at] });
+        try shorted.append(gpa, .{ names[at - 1], names[at] });
     }
     try report.recordRun(gpa, runs, out, before, rule, .ran, ports.len());
     if (shorts.items.len == 0) return;
@@ -89,16 +95,20 @@ pub fn checkNetSeedConflicts(gpa: Allocator, design: Design, ports: *const PortT
     var outcome: report.Outcome = .ran;
     var path: std.ArrayList(PolyId) = .empty;
     defer path.deinit(gpa);
-    for (shorts.items) |s| {
+    for (shorts.items, shorted.items) |s, pair| {
         if (!try design.nets.pathInto(gpa, s[0], s[1], &path)) {
             outcome = .refused;
             continue;
         }
         const steps: u32 = @intCast(path.items.len - 1);
-        if (steps == 0) try out.push(gpa, onFirstShape(design.store, graphViolation(path_rule, s[0], report.no_shape, 1, 1)));
+        if (steps == 0) {
+            try out.push(gpa, onFirstShape(design.store, graphViolation(path_rule, s[0], report.no_shape, 1, 1)));
+            try out.setLabels(gpa, out.len() - 1, pair);
+        }
         for (0..steps) |step| {
             const row = graphViolation(path_rule, path.items[step], path.items[step + 1], @intCast(step + 1), steps);
             try out.push(gpa, onFirstShape(design.store, row));
+            try out.setLabels(gpa, out.len() - 1, pair);
         }
     }
     try report.recordRun(gpa, runs, out, path_before, path_rule, outcome, shorts.items.len);

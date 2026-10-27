@@ -5,8 +5,8 @@
 //! Each section is its own call, so the engine (wave 5) calls them in
 //! order: `writeRuns`, `writeViolations`, `writeMerges`, `writeVerdict`,
 //! `writeSummary`, Rust's `write_violations` then `write_summary`. Numbers
-//! are Rust's `{}` (geom.float); the LVS verdict is Rust's `{:?}` of it,
-//! raw ids included. `Summary` and `StageStatus` are the minimal shape the
+//! are Rust's `{}` (geom.float). The LVS verdict is one plain sentence per
+//! discrepancy, names resolved, where Rust printed its `{:?}`. `Summary` and `StageStatus` are the minimal shape the
 //! summary prints; the engine fills them. Rust's `write_error` (an error's
 //! cause chain) stays with the CLI: a Zig error has no chain.
 //!
@@ -17,14 +17,13 @@
 //! - `pub fn writeRuns(w: *std.Io.Writer, strings: *const StrTable, runs: []const RuleRun) std.Io.Writer.Error!void`
 //! - `pub fn writeViolations(w: *std.Io.Writer, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations) std.Io.Writer.Error!void`
 //! - `pub fn writeMerges(w: *std.Io.Writer, strings: *const StrTable, placements: []const Placement, unpaired: []const UnpairedInstance, layout_merges: *const Merges, reference_merges: *const Merges) std.Io.Writer.Error!void`
-//! - `pub fn writeVerdict(w: *std.Io.Writer, verdict: ?Verdict, found: []const Discrepancy) std.Io.Writer.Error!void`
+//! - `pub fn writeVerdict(w: *std.Io.Writer, strings: *const StrTable, verdict: ?Verdict, found: []const Discrepancy) std.Io.Writer.Error!void`
 //! - `pub fn writeSummary(w: *std.Io.Writer, summary: Summary) std.Io.Writer.Error!void`
 
 const std = @import("std");
 const Writer = std.Io.Writer;
 const geom = @import("geom");
 const Grid = geom.Grid;
-const StrId = geom.StrId;
 const StrTable = geom.StrTable;
 const ingest = @import("ingest");
 const Placement = ingest.netlist.Placement;
@@ -106,7 +105,8 @@ pub fn writeRuns(w: *Writer, strings: *const StrTable, runs: []const RuleRun) Wr
 /// deck's name for a drawn or derived layer and the hidden name of an
 /// inner one (`x#1`, `<rule id>@k`). A row on no layer (`report.no_layer`,
 /// an LVS or system finding) has no `layer` clause, and a row on no shape
-/// (`report.no_shape`) no `on shape` clause. `layers` is the run's deck's
+/// (`report.no_shape`) no `on shape` clause. A short's row names its two
+/// labels (`labels VDD and VSS`). `layers` is the run's deck's
 /// table; a run with no one deck (a system) passes an empty one. Asserts
 /// that every row's layer is in `layers` or is `report.no_layer`.
 pub fn writeViolations(w: *Writer, strings: *const StrTable, layers: *const LayerTable, grid: Grid, violations: *const Violations, waived: *const Violations) Writer.Error!void {
@@ -138,24 +138,27 @@ pub fn writeMerges(w: *Writer, strings: *const StrTable, placements: []const Pla
     }
 }
 
-/// `lvs: ` and Rust's `{:?}` of the verdict, when LVS compared; a
-/// mismatch's `found` are already error rows above.
-pub fn writeVerdict(w: *Writer, verdict: ?Verdict, found: []const Discrepancy) Writer.Error!void {
+/// `lvs: ` and the verdict, when LVS compared: `match`, `inconclusive, <why>`,
+/// or `mismatch, <n> discrepancies:` then one indented sentence per entry
+/// of `found` (already error rows above). Devices and nets are their
+/// netlist's indices; every name prints bare as `strings` resolves it, and
+/// a net with no name as `unnamed`.
+pub fn writeVerdict(w: *Writer, strings: *const StrTable, verdict: ?Verdict, found: []const Discrepancy) Writer.Error!void {
     const v = verdict orelse return;
     try w.writeAll("lvs: ");
     switch (v) {
-        .match => try w.writeAll("Match"),
-        .inconclusive => |why| try w.print("Inconclusive({s})", .{pascal(why)}),
+        .match => try w.writeAll("match\n"),
+        .inconclusive => |why| try w.print("inconclusive, {s}\n", .{switch (why) {
+            .round_limit => "refinement kept splitting a class past its round limit",
+            .ambiguous_top => "the reference has no unique top subcircuit",
+        }}),
         .mismatch => {
-            try w.writeAll("Mismatch([");
-            for (found, 0..) |d, i| {
-                if (i > 0) try w.writeAll(", ");
-                try writeDiscrepancy(w, d);
-            }
-            try w.writeAll("])");
+            // A mismatch always names what differs (verdict.zig's `Verdict`).
+            assert(found.len > 0);
+            try w.print("mismatch, {d} discrepancies:\n", .{found.len});
+            for (found) |d| try writeDiscrepancy(w, strings, d);
         },
     }
-    try w.writeByte('\n');
 }
 
 /// The stage lines, then skipped before clean before the count.
@@ -198,6 +201,7 @@ fn writeRows(w: *Writer, strings: *const StrTable, layers: *const LayerTable, gr
         try writeMeasurement(w, grid, r.limit);
         if (r.shape_a != report.no_shape) try w.print(" on shape {d}", .{@backingInt(r.shape_a)});
         if (r.shape_b != report.no_shape) try w.print(" and shape {d}", .{@backingInt(r.shape_b)});
+        if (v.labelsOf(row)) |names| try w.print(" labels {s} and {s}", .{ strings.resolve(names[0]), strings.resolve(names[1]) });
         if (v.loadOf(row)) |load| try w.print(" loaded most by {s} {s}", .{ strings.resolve(load.instance), strings.resolve(load.terminal) });
         if (v.fixOf(row)) |fix| {
             try w.writeAll(" fix ");
@@ -233,54 +237,34 @@ fn writeMeasurement(w: *Writer, grid: Grid, m: Measurement) Writer.Error!void {
     }
 }
 
-/// One discrepancy as Rust's derived `Debug`: `Variant { field: value, … }`.
-fn writeDiscrepancy(w: *Writer, d: Discrepancy) Writer.Error!void {
+/// One discrepancy as an indented sentence, as `writeVerdict` documents.
+fn writeDiscrepancy(w: *Writer, strings: *const StrTable, d: Discrepancy) Writer.Error!void {
+    try w.writeAll("  ");
     switch (d) {
-        inline else => |payload, tag| {
-            try w.print("{s} {{ ", .{comptime pascal(tag)});
-            inline for (@typeInfo(@TypeOf(payload)).@"struct".field_names, 0..) |name, i| {
-                if (i > 0) try w.writeAll(", ");
-                try w.print("{s}: ", .{name});
-                try writeDebugValue(w, @field(payload, name));
+        .unpaired_device => |u| try w.print("{t} device {d} ({s}) has no partner", .{ u.side, u.device, strings.resolve(u.model) }),
+        .unpaired_net => |u| try w.print("{t} net {d} ({s}) has no partner", .{ u.side, u.net, if (u.name) |n| strings.resolve(n) else "unnamed" }),
+        .terminal_mismatch => |t| {
+            try w.print("layout device {d} and reference device {d} disagree on the net at ", .{ t.layout_device, t.ref_device });
+            switch (t.role) {
+                .pin => |k| try w.print("pin {d}", .{k}),
+                else => try w.writeAll(@tagName(t.role)),
             }
-            try w.writeAll(" }");
         },
-    }
-}
-
-fn writeDebugValue(w: *Writer, value: anytype) Writer.Error!void {
-    switch (@TypeOf(value)) {
-        u32 => try w.print("{d}", .{value}),
-        f64 => try float.debug(w, value),
-        StrId => try w.print("StrId({d})", .{@backingInt(value)}),
-        ?StrId => if (value) |id| try w.print("Some(StrId({d}))", .{@backingInt(id)}) else try w.writeAll("None"),
-        lvs.verdict.Side => try w.writeAll(pascal(value)),
-        check.topology.TerminalRole => switch (value) {
-            .pin => |position| try w.print("Pin({d})", .{position}),
-            inline else => |_, tag| try w.writeAll(comptime pascal(tag)),
+        .parameter_mismatch => |p| {
+            try w.print("layout device {d} and reference device {d} differ in {s}: ", .{ p.layout_device, p.ref_device, strings.resolve(p.param) });
+            try float.display(w, p.layout_value);
+            try w.writeAll(" against ");
+            try float.display(w, p.ref_value);
         },
-        else => @compileError("no Debug form for " ++ @typeName(@TypeOf(value))),
-    }
-}
-
-/// An enum tag as its Rust variant: `round_limit` is `RoundLimit`.
-fn pascal(tag: anytype) []const u8 {
-    switch (tag) {
-        inline else => |t| return comptime blk: {
-            const name = @tagName(t);
-            var out: []const u8 = "";
-            var up = true;
-            for (name) |c| {
-                if (c == '_') {
-                    up = true;
-                    continue;
-                }
-                out = out ++ .{if (up) std.ascii.toUpper(c) else c};
-                up = false;
-            }
-            break :blk out;
+        .undeclared_param => |u| {
+            // Only the reference states a parameter the layout lacks (verdict.zig).
+            assert(u.side == .reference);
+            try w.print("reference device {d} states {s}, which layout device {d} does not measure", .{ u.ref_device, strings.resolve(u.param), u.layout_device });
         },
+        .model_mismatch => |m| try w.print("layout device {d} and reference device {d} differ in model: {s} against {s}", .{ m.layout_device, m.ref_device, strings.resolve(m.layout_model), strings.resolve(m.ref_model) }),
+        .class_imbalance => |c| try w.print("a class holds {d} layout nodes against {d} reference nodes", .{ c.layout_nodes, c.ref_nodes }),
     }
+    try w.writeByte('\n');
 }
 
 test "a run renders to this exact text" {
@@ -292,7 +276,8 @@ test "a run renders to this exact text" {
     // area moved to a waived row with a fix hint, the two paths Rust's test
     // left out. Layer names: id 3 is the fourth entry the table was built from,
     // `met1`; the waived row is on `report.no_layer` and `report.no_shape`, so
-    // the doc says its line has neither a layer nor a shape clause.
+    // the doc says its line has neither a layer nor a shape clause; its labels,
+    // as a short's row carries them, print by name.
     const gpa = std.testing.allocator;
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
@@ -314,6 +299,7 @@ test "a run renders to this exact text" {
     defer waived.deinit(gpa);
     try waived.push(gpa, .{ .rule = antenna, .layer = report.no_layer, .severity = .warning, .at = .{ .x = 1, .y = -3 }, .measured = .area(48), .limit = .area(40), .shape_a = report.no_shape, .shape_b = report.no_shape });
     try waived.setFix(gpa, 0, .area(8));
+    try waived.setLabels(gpa, 0, .{ try strings.intern(gpa, "VDD"), try strings.intern(gpa, "VSS") });
     const summary: Summary = .{
         .drc = .ran,
         .erc = .{ .refused = "bad grid" },
@@ -332,7 +318,7 @@ test "a run renders to this exact text" {
     try writeRuns(&out.writer, &strings, &runs);
     try writeViolations(&out.writer, &strings, &layers, grid, &violations, &waived);
     try writeMerges(&out.writer, &strings, &.{}, &.{}, &no_merges, &no_merges);
-    try writeVerdict(&out.writer, null, &.{});
+    try writeVerdict(&out.writer, &strings, null, &.{});
     try writeSummary(&out.writer, summary);
     try std.testing.expectEqualStrings(
         \\rules:
@@ -341,7 +327,7 @@ test "a run renders to this exact text" {
         \\violations: 1
         \\  m1_min_width error layer met1 at (2100 nm, 4300 nm) measured 2 nm against limit 100 nm on shape 7 and shape 9
         \\waived: 1
-        \\  antenna_ratio warning at (0.5 nm, -1.5 nm) measured 12 nm^2 against limit 10 nm^2 fix 2 nm^2
+        \\  antenna_ratio warning at (0.5 nm, -1.5 nm) measured 12 nm^2 against limit 10 nm^2 labels VDD and VSS fix 2 nm^2
         \\summary:
         \\  drc: ran
         \\  erc: refused, bad grid
@@ -354,16 +340,23 @@ test "a run renders to this exact text" {
     , out.written());
 }
 
-test "the lvs merges and verdict render as Rust's lines and Debug" {
-    // Oracle: rustc 1.95's `{:?}` of a mirror of Rust's `Verdict` (the
-    // same variants, fields and derives), copied from its output; the
-    // merge and instance lines from format.rs's `writeln!` formats.
+test "the lvs merges and verdict render as plain sentences, names bare" {
+    // Oracle: spec example, written by hand from each `Discrepancy` field's
+    // doc (check/lvs/verdict.zig): every name id is the text it interns,
+    // bare; a net with no name says `unnamed`; a role is its own word, a
+    // passive's terminal `pin <k>`; no Debug form (`Some(`, `None`, quotes,
+    // `Variant { .. }`) appears. The merge and instance lines are
+    // format.rs's `writeln!` formats.
     const gpa = std.testing.allocator;
     var strings: StrTable = .empty;
     defer strings.deinit(gpa);
     const nch = try strings.intern(gpa, "nch");
     const path = try strings.intern(gpa, "X1.X2");
     const cell = try strings.intern(gpa, "inv");
+    const vdd = try strings.intern(gpa, "VDD");
+    const w_param = try strings.intern(gpa, "w");
+    const l_param = try strings.intern(gpa, "l");
+    const pch = try strings.intern(gpa, "pch");
     var layout_merges: Merges = .{};
     defer layout_merges.deinit(gpa);
     try layout_merges.kind.append(gpa, .parallel);
@@ -379,31 +372,40 @@ test "the lvs merges and verdict render as Rust's lines and Debug" {
     const placements = [_]Placement{.{ .path = path, .cell = cell, .devices = .{ 0, 2 } }};
     const unpaired = [_]UnpairedInstance{.{ .placement = 0, .devices = 2 }};
     const found = [_]Discrepancy{
-        .{ .unpaired_device = .{ .side = .layout, .device = 3, .model = @fromBackingInt(5) } },
+        .{ .unpaired_device = .{ .side = .layout, .device = 3, .model = nch } },
         .{ .unpaired_net = .{ .side = .reference, .net = 2, .name = null } },
-        .{ .unpaired_net = .{ .side = .layout, .net = 0, .name = @fromBackingInt(1) } },
+        .{ .unpaired_net = .{ .side = .layout, .net = 0, .name = vdd } },
         .{ .terminal_mismatch = .{ .layout_device = 1, .ref_device = 2, .role = .{ .pin = 1 } } },
         .{ .terminal_mismatch = .{ .layout_device = 1, .ref_device = 2, .role = .drain } },
-        .{ .parameter_mismatch = .{ .layout_device = 0, .ref_device = 1, .param = @fromBackingInt(4), .layout_value = 1e-6, .ref_value = 1.5 } },
-        .{ .undeclared_param = .{ .side = .reference, .layout_device = 0, .ref_device = 1, .param = @fromBackingInt(6) } },
-        .{ .model_mismatch = .{ .layout_device = 4, .ref_device = 5, .layout_model = @fromBackingInt(7), .ref_model = @fromBackingInt(8) } },
+        .{ .parameter_mismatch = .{ .layout_device = 0, .ref_device = 1, .param = w_param, .layout_value = 1e-6, .ref_value = 1.5 } },
+        .{ .undeclared_param = .{ .side = .reference, .layout_device = 0, .ref_device = 1, .param = l_param } },
+        .{ .model_mismatch = .{ .layout_device = 4, .ref_device = 5, .layout_model = nch, .ref_model = pch } },
         .{ .class_imbalance = .{ .layout_nodes = 2, .ref_nodes = 3 } },
     };
     var out: Writer.Allocating = .init(gpa);
     defer out.deinit();
     try writeMerges(&out.writer, &strings, &placements, &unpaired, &layout_merges, &reference_merges);
-    try writeVerdict(&out.writer, .mismatch, &found);
-    try writeVerdict(&out.writer, .{ .inconclusive = .round_limit }, &.{});
-    try writeVerdict(&out.writer, .match, &.{});
+    try writeVerdict(&out.writer, &strings, .mismatch, &found);
+    try writeVerdict(&out.writer, &strings, .{ .inconclusive = .round_limit }, &.{});
+    try writeVerdict(&out.writer, &strings, .match, &.{});
     try std.testing.expectEqualStrings(
         \\lvs unpaired instances:
         \\  X1.X2 (inv): none of its 2 devices has a partner in the layout
         \\lvs merges:
         \\  layout parallel: 3 devices of nch (0, 4, 7) are one
         \\  reference series: 2 devices of nch (1, 2) are one
-        \\lvs: Mismatch([UnpairedDevice { side: Layout, device: 3, model: StrId(5) }, UnpairedNet { side: Reference, net: 2, name: None }, UnpairedNet { side: Layout, net: 0, name: Some(StrId(1)) }, TerminalMismatch { layout_device: 1, ref_device: 2, role: Pin(1) }, TerminalMismatch { layout_device: 1, ref_device: 2, role: Drain }, ParameterMismatch { layout_device: 0, ref_device: 1, param: StrId(4), layout_value: 1e-6, ref_value: 1.5 }, UndeclaredParam { side: Reference, layout_device: 0, ref_device: 1, param: StrId(6) }, ModelMismatch { layout_device: 4, ref_device: 5, layout_model: StrId(7), ref_model: StrId(8) }, ClassImbalance { layout_nodes: 2, ref_nodes: 3 }])
-        \\lvs: Inconclusive(RoundLimit)
-        \\lvs: Match
+        \\lvs: mismatch, 9 discrepancies:
+        \\  layout device 3 (nch) has no partner
+        \\  reference net 2 (unnamed) has no partner
+        \\  layout net 0 (VDD) has no partner
+        \\  layout device 1 and reference device 2 disagree on the net at pin 1
+        \\  layout device 1 and reference device 2 disagree on the net at drain
+        \\  layout device 0 and reference device 1 differ in w: 0.000001 against 1.5
+        \\  reference device 1 states l, which layout device 0 does not measure
+        \\  layout device 4 and reference device 5 differ in model: nch against pch
+        \\  a class holds 2 layout nodes against 3 reference nodes
+        \\lvs: inconclusive, refinement kept splitting a class past its round limit
+        \\lvs: match
         \\
     , out.written());
 }

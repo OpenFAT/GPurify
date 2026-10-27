@@ -324,3 +324,31 @@ test "a fix hint follows its row through the sort, extend and truncate" {
     table.truncate(rows.len);
     try testing.expectEqual(@as(usize, 1), table.fix_row.items.len);
 }
+
+test "a short's labels follow their row through the sort, extend and truncate" {
+    // Oracle: law, as the fix hint's: the sparse label column is part of its
+    // row through `pushRow`, the sort, `extend` and `truncate`.
+    const rows = orderedCorpus();
+    var table = try tableOf(&rows);
+    defer table.deinit(gpa);
+    const names: [2]geom.StrId = .{ @fromBackingInt(3), @fromBackingInt(4) };
+    try table.setLabels(gpa, 5, names);
+    const tagged = table.get(5);
+    var reversed: Violations = .{};
+    defer reversed.deinit(gpa);
+    var i: u32 = table.len();
+    while (i > 0) {
+        i -= 1;
+        try reversed.pushRow(gpa, &table, i);
+    }
+    try reversed.sortCanonical(gpa);
+    for (0..reversed.len()) |r| {
+        const has = reversed.labelsOf(@intCast(r));
+        try testing.expectEqual(std.meta.eql(reversed.get(@intCast(r)), tagged), has != null);
+        if (has) |got| try testing.expectEqual(names, got);
+    }
+    try table.extend(gpa, &reversed);
+    try testing.expect(table.labelsOf(5 + rows.len) != null);
+    table.truncate(rows.len);
+    try testing.expectEqual(@as(usize, 1), table.label_row.items.len);
+}

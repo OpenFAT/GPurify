@@ -70,6 +70,7 @@ const World = struct {
         try topology.bindPortsInto(gpa, &w.nets, w.provenance.labels(), &w.ports);
 
         try w.violations.push(gpa, .{ .rule = density, .layer = report.no_layer, .severity = .warning, .at = .{ .x = 40, .y = 60 }, .measured = .ratio(0.8125), .limit = .ratio(0.75), .shape_a = report.no_shape, .shape_b = report.no_shape });
+        try w.violations.setLabels(gpa, 0, .{ try w.strings.intern(gpa, "VDD"), try w.strings.intern(gpa, "VSS") });
         try w.violations.push(gpa, .{ .rule = width, .layer = conductor, .severity = .@"error", .at = .{ .x = 10, .y = 20 }, .measured = .length(80), .limit = .length(100), .shape_a = w.lower, .shape_b = w.upper });
         w.runs = .{
             .{ .rule = width, .outcome = .ran, .examined = 1234, .violations = 1 },
@@ -173,7 +174,8 @@ test "the json report is exactly these bytes" {
     // Oracle: golden, written by hand from the known world (module doc): the
     // violation rows in the table's order, floats at six decimals, the skipped
     // rule beside the ones that ran; `layer_name` the deck's name, `null` for
-    // `report.no_layer`, and a `report.no_shape` shape `null`; each run's
+    // `report.no_layer`, and a `report.no_shape` shape `null`; a short's
+    // `labels` by name, only on the row that has them; each run's
     // `domain` as given, and the summary, every stage status once, with the
     // text summary's fields in its order (json.zig's `writeReport` doc,
     // text.zig's `writeSummary`); and determinism, two
@@ -181,7 +183,7 @@ test "the json report is exactly these bytes" {
     const expected =
         \\{"header":{"tool_version":"gpurify-test","deck_path":"decks/test.json","layout_path":"layouts/test.gds","timestamp":"2020-01-01T00:00:00Z"},
     ++
-        \\"violations":[{"rule":"m1.density","layer":65535,"layer_name":null,"severity":"warning","at":{"unit":"nm","x":40.000000,"y":60.000000},"measured":{"kind":"ratio","unit":"","value":0.812500},"limit":{"kind":"ratio","unit":"","value":0.750000},"shapes":[null,null]},
+        \\"violations":[{"rule":"m1.density","layer":65535,"layer_name":null,"severity":"warning","at":{"unit":"nm","x":40.000000,"y":60.000000},"measured":{"kind":"ratio","unit":"","value":0.812500},"limit":{"kind":"ratio","unit":"","value":0.750000},"shapes":[null,null],"labels":["VDD","VSS"]},
     ++
         \\{"rule":"m1.width","layer":0,"layer_name":"met1","severity":"error","at":{"unit":"nm","x":10.000000,"y":20.000000},"measured":{"kind":"length","unit":"nm","value":80.000000},"limit":{"kind":"length","unit":"nm","value":100.000000},"shapes":[0,1]}],
     ++
