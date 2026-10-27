@@ -5,8 +5,8 @@
 //! Each section is its own call, so the engine (wave 5) calls them in
 //! order: `writeRuns`, `writeViolations`, `writeMerges`, `writeVerdict`,
 //! `writeSummary`, Rust's `write_violations` then `write_summary`. Numbers
-//! are Rust's `{}` (geom.float); the LVS verdict is Rust's `{:?}` of it,
-//! raw ids included. `Summary` and `StageStatus` are the minimal shape the
+//! are Rust's `{}` (geom.float). The LVS verdict is one plain sentence per
+//! discrepancy, names resolved, where Rust printed its `{:?}`. `Summary` and `StageStatus` are the minimal shape the
 //! summary prints; the engine fills them. Rust's `write_error` (an error's
 //! cause chain) stays with the CLI: a Zig error has no chain.
 //!
@@ -24,7 +24,6 @@ const std = @import("std");
 const Writer = std.Io.Writer;
 const geom = @import("geom");
 const Grid = geom.Grid;
-const StrId = geom.StrId;
 const StrTable = geom.StrTable;
 const ingest = @import("ingest");
 const Placement = ingest.netlist.Placement;
@@ -139,25 +138,27 @@ pub fn writeMerges(w: *Writer, strings: *const StrTable, placements: []const Pla
     }
 }
 
-/// `lvs: ` and Rust's `{:?}` of the verdict, when LVS compared; a
-/// mismatch's `found` are already error rows above. Every name id prints
-/// as the text `strings` gives it, quoted as Rust's Debug of a `String`.
+/// `lvs: ` and the verdict, when LVS compared: `match`, `inconclusive, <why>`,
+/// or `mismatch, <n> discrepancies:` then one indented sentence per entry
+/// of `found` (already error rows above). Devices and nets are their
+/// netlist's indices; every name prints bare as `strings` resolves it, and
+/// a net with no name as `unnamed`.
 pub fn writeVerdict(w: *Writer, strings: *const StrTable, verdict: ?Verdict, found: []const Discrepancy) Writer.Error!void {
     const v = verdict orelse return;
     try w.writeAll("lvs: ");
     switch (v) {
-        .match => try w.writeAll("Match"),
-        .inconclusive => |why| try w.print("Inconclusive({s})", .{pascal(why)}),
+        .match => try w.writeAll("match\n"),
+        .inconclusive => |why| try w.print("inconclusive, {s}\n", .{switch (why) {
+            .round_limit => "refinement kept splitting a class past its round limit",
+            .ambiguous_top => "the reference has no unique top subcircuit",
+        }}),
         .mismatch => {
-            try w.writeAll("Mismatch([");
-            for (found, 0..) |d, i| {
-                if (i > 0) try w.writeAll(", ");
-                try writeDiscrepancy(w, strings, d);
-            }
-            try w.writeAll("])");
+            // A mismatch always names what differs (verdict.zig's `Verdict`).
+            assert(found.len > 0);
+            try w.print("mismatch, {d} discrepancies:\n", .{found.len});
+            for (found) |d| try writeDiscrepancy(w, strings, d);
         },
     }
-    try w.writeByte('\n');
 }
 
 /// The stage lines, then skipped before clean before the count.
@@ -236,56 +237,34 @@ fn writeMeasurement(w: *Writer, grid: Grid, m: Measurement) Writer.Error!void {
     }
 }
 
-/// One discrepancy as Rust's derived `Debug`: `Variant { field: value, … }`.
+/// One discrepancy as an indented sentence, as `writeVerdict` documents.
 fn writeDiscrepancy(w: *Writer, strings: *const StrTable, d: Discrepancy) Writer.Error!void {
+    try w.writeAll("  ");
     switch (d) {
-        inline else => |payload, tag| {
-            try w.print("{s} {{ ", .{comptime pascal(tag)});
-            inline for (@typeInfo(@TypeOf(payload)).@"struct".field_names, 0..) |name, i| {
-                if (i > 0) try w.writeAll(", ");
-                try w.print("{s}: ", .{name});
-                try writeDebugValue(w, strings, @field(payload, name));
+        .unpaired_device => |u| try w.print("{t} device {d} ({s}) has no partner", .{ u.side, u.device, strings.resolve(u.model) }),
+        .unpaired_net => |u| try w.print("{t} net {d} ({s}) has no partner", .{ u.side, u.net, if (u.name) |n| strings.resolve(n) else "unnamed" }),
+        .terminal_mismatch => |t| {
+            try w.print("layout device {d} and reference device {d} disagree on the net at ", .{ t.layout_device, t.ref_device });
+            switch (t.role) {
+                .pin => |k| try w.print("pin {d}", .{k}),
+                else => try w.writeAll(@tagName(t.role)),
             }
-            try w.writeAll(" }");
         },
-    }
-}
-
-fn writeDebugValue(w: *Writer, strings: *const StrTable, value: anytype) Writer.Error!void {
-    // ponytail: a name prints between quotes unescaped, where Rust's Debug
-    // escapes `"` and `\`; escape it if a deck or netlist name ever has one.
-    switch (@TypeOf(value)) {
-        u32 => try w.print("{d}", .{value}),
-        f64 => try float.debug(w, value),
-        StrId => try w.print("\"{s}\"", .{strings.resolve(value)}),
-        ?StrId => if (value) |id| try w.print("Some(\"{s}\")", .{strings.resolve(id)}) else try w.writeAll("None"),
-        lvs.verdict.Side => try w.writeAll(pascal(value)),
-        check.topology.TerminalRole => switch (value) {
-            .pin => |position| try w.print("Pin({d})", .{position}),
-            inline else => |_, tag| try w.writeAll(comptime pascal(tag)),
+        .parameter_mismatch => |p| {
+            try w.print("layout device {d} and reference device {d} differ in {s}: ", .{ p.layout_device, p.ref_device, strings.resolve(p.param) });
+            try float.display(w, p.layout_value);
+            try w.writeAll(" against ");
+            try float.display(w, p.ref_value);
         },
-        else => @compileError("no Debug form for " ++ @typeName(@TypeOf(value))),
-    }
-}
-
-/// An enum tag as its Rust variant: `round_limit` is `RoundLimit`.
-fn pascal(tag: anytype) []const u8 {
-    switch (tag) {
-        inline else => |t| return comptime blk: {
-            const name = @tagName(t);
-            var out: []const u8 = "";
-            var up = true;
-            for (name) |c| {
-                if (c == '_') {
-                    up = true;
-                    continue;
-                }
-                out = out ++ .{if (up) std.ascii.toUpper(c) else c};
-                up = false;
-            }
-            break :blk out;
+        .undeclared_param => |u| {
+            // Only the reference states a parameter the layout lacks (verdict.zig).
+            assert(u.side == .reference);
+            try w.print("reference device {d} states {s}, which layout device {d} does not measure", .{ u.ref_device, strings.resolve(u.param), u.layout_device });
         },
+        .model_mismatch => |m| try w.print("layout device {d} and reference device {d} differ in model: {s} against {s}", .{ m.layout_device, m.ref_device, strings.resolve(m.layout_model), strings.resolve(m.ref_model) }),
+        .class_imbalance => |c| try w.print("a class holds {d} layout nodes against {d} reference nodes", .{ c.layout_nodes, c.ref_nodes }),
     }
+    try w.writeByte('\n');
 }
 
 test "a run renders to this exact text" {
@@ -361,12 +340,13 @@ test "a run renders to this exact text" {
     , out.written());
 }
 
-test "the lvs merges and verdict render as Rust's lines and Debug" {
-    // Oracle: rustc 1.95's `{:?}` of a mirror of Rust's `Verdict` (the
-    // same variants, fields and derives), copied from its output, with each
-    // `StrId` replaced by the `String` it names (Rust's Debug of a `String`
-    // is the quoted text, of an `Option<String>` `Some("...")` or `None`);
-    // the merge and instance lines from format.rs's `writeln!` formats.
+test "the lvs merges and verdict render as plain sentences, names bare" {
+    // Oracle: spec example, written by hand from each `Discrepancy` field's
+    // doc (check/lvs/verdict.zig): every name id is the text it interns,
+    // bare; a net with no name says `unnamed`; a role is its own word, a
+    // passive's terminal `pin <k>`; no Debug form (`Some(`, `None`, quotes,
+    // `Variant { .. }`) appears. The merge and instance lines are
+    // format.rs's `writeln!` formats.
     const gpa = std.testing.allocator;
     var strings: StrTable = .empty;
     defer strings.deinit(gpa);
@@ -414,9 +394,18 @@ test "the lvs merges and verdict render as Rust's lines and Debug" {
         \\lvs merges:
         \\  layout parallel: 3 devices of nch (0, 4, 7) are one
         \\  reference series: 2 devices of nch (1, 2) are one
-        \\lvs: Mismatch([UnpairedDevice { side: Layout, device: 3, model: "nch" }, UnpairedNet { side: Reference, net: 2, name: None }, UnpairedNet { side: Layout, net: 0, name: Some("VDD") }, TerminalMismatch { layout_device: 1, ref_device: 2, role: Pin(1) }, TerminalMismatch { layout_device: 1, ref_device: 2, role: Drain }, ParameterMismatch { layout_device: 0, ref_device: 1, param: "w", layout_value: 1e-6, ref_value: 1.5 }, UndeclaredParam { side: Reference, layout_device: 0, ref_device: 1, param: "l" }, ModelMismatch { layout_device: 4, ref_device: 5, layout_model: "nch", ref_model: "pch" }, ClassImbalance { layout_nodes: 2, ref_nodes: 3 }])
-        \\lvs: Inconclusive(RoundLimit)
-        \\lvs: Match
+        \\lvs: mismatch, 9 discrepancies:
+        \\  layout device 3 (nch) has no partner
+        \\  reference net 2 (unnamed) has no partner
+        \\  layout net 0 (VDD) has no partner
+        \\  layout device 1 and reference device 2 disagree on the net at pin 1
+        \\  layout device 1 and reference device 2 disagree on the net at drain
+        \\  layout device 0 and reference device 1 differ in w: 0.000001 against 1.5
+        \\  reference device 1 states l, which layout device 0 does not measure
+        \\  layout device 4 and reference device 5 differ in model: nch against pch
+        \\  a class holds 2 layout nodes against 3 reference nodes
+        \\lvs: inconclusive, refinement kept splitting a class past its round limit
+        \\lvs: match
         \\
     , out.written());
 }
