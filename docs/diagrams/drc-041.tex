@@ -1,0 +1,32 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 (0,0)-(180,220) nm, via1 (40,40)-(140,140); 1 unit = 50 nm
+  \draw[layer a] (0,0) rectangle (3.6,4.4);
+  \node[caption,anchor=south] at (1.8,4.55) {met1};
+  \draw[layer b] (0.8,0.8) rectangle (2.8,2.8);
+  \node[caption] at (1.8,1.8) {via1};
+  \draw[dim] (0,2.0) -- (0.8,2.0);
+  \draw[dim] (2.8,2.0) -- (3.6,2.0);
+  \draw[dim] (1.4,0) -- (1.4,0.8);
+  \draw[dim] (1.4,2.8) -- (1.4,4.4);
+  \node[dim label] at (0.4,1.5) {40};
+  \node[dim label] at (3.2,1.5) {40};
+  \node[dim label] at (2.0,0.4) {40};
+  \node[dim label] at (2.0,3.6) {80};
+  \draw[violation] (-0.1,-0.1) rectangle (3.7,4.5);
+  \node[violation label,align=center,anchor=north] at (1.8,-0.2) {best axis \SI{40}{\nano\metre}\\ < \SI{50}{\nano\metre}};
+  % met1 (400,0)-(600,100), via1 (450,0)-(550,100)
+  \draw[layer a] (6,1) rectangle (10,3);
+  \node[caption,anchor=south] at (8,3) {met1};
+  \draw[layer b] (7,1) rectangle (9,3);
+  \node[caption] at (8,2) {via1};
+  \draw[dim] (6,0.6) -- (7,0.6);
+  \draw[dim] (9,0.6) -- (10,0.6);
+  \node[dim label,anchor=north] at (6.5,0.4) {50};
+  \node[dim label,anchor=north] at (9.5,0.4) {50};
+  \node[caption,align=center,anchor=north] at (8,-0.2) {opposite passes;\\ flush top and bottom};
+  \node[caption,anchor=north] at (5.2,5.2) {distances in \si{\nano\metre}};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 20 x 10 um die, 0.4 cm per um
+  \draw[layer a] (0,0) rectangle (3.6,4);
+  \draw[layer a] (4,0) rectangle (4.8,4);
+  \node[caption,fill=white,inner sep=1pt] at (1.8,3.4) {met1};
+  \draw[violation] (0,0) rectangle (4,4);
+  \draw[violation] (4.06,0.06) rectangle (8,3.94);
+  \node[violation label,align=center,anchor=south] at (2,4.1) {$d = 0.9$\\$t = 400 \times 0.4 = \SI{160}{\nano\metre}$};
+  \node[violation label,align=center,anchor=south] at (6,4.1) {$d = 0.2$\\$|t| = \SI{120}{\nano\metre}$};
+  \node[violation label,anchor=north] at (4,-1.2) {step in density $0.9 - 0.2 = 0.7 > 0.5$; excursions above \SI{100}{\nano\metre}};
+  \draw[dim] (0,-0.4) -- node[dim label,below=1pt] {window \SI{10}{\micro\metre}} (4,-0.4);
+  \draw[dim] (4,-0.4) -- node[dim label,below=1pt] {step \SI{10}{\micro\metre}} (8,-0.4);
+  \draw[dim] (8.4,0) -- node[dim label,right=1pt] {\SI{10}{\micro\metre}} (8.4,4);
+\end{circuitikz}
+\end{document}

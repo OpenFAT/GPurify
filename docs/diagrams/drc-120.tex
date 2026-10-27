@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.6cm,y=0.6cm]
+  % 1 unit = 100 nm. diff 1 um x 600 nm, poly crossing it, a licon on the
+  % gate and one on diff only.
+  \draw[layer a] (0,0) rectangle (10,6);
+  \node[above right] at (6,6) {diff};
+  \draw[layer c] (4,-2) rectangle (6,8);
+  \node[above] at (5,8) {poly};
+  \draw[layer b] (4.15,2.15) rectangle (5.85,3.85);
+  \draw[layer b] (1,2.15) rectangle (2.7,3.85);
+  \node[below] at (1.85,2.15) {licon};
+  \draw[violation] (4.15,2.15) rectangle (5.85,3.85);
+  \node[violation label,align=left,right] at (10.5,3) {licon.17: licon\_on\_gate,\\\SI{28900}{\nano\metre\squared}};
+  \draw[->] (10.4,3) -- (6,3);
+\end{circuitikz}
+\end{document}

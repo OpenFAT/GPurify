@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The 5 nm grid near the right edge, drawn to scale: 1 nm = 0.4 cm.
+  \foreach \x in {0,2,4} \draw[gray,densely dotted] (\x,-0.6) -- (\x,3.6);
+  \node[caption,below] at (0,-0.6) {\SI{2995}{\nano\metre}};
+  \node[caption,below] at (2,-0.6) {\SI{3000}{\nano\metre}};
+  \node[caption,below] at (4,-0.6) {\SI{3005}{\nano\metre}};
+  % met1 ends at x = 3003 nm.
+  \draw[layer a] (-1.5,0) -- (3.2,0) -- (3.2,3) -- (-1.5,3);
+  \node at (0.6,1.5) {met1};
+  \draw[dim] (3.2,2.2) -- (4,2.2) node[midway,above=2pt,dim label] {\SI{2}{\nano\metre}};
+  \draw[violation] (3.2,0) circle (0.18);
+  \draw[violation] (3.2,3) circle (0.18);
+  \node[violation label,right] at (3.4,3.3) {off grid};
+  \node[violation label,right] at (3.4,0.3) {off grid};
+  \node[caption] at (3.2,-1.5) {edge at \SI{3003}{\nano\metre}};
+\end{circuitikz}
+\end{document}

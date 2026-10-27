@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % not to scale along x: lines 10 um long drawn 6 cm; across, 3 cm per um
+  \draw[layer a] (0,0) rectangle (6,0.6);
+  \draw[layer a] (0,1.2) rectangle (6,1.8);
+  \node[caption] at (3,0.3) {met1};
+  \node[caption] at (3,1.5) {met1};
+  % each grown by r = 150 nm (0.45 cm)
+  \draw[marker] (-0.45,-0.45) rectangle (6.45,1.05);
+  \draw[marker] (-0.45,0.75) rectangle (6.45,2.25);
+  \draw[violation,fill=red!15] (-0.45,0.75) rectangle (6.45,1.05);
+  \draw[dim] (6.9,0.6) -- node[dim label,right=1pt] {gap $s$ = \SI{200}{\nano\metre}} (6.9,1.2);
+  \draw[dim] (6.9,-0.45) -- node[dim label,right=1pt] {$r$ = \SI{150}{\nano\metre}} (6.9,0);
+  \draw[dim] (-0.45,-0.9) -- node[dim label,below=1pt] {$l + 2r$ = \SI{10.3}{\micro\metre}} (6.45,-0.9);
+  \node[violation label,anchor=north] at (3,-1.5) {critical area $(10 + 0.3) \times 0.1 = \SI{1.03}{\micro\metre\squared}$, above the \SI{1}{\micro\metre\squared} limit};
+  \node[caption,anchor=south] at (3,2.3) {dashed: each line grown by $r$; shaded: their overlap};
+\end{circuitikz}
+\end{document}

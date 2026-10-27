@@ -1,0 +1,24 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % metal1 (0,0)-(300,300), contact (40,40)-(260,260); 1 unit = 50 nm
+  \draw[layer a] (0,0) rectangle (6,6);
+  \node[caption,anchor=south] at (3,6.2) {metal1, \SI{300}{\nano\metre} wide};
+  \draw[layer b] (0.8,0.8) rectangle (5.2,5.2);
+  \node[caption] at (3,3) {contact};
+  \draw[dim] (0,3.6) -- (0.8,3.6);
+  \draw[dim] (3,0) -- (3,0.8);
+  \node[dim label,anchor=east] at (-0.3,3.6) {\SI{40}{\nano\metre}};
+  \node[dim label,anchor=west] at (3.1,0.4) {\SI{40}{\nano\metre}};
+  \draw[violation] (-0.1,-0.1) rectangle (6.1,6.1);
+  \node[violation label,anchor=north] at (3,-0.2) {\SI{40}{\nano\metre} < \SI{60}{\nano\metre}};
+  % plate (1000,0)-(2000,1000), drawn shortened; contact with the same 40 nm margins
+  \draw[layer a] (8,0) rectangle (16,7);
+  \node[caption,anchor=south] at (12,7.2) {metal1, \SI{1}{\micro\metre} plate};
+  \draw[layer b] (8.8,0.8) rectangle (13.2,5.2);
+  \node[caption] at (11,3) {contact};
+  \draw[marker] (8.1,0.1) rectangle (14.9,6.9);
+  \node[caption,anchor=north] at (12,-0.2) {a \SI{340}{\nano\metre} square fits: not held};
+\end{circuitikz}
+\end{document}

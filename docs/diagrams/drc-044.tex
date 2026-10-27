@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[scale=1.4]
+  % npc (0,0)-(400,360), licon (95,95)-(265,265); 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (4,3.6);
+  \node[caption,anchor=south] at (2,3.6) {npc};
+  \draw[layer b] (0.95,0.95) rectangle (2.65,2.65);
+  \node[caption] at (1.8,1.8) {licon};
+  \draw[marker] (0,0) rectangle (3.6,3.6);
+  \node[caption,anchor=north] at (1.8,-0.1) {licon grown by \SI{95}{\nano\metre}};
+  \draw[violation] (3.6,0) rectangle (4,3.6);
+  \draw[dim] (2.65,1.2) -- (4,1.2);
+  \node[dim label] at (3.3,1.45) {\SI{135}{\nano\metre}};
+  \node[violation label,anchor=west] at (4.1,2.6) {\SI{135}{\nano\metre} > \SI{95}{\nano\metre}};
+\end{circuitikz}
+\end{document}

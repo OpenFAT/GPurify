@@ -1,0 +1,17 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 1 um = 2 cm. Allowed: 0 and 90 degrees.
+  \draw[layer a] (0,0) rectangle (2,2);
+  \node at (1,1) {diff};
+  \node[caption,below] at (1,-0.1) {passes};
+  % Right triangle (2,0)-(3,0)-(2,1) um, drawn at x = 4..6 cm.
+  \draw[layer a] (4,0) -- (6,0) -- (4,2) -- cycle;
+  \node at (4.6,0.6) {diff};
+  \draw[violation] (6,0) -- (4,2);
+  \node[violation label,right] at (5.1,1.3) {\SI{135}{\degree} edge};
+  \fill (6,0) circle (0.06);
+  \node[caption,below] at (6,-0.1) {reported at $(3000, 0)$};
+\end{circuitikz}
+\end{document}

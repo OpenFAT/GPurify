@@ -1,0 +1,32 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 (0,0)-(260,260), mcon (60,60)-(230,230); 1 unit = 50 nm
+  \draw[layer a] (0,0) rectangle (5.2,5.2);
+  \node[caption,anchor=south] at (2.6,5.2) {met1};
+  \draw[layer b] (1.2,1.2) rectangle (4.6,4.6);
+  \node[caption] at (2.9,2.9) {mcon};
+  \draw[dim] (0,2.9) -- (1.2,2.9);
+  \draw[dim] (2.9,0) -- (2.9,1.2);
+  \node[dim label] at (0.6,3.3) {60};
+  \node[dim label] at (3.3,0.6) {60};
+  \draw[dim] (4.6,3.6) -- (5.2,3.6);
+  \draw[dim] (3.6,4.6) -- (3.6,5.2);
+  \node[dim label,anchor=west] at (5.3,3.6) {30};
+  \node[dim label,anchor=south] at (3.6,5.5) {30};
+  \draw[violation] (4.6,4.6) circle (0.35);
+  \node[violation label,align=center,anchor=north] at (2.6,-0.2) {top-right corner:\\ \SI{30}{\nano\metre} both sides < \SI{60}{\nano\metre}};
+  % met1 (500,0)-(790,230), mcon (560,30)-(730,200)
+  \draw[layer a] (8,0) rectangle (13.8,4.6);
+  \node[caption,anchor=south] at (10.9,4.6) {met1};
+  \draw[layer b] (9.2,0.6) rectangle (12.6,4.0);
+  \node[caption] at (10.9,2.3) {mcon};
+  \draw[dim] (8,2.3) -- (9.2,2.3);
+  \draw[dim] (12.6,2.3) -- (13.8,2.3);
+  \node[dim label] at (8.6,2.7) {60};
+  \node[dim label] at (13.2,2.7) {60};
+  \node[caption,anchor=north] at (10.9,-0.2) {every corner has a \SI{60}{\nano\metre} side};
+  \node[caption,anchor=west] at (0,6.2) {distances in \si{\nano\metre}};
+\end{circuitikz}
+\end{document}

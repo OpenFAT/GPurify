@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Cell top places inv_x1 at (0,0) and inverter_strong_x16 at (5,0); 1 um = 1 cm.
+  \draw[marker] (-0.5,-0.5) rectangle (2,2.2);
+  \node[caption,above] at (0.75,2.2) {inv\_x1 (6)};
+  \draw[layer a] (0,0) rectangle (1,1);
+  \node[caption] at (0.5,0.5) {met1};
+  \node[caption,below] at (0.75,-0.5) {passes};
+  \draw[marker] (4.5,-0.5) rectangle (7,2.2);
+  \node[caption,above] at (5.75,2.2) {inverter\_strong\_x16 (19)};
+  \draw[layer a] (5,0) rectangle (6,1);
+  \node[caption] at (5.5,0.5) {met1};
+  \draw[violation] (5,0) rectangle (6,1);
+  \node[violation label,below] at (5.75,-0.5) {name over 16 characters};
+\end{circuitikz}
+\end{document}

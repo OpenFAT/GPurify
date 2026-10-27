@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 1 um = 0.8 cm. hvi (0,0)-(10,6); hvntm (6,2)-(12,4).
+  \draw[layer a] (0,0) rectangle (8,4.8);
+  \node at (2,3.8) {hvi};
+  \draw[layer c] (4.8,1.6) rectangle (9.6,3.2);
+  \node[fill=white,inner sep=1pt] at (6.2,2.4) {hvntm};
+  \draw[violation] (8,1.6) rectangle (9.6,3.2);
+  \node[violation label,right] at (9.7,2.4) {outside hvi};
+  \draw[dim] (8,0.8) -- (9.6,0.8) node[midway,below,dim label] {\SI{2}{\micro\metre}};
+\end{circuitikz}
+\end{document}
