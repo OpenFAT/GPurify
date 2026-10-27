@@ -12,7 +12,7 @@
 //! `--threads` pick the `Device` (ARCHITECTURE.md, GPU: Selection).
 //!
 //! Contents:
-//! - `pub const Format = enum { text, json, spef, dspf }`, `pub const Edit = enum { fill, enhance }`
+//! - `pub const Format = enum { text, json, spef, dspf, spice }`, `pub const Edit = enum { fill, enhance }`
 //! - `pub const Lib = struct { spec, output_dir, lef }`
 //! - `pub const Command = union(enum) { check, xor, edit, lib, system }`
 //! - `pub const Backend = enum { auto, cpu, cuda, hip }`
@@ -25,7 +25,7 @@ const gpurify = @import("gpurify");
 const testing = std.testing;
 
 /// How to render the result.
-pub const Format = enum { text, json, spef, dspf };
+pub const Format = enum { text, json, spef, dspf, spice };
 
 /// A layout edit the deck configures, written to a new GDSII file.
 pub const Edit = enum {
@@ -70,6 +70,9 @@ pub const Cli = struct {
     backend: Backend = .auto,
     /// Null: one per CPU.
     threads: ?u16 = null,
+    /// `-o FILE`, `--format spice` only: each process corner's netlist goes
+    /// to `FILE.<corner>`; the nominal one is on stdout either way.
+    output: ?[]const u8 = null,
 };
 
 /// `Usage`: the command line is malformed; `message` says how.
@@ -108,6 +111,7 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
     var format: Format = .text;
     var backend: Backend = .auto;
     var threads: ?u16 = null;
+    var output: ?[]const u8 = null;
 
     var i: usize = 1;
     while (i < argv.len) : (i += 1) {
@@ -129,7 +133,7 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
                 .@"output-dir" => output_dir = value,
                 .lef => try lef.append(arena, value),
                 .format => format = std.meta.stringToEnum(Format, value) orelse
-                    return usage(arena, message, "unknown --format {s}; expected text, json, spef or dspf", .{value}),
+                    return usage(arena, message, "unknown --format {s}; expected text, json, spef, dspf or spice", .{value}),
                 .backend => backend = std.meta.stringToEnum(Backend, value) orelse
                     return usage(arena, message, "unknown --backend {s}; expected auto, cpu, cuda or hip", .{value}),
                 .threads => threads = blk: {
@@ -138,6 +142,10 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
                     break :blk n;
                 },
             }
+        } else if (std.mem.eql(u8, token, "-o")) {
+            i += 1;
+            if (i == argv.len or argv[i].len == 0) return usage(arena, message, "-o wants a file name", .{});
+            output = argv[i];
         } else if (moved.get(token)) |to| {
             return usage(arena, message, "{s} is no longer an option: {s} says it now", .{ token, to });
         } else if (std.mem.startsWith(u8, token, "-")) {
@@ -156,7 +164,8 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
         // ERC reads a reference only to place `--currents` through LVS.
         .erc => .{ .checks = .{ .erc = true }, .intent = true, .currents = true, .reference = true },
         .lvs => .{ .checks = .{ .lvs = true }, .reference = true },
-        .pex => .{ .checks = .{ .pex = true }, .quasistatic = true },
+        // `pex`'s reference names its netlist (PEX-017), through LVS.
+        .pex => .{ .checks = .{ .pex = true }, .quasistatic = true, .reference = true },
         // `all` keeps LVS selected without a reference, so it reports Skipped.
         .all => .{ .checks = .all, .intent = true, .currents = true, .reference = true },
         // `lib` cross-checks a reference against its spec's pins; `system`'s
@@ -196,15 +205,20 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
     if (quasistatic.items.len > 0 and !takes.quasistatic) return usage(arena, message, "{s} takes no --quasistatic", .{word});
     if (sub == .lvs and reference.items.len == 0) return usage(arena, message, "lvs requires a reference netlist (--reference)", .{});
     // A check with no parasitic network would write an empty file that reads as clean.
-    if ((format == .spef or format == .dspf) and !takes.checks.pex) return usage(arena, message, "--format {t} is not something this check produces", .{format});
+    if ((format == .spef or format == .dspf or format == .spice) and !takes.checks.pex) return usage(arena, message, "--format {t} is not something this check produces", .{format});
+    if (output != null and format != .spice) return usage(arena, message, "-o names where --format spice writes each corner's netlist, and the format is {t}", .{format});
+    // A netlist in the reference's terms needs the pairing LVS makes.
+    var checks = takes.checks;
+    if ((format == .spice or format == .dspf) and reference.items.len > 0) checks.lvs = true;
 
     var cli: Cli = .{
         .inputs = .{ .layout = "", .deck = "", .reference = reference.items, .intent = intent, .currents = currents },
-        .options = .{ .checks = takes.checks, .quasistatic_nets = quasistatic.items },
+        .options = .{ .checks = checks, .quasistatic_nets = quasistatic.items },
         .format = format,
         .command = .check,
         .backend = backend,
         .threads = threads,
+        .output = output,
     };
     if (sub == .system) {
         if (deck != null) return usage(arena, message, "system takes no --deck: each die names its deck in the system file", .{});
@@ -272,6 +286,23 @@ test "a full command line reaches every field" {
     const two = try parseLine(a, "lvs t --deck d --reference cells.spice --reference top.v");
     try testing.expectEqualStrings("cells.spice", two.inputs.reference[0]);
     try testing.expectEqualStrings("top.v", two.inputs.reference[1]);
+}
+
+test "a simulator netlist with a reference also runs LVS for its names" {
+    // Oracle: docs/usage.md (Parasitics, PEX-017): `pex --reference
+    // --format spice` names the netlist through LVS's pairing; `-o` sends
+    // the corners to files; DSPF's instance section takes the same names.
+    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const cli = try parseLine(a, "pex ota.gds --deck sky130 --reference ota.spice --format spice -o ota.pex.spice");
+    try testing.expectEqual(Format.spice, cli.format);
+    try testing.expectEqual(gpurify.Checks{ .lvs = true, .pex = true }, cli.options.checks);
+    try testing.expectEqualStrings("ota.pex.spice", cli.output.?);
+    try testing.expectEqual(gpurify.Checks{ .lvs = true, .pex = true }, (try parseLine(a, "pex t --deck d --reference r --format dspf")).options.checks);
+    // Without a reference there is nothing to pair, and SPEF needs no names.
+    try testing.expectEqual(gpurify.Checks{ .pex = true }, (try parseLine(a, "pex t --deck d --format spice")).options.checks);
+    try testing.expectEqual(gpurify.Checks{ .pex = true }, (try parseLine(a, "pex t --deck d --reference r --format spef")).options.checks);
 }
 
 test "lib takes its spec, directory and macro lef and runs no check" {
@@ -391,7 +422,10 @@ test "every malformed command line is refused with its message" {
         .{ "drc t u --deck d", "one layout file, but a second was given: u" },
         .{ "drc t --deck", "--deck wants a value" },
         .{ "drc t --deck d --nonsense", "unknown option --nonsense" },
-        .{ "drc t --deck d --format gds", "unknown --format gds; expected text, json, spef or dspf" },
+        .{ "drc t --deck d --format gds", "unknown --format gds; expected text, json, spef, dspf or spice" },
+        .{ "lvs t --deck d --reference r --format spice", "--format spice is not something this check produces" },
+        .{ "pex t --deck d --format spef -o x", "-o names where --format spice writes each corner's netlist, and the format is spef" },
+        .{ "pex t --deck d --format spice -o", "-o wants a file name" },
         .{ "drc t --deck d --grid 1000", "unknown option --grid" },
         .{ "drc t --deck d --no-strict-layers", "unknown option --no-strict-layers" },
         .{ "drc t --deck d --output o", "unknown option --output" },

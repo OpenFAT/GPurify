@@ -111,24 +111,52 @@ const World = struct {
         return w.out.written();
     }
 
-    /// One MOS, gate on the upper net and everything else on the lower,
-    /// terminals in the recogniser's order (gate, source, drain, bulk);
-    /// `spliced` writes the parasitics too.
-    fn spice(w: *World, spliced: bool) ![]const u8 {
-        const vdd = w.nets.netOf(w.lower);
-        var devices: topology.DeviceTable = .{};
-        defer devices.deinit(gpa);
-        try devices.kind.append(gpa, .mos);
-        try devices.marker.append(gpa, @fromBackingInt(0));
-        try devices.model.append(gpa, try w.strings.intern(gpa, "nch"));
-        try devices.terminal_start.appendSlice(gpa, &.{ 0, 4 });
-        try devices.terminal_net.appendSlice(gpa, &.{ w.upper_net, vdd, vdd, vdd });
-        try devices.terminal_role.appendSlice(gpa, &.{ .gate, .source, .drain, .bulk });
-        try devices.param_start.appendSlice(gpa, &.{ 0, 3 });
-        try devices.param_name.appendSlice(gpa, &.{ .width, .length, .source_area });
-        try devices.param_measure.appendSlice(gpa, &.{ .{ .length = 100 }, .{ .length = 50 }, .{ .area_share = .{ .area = 70_000, .ways = 2 } } });
+    /// The world as a simulator's subcircuit `test` on pins `VDD VSS`, a
+    /// third net `SUB` with no node, and one MOS `XM1`: drain on VDD's
+    /// second node, gate on VSS's, source on VDD's first (its pin node),
+    /// bulk on SUB; 100 by 50 nm with a shared 70000 nm² source, written in
+    /// µm (1 nm database units).
+    fn subckt(w: *World, s: *ex.subckt.Subckt) !void {
+        const vdd = @backingInt(w.nets.netOf(w.lower));
+        const vss = @backingInt(w.upper_net);
+        try s.clear(gpa);
+        s.name = "test";
+        s.unit_nm = 1000;
+        s.dbu_per_unit = 1000;
+        try s.pin_net.appendSlice(gpa, &.{ vdd, vss });
+        try s.net_name.appendNTimes(gpa, null, 3);
+        s.net_name.items[vdd] = "VDD";
+        s.net_name.items[vss] = "VSS";
+        s.net_name.items[2] = "SUB";
+        try s.pin_node.appendNTimes(gpa, .ground, 3);
+        s.pin_node.items[vdd] = .at(0);
+        s.pin_node.items[vss] = .at(2);
+        try s.device_name.append(gpa, "XM1");
+        try s.device_model.append(gpa, "nch");
+        try s.device_kind.append(gpa, .mos);
+        try s.terminal_net.appendSlice(gpa, &.{ vdd, vss, vdd, 2 });
+        try s.terminal_node.appendSlice(gpa, &.{ .at(1), .at(2), .at(0), .ground });
+        try s.terminal_start.append(gpa, 4);
+        try s.param_name.appendSlice(gpa, &.{ "w", "l", "as", "nf" });
+        try s.param_value.appendSlice(gpa, &.{ .{ .length = 100 }, .{ .length = 50 }, .{ .area = 35_000 }, .{ .count = 1 } });
+        try s.param_start.append(gpa, 4);
+    }
+
+    fn spice(w: *World) ![]const u8 {
+        var s: ex.subckt.Subckt = .{};
+        defer s.deinit(gpa);
+        try w.subckt(&s);
         w.out.clearRetainingCapacity();
-        try ex.netlist.writeSpice(&w.out.writer, gpa, w.nets.netCount(), &devices, &w.ports, &w.strings, if (spliced) &w.parasitics else null, &w.header, &w.diag);
+        try ex.netlist.writeSpice(&w.out.writer, gpa, &w.parasitics, &s, "nominal", &w.header, &w.diag);
+        return w.out.written();
+    }
+
+    fn dspfSubckt(w: *World) ![]const u8 {
+        var s: ex.subckt.Subckt = .{};
+        defer s.deinit(gpa);
+        try w.subckt(&s);
+        w.out.clearRetainingCapacity();
+        try ex.dspf.writeDspfSubckt(&w.out.writer, gpa, &w.parasitics, &s, &w.header, &w.diag);
         return w.out.written();
     }
 };
@@ -287,17 +315,61 @@ test "a dspf label with parentheses reads back as itself" {
 }
 
 test "the spice netlist is exactly these bytes" {
-    // Oracle: golden, written by hand: the SPICE `M` card's drain, gate, source,
-    // bulk order, and the shared source's area as the exact quotient `70000/2`
-    // (F16).
-    const head = "* gpurify-test SPICE netlist\n* deck: decks/test.json\n* layout: layouts/test.gds\n" ++
-        "* written: 2020-01-01T00:00:00Z\n* lengths below are in database units\n";
+    // Oracle: golden, written by hand from the known world (World.subckt):
+    // the `.subckt` on its pins in order, the device on its nodes in drain,
+    // gate, source, bulk order, a pin node bare and every other `net#index`
+    // as DSPF counts it, a net with no node bare; sizes in µm (100 nm is
+    // 0.1, 35000 nm² is 0.035 µm²); the elements as DSPF cards them.
     var w: World = undefined;
     try w.init("VSS");
     defer w.deinit();
-    try testing.expectEqualStrings(head ++ ".subckt TOP VDD VSS\nM0 VDD VSS VDD VDD nch w=100 l=50 as='70000/2'\n.ends TOP\n", try w.spice(false));
-    try testing.expectEqualStrings(head ++ ".subckt TOP VDD:0 VSS:0\nM0 VDD:0 VSS:0 VDD:0 VDD:0 nch w=100 l=50 as='70000/2'\n" ++
-        "Cp0 VDD:0 0 0.250000f\nRp1 VDD:0 VDD:1 12.500000\nCp2 VDD:1 VSS:0 0.125000f\n.ends TOP\n", try w.spice(true));
+    w.header.reference_path = "ref/test.spice";
+    try testing.expectEqualStrings("* gpurify-test pex: layouts/test.gds, deck decks/test.json, reference ref/test.spice, corner nominal\n" ++
+        "* written: 2020-01-01T00:00:00Z\n* sizes in units of 1e-6 m: a bench's .option scale must say the same\n" ++
+        ".subckt test VDD VSS\nXM1 VDD#1 VSS VDD SUB nch w=0.1 l=0.05 as=0.035 nf=1\n" ++
+        "C1 VDD 0 0.250000f\nR1 VDD VDD#1 12.500000\nC2 VDD#1 VSS 0.125000f\n.ends test\n", try w.spice());
+    w.header.reference_path = null;
+    try testing.expect(std.mem.indexOf(u8, try w.spice(), "no reference, so devices are named by layout index and cannot be back-annotated, corner nominal\n") != null);
+}
+
+test "dspf's instance section declares each terminal's node and carries the card" {
+    // Oracle: golden, written by hand (DSPF 1.4's `*|I (pin inst pin_name
+    // type cap)` per device terminal in place of the node's `*|S`, then the
+    // instance section): VDD:0 holds the source, VDD:1 the drain, VSS:0 the
+    // gate; the bulk's net SUB has no node. Read back, the instance
+    // section changes nothing: the same totals as the labels' DSPF.
+    var w: World = undefined;
+    try w.init("VSS");
+    defer w.deinit();
+    const text = try w.dspfSubckt();
+    try testing.expectEqualStrings("*|NET VDD 0.375000f\n*|I (VDD:0 XM1 s B 0 L0)\n*|I (VDD:1 XM1 d B 0 L0)\n\n" ++
+        "*|NET VSS 0.125000f\n*|I (VSS:0 XM1 g B 0 L0)\n\n" ++
+        "C1 VDD:0 0 0.250000f\nR1 VDD:0 VDD:1 12.500000\nC2 VDD:1 VSS:0 0.125000f\n\n* instance section\n" ++
+        "XM1 VDD:1 VSS:0 VDD:0 SUB nch w=0.1 l=0.05 as=0.035 nf=1\n", text[std.mem.indexOf(u8, text, "*|NET").?..]);
+    var read: extract.foreign.Read = .empty;
+    defer read.deinit(gpa);
+    var diag: extract.foreign.Diagnostic = .{};
+    try extract.dspf.readInto(gpa, text, &read, &diag);
+    var totals: std.ArrayList(f64) = .empty;
+    defer totals.deinit(gpa);
+    try read.network.capacitancePerNetInto(gpa, &totals);
+    try testing.expectEqualSlices(f64, &.{ 0.375, 0.125 }, totals.items);
+}
+
+test "spice refuses a name a card would read as syntax" {
+    // Oracle: construct-from-answer. `#` is the node suffix, a blank splits
+    // the card, `=` makes a parameter: each would wire another circuit.
+    for ([_][]const u8{ "V#1", "V DD", "a=b", "" }) |bad| {
+        var w: World = undefined;
+        try w.init("VSS");
+        defer w.deinit();
+        var s: ex.subckt.Subckt = .{};
+        defer s.deinit(gpa);
+        try w.subckt(&s);
+        s.net_name.items[s.pin_net.items[1]] = bad;
+        w.out.clearRetainingCapacity();
+        try testing.expectError(error.Unrepresentable, ex.netlist.writeSpice(&w.out.writer, gpa, &w.parasitics, &s, "nominal", &w.header, &w.diag));
+    }
 }
 
 test "inductances, a mutual one and a substrate resistance go out as comments and K cards" {
@@ -372,36 +444,6 @@ test "process corners write min:typ:max triplets" {
     try testing.expectEqualStrings("a resistance or inductance at one process corner and not another", w.diag.what);
 }
 
-test "spice numbers an anonymous net" {
-    // Oracle: construct-from-answer. The upper rectangle has no label, so SPICE,
-    // which carries its own netlist, names it `n` and its net number.
-    var w: World = undefined;
-    try w.init(null);
-    defer w.deinit();
-    const text = try w.spice(false);
-    var want_buf: [64]u8 = undefined;
-    const want = try std.fmt.bufPrint(&want_buf, ".subckt TOP VDD\nM0 VDD n{d} VDD VDD nch", .{@backingInt(w.upper_net)});
-    try testing.expect(std.mem.indexOf(u8, text, want) != null);
-}
-
-test "spice lengthens a fallback name a label already holds" {
-    // Oracle: construct-from-answer. The upper net is anonymous and the
-    // lower one is labelled with the upper's fallback `n<id>` too, so the
-    // fallback grows a `_` rather than short the two nets.
-    var w: World = undefined;
-    try w.init(null);
-    defer w.deinit();
-    var name_buf: [16]u8 = undefined;
-    const name = try std.fmt.bufPrint(&name_buf, "n{d}", .{@backingInt(w.upper_net)});
-    w.provenance.deinit(gpa);
-    w.provenance = .{};
-    try w.provenance.label(gpa, w.lower, try w.strings.intern(gpa, name));
-    try topology.bindPortsInto(gpa, &w.nets, w.provenance.labels(), &w.ports);
-    var want_buf: [64]u8 = undefined;
-    const want = try std.fmt.bufPrint(&want_buf, "M0 {s} {s}_ {s} {s} nch", .{ name, name, name, name });
-    try testing.expect(std.mem.indexOf(u8, try w.spice(false), want) != null);
-}
-
 test "both parasitic formats refuse an anonymous net" {
     // Oracle: construct-from-answer. The upper net has no label, and a placeholder
     // name would change between runs, so both formats refuse it by number.
@@ -438,8 +480,6 @@ test "every writer refuses a label on two nets" {
     try testing.expectError(error.SplitLabel, w.spef());
     try testing.expectEqualSlices(geom.StrId, &.{vdd}, w.diag.labels);
     try testing.expectError(error.SplitLabel, w.dspf());
-    try testing.expectError(error.SplitLabel, w.spice(false));
-    try testing.expectError(error.SplitLabel, w.spice(true));
     try testing.expectEqualSlices(geom.StrId, &.{vdd}, w.diag.labels);
 }
 
@@ -461,8 +501,6 @@ test "every writer refuses a net with two labels" {
     try testing.expectError(error.ShortedLabels, w.spef());
     try testing.expectEqualSlices(geom.StrId, &both, w.diag.labels);
     try testing.expectError(error.ShortedLabels, w.dspf());
-    try testing.expectError(error.ShortedLabels, w.spice(false));
-    try testing.expectError(error.ShortedLabels, w.spice(true));
     try testing.expectEqualSlices(geom.StrId, &both, w.diag.labels);
 }
 
@@ -478,8 +516,7 @@ test "every parasitic writer refuses a value that is not finite" {
         try testing.expectError(error.Unrepresentable, w.spef());
         try testing.expectEqualStrings("a non-finite parasitic value", w.diag.what);
         try testing.expectError(error.Unrepresentable, w.dspf());
-        try testing.expectError(error.Unrepresentable, w.spice(true));
-        _ = try w.spice(false);
+        try testing.expectError(error.Unrepresentable, w.spice());
     };
 }
 

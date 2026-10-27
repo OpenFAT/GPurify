@@ -158,8 +158,9 @@ test "a subcircuit of two transistors reads back card for card" {
     for (ports, &port_names) |p, *name| name.* = r.name(n.net_name.items[@backingInt(p)]);
     try expectNames(&.{ "a", "y", "vdd", "vss" }, &port_names);
     try testing.expectEqual([2]u32{ 0, 2 }, n.devicesOf(sub(0)));
-    for ([_][]const u8{ "nfet", "pfet" }, 0..) |model, row| {
+    for ([_][]const u8{ "nfet", "pfet" }, [_][]const u8{ "mn", "mp" }, 0..) |model, name, row| {
         try testing.expectEqualStrings(model, r.name(n.device_model.items[row]));
+        try testing.expectEqualStrings(name, r.name(n.device_name.items[row]));
         try testing.expectEqual(DeviceKind.mos, n.device_kind.items[row]);
         try testing.expectEqual(4, n.terminalsOf(@intCast(row)).len);
     }
@@ -291,6 +292,11 @@ test "flattening keeps a black box whole on its ports" {
     var models: [3][]const u8 = undefined;
     for (flat.device_model.items, &models) |m, *s| s.* = r.name(m);
     try expectNames(&.{ "BB1", "BB1", "nfet" }, &models);
+    // A box kept whole is named after the instance placing it; a device
+    // keeps its card's name, its placement saying where it is.
+    var names: [3][]const u8 = undefined;
+    for (flat.device_name.items, &names) |d, *s| s.* = r.name(d);
+    try expectNames(&.{ "X1", "X2", "M0" }, &names);
     try testing.expectEqualSlices(DeviceKind, &.{ .cell, .cell, .mos }, flat.device_kind.items);
     try expectNames(&.{ "c", "a", "b" }, try terminalNames(&r, &flat, a, 0));
     try expectNames(&.{ "b", "b", "a" }, try terminalNames(&r, &flat, a, 1));
@@ -389,6 +395,10 @@ test "flattening keeps each placement's nets apart" {
     try testing.expectEqual(want.len, flat.device_model.items.len);
     for (want, 0..) |w, device| try expectNames(&w, try terminalNames(&r, &flat, arena.allocator(), @intCast(device)));
     try testing.expectEqual(9, flat.net_name.items.len);
+    // Each device keeps its card's name; its placement says where it is.
+    var names: [want.len][]const u8 = undefined;
+    for (flat.device_name.items, &names) |d, *o| o.* = r.name(d);
+    try expectNames(&.{ "R1", "R1", "R1", "R1", "R1", "R1", "R1", "R1" }, &names);
 }
 
 test "a reference deeper than the layout's depth cap is refused, not overflowed" {

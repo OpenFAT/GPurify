@@ -707,3 +707,27 @@ test "a measure sorting before the card's parameter is passed over" {
     defer b.deinit(gpa);
     try expectSameOf(&layout, &b, common.decisive(), &.{pm(1, 1, length, 0.5, 1.0)});
 }
+
+test "a match carries its pairing in the rows of the graphs given" {
+    // Oracle: construct-from-answer. The layout draws a transistor as two
+    // fingers (rows 0 and 1, the second written source for drain), which
+    // merge in parallel, and a second transistor (row 2) gated by their
+    // drain; the reference writes the same circuit through the net
+    // permutation 0→2, 1→3, 2→1, 3→0, the transistors in the other order.
+    // So reference device 0 pairs with reduced layout device 1 (row 2),
+    // reference device 1 with reduced device 0 (rows 0 and 1), and each
+    // reference net with its preimage, numbered after the two devices.
+    var layout = try mosCircuit(4, &.{ .{ 0, 1, 2, 1e-6 }, .{ 0, 2, 1, 1e-6 }, .{ 2, 1, 3, 2e-6 } });
+    defer layout.deinit(gpa);
+    var reference = try mosCircuit(4, &.{ .{ 1, 3, 0, 2e-6 }, .{ 2, 3, 1, 2e-6 } });
+    defer reference.deinit(gpa);
+    var r = try verdictOf(&layout, &reference, sized());
+    defer r.deinit(gpa);
+    try common.expectMatch(&r);
+    try testing.expectEqualSlices(u32, &.{ 0, 1 }, r.layoutRowsOf(0));
+    try testing.expectEqualSlices(u32, &.{2}, r.layoutRowsOf(1));
+    try testing.expectEqualSlices(u32, &.{1}, r.referenceRowsOf(1));
+    try testing.expectEqualSlices(u32, &.{ 0, 1, 2, 3 }, r.layout_net_origin.items);
+    try testing.expectEqualSlices(u32, &.{ 0, 1, 2, 3 }, r.reference_net_origin.items);
+    try testing.expectEqualSlices(u32, &.{ 1, 0, 2 + 3, 2 + 2, 2 + 0, 2 + 1 }, r.reference_mate.items);
+}

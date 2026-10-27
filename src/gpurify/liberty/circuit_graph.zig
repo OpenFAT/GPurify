@@ -3,8 +3,9 @@
 //! rectangle index, plus the box arithmetic every builder transform shares.
 //! In: `Loaded` + `Extracted`. Out: a `Builder` the circuit_*.zig transforms
 //! fill and `finish` numbers. Ported from src/liberty/circuit.rs (`Union`,
-//! `RectIndex`, `shared`, `contact`, `gap2`, `Builder::{new, proto,
-//! rect_node, anchor, anchor_hub, stack_row, is_wire, resistor, cap}`).
+//! `RectIndex`, `shared`, `gap2`, `Builder::{new, proto, rect_node,
+//! anchor, anchor_hub, stack_row, is_wire, resistor, cap}`; its `contact`
+//! is geom's `Bbox.contact`, which PEX's site placement shares).
 //!
 //! Proto node 0 is ground; rectangle `r` is proto node `r + 1`; a net with
 //! no rectangle (or a substrate contact) gets a hub node on first use.
@@ -15,7 +16,7 @@
 //! - `pub const RectIndex = struct`, `init(cell: i64) RectIndex`, `insert`, `query`
 //! - `pub const Builder = struct`, `init`, `proto`, `rectNode`, `find`, `join`, `anchor`, `anchorHub`, `stackRow`, `isWire`, `resistor`, `cap`, `sortedCaps`
 //! - `pub fn findIn(parent: []u32, start: u32) u32`, `pub fn joinIn(parent: []u32, x: u32, y: u32) void`
-//! - `pub fn shared(a: Bbox, b: Bbox) [2]i64`, `pub fn contact(a: Bbox, b: Bbox) i64`, `pub fn gap2(a: Bbox, b: Bbox) i128`
+//! - `pub fn shared(a: Bbox, b: Bbox) [2]i64`, `pub fn gap2(a: Bbox, b: Bbox) i128`
 //! - `pub const LayerIndex = struct { layer, index }`, `Builder.stack(b) *const ProcessStack`, `lessThan`: the sort context's hook
 
 const std = @import("std");
@@ -221,14 +222,6 @@ const big_cells: i64 = 64;
 /// Lengths along x and y two boxes share; negative is a gap.
 pub fn shared(a: Bbox, b: Bbox) [2]i64 {
     return .{ @min(a.xhi, b.xhi) - @max(a.xlo, b.xlo), @min(a.yhi, b.yhi) - @max(a.ylo, b.ylo) };
-}
-
-/// How much of `b` a rectangle `a` touches or covers: zero when apart or
-/// meeting at a corner.
-pub fn contact(a: Bbox, b: Bbox) i64 {
-    const s = shared(a, b);
-    if (s[0] < 0 or s[1] < 0 or (s[0] == 0 and s[1] == 0)) return 0;
-    return s[0] + s[1];
 }
 
 pub fn gap2(a: Bbox, b: Bbox) i128 {

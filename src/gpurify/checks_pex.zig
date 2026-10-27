@@ -239,6 +239,7 @@ pub fn runPex(scratch: Allocator, run_arena: Allocator, device: Device, loaded: 
     }
     out.parasitics = nominal;
     out.corners = corners;
+    out.field_solved = try run_arena.dupe(u32, unique);
     return .ran;
 }
 

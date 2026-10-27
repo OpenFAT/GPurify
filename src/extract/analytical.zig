@@ -18,6 +18,8 @@
 //! - `pub const Refusal = struct { layer: LayerId }`
 //! - `pub fn extractInto(gpa: Allocator, problem: Problem, out: *ParasiticNetwork, refusal: *Refusal) Error!void`
 //! - `pub fn nodeRectsInto(gpa: Allocator, problem: Problem, node: *std.ArrayList(NodeId), rect: *std.ArrayList(Bbox), refusal: *Refusal) Error!void`
+//! - `pub const Sites = struct { net, box, layer_start, layer }`, `pub const no_site: u32`
+//! - `pub fn siteNodesInto(gpa: Allocator, store: *const GeometryStore, nets: *const NetPolys, global: []const LayerId, sites: Sites, out: []u32, refusal: *Refusal) Error!void`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -72,6 +74,19 @@ pub const Error = error{
 
 pub const Refusal = struct { layer: LayerId = @fromBackingInt(0) };
 
+/// Places to find on the network, one row each: a net, a box on it (a
+/// device's channel, a label's shape), and the layers its region may be on,
+/// CSR (`layer[layer_start[i]..layer_start[i + 1]]`).
+pub const Sites = struct {
+    net: []const u32,
+    box: []const Bbox,
+    layer_start: []const u32,
+    layer: []const LayerId,
+};
+
+/// A site no region meets.
+pub const no_site: u32 = std.math.maxInt(u32);
+
 /// Extracts every net into `out` (cleared), left in canonical order. Net
 /// `k`'s nodes follow those of nets `0..k`; a net of `n` regions has `n + 1`
 /// nodes, its regions ascending by layer: region `i` puts a ground C on node
@@ -89,7 +104,7 @@ pub fn extractInto(gpa: Allocator, problem: Problem, out: *ParasiticNetwork, ref
     try refuseUndescribed(gpa, problem, refusal);
     var regions: Regions = .empty;
     defer regions.deinit(gpa);
-    try regionsInto(gpa, problem, &regions, refusal);
+    try regionsInto(gpa, problem.store, problem.nets, problem.global, &regions, refusal);
     const node_of = try gpa.alloc(NodeId, regions.len());
     defer gpa.free(node_of);
     try nodesInto(gpa, &regions, problem.stack, problem.grid, node_of, out);
@@ -112,7 +127,7 @@ pub fn nodeRectsInto(gpa: Allocator, problem: Problem, node: *std.ArrayList(Node
     rect.clearRetainingCapacity();
     var regions: Regions = .empty;
     defer regions.deinit(gpa);
-    try regionsInto(gpa, problem, &regions, refusal);
+    try regionsInto(gpa, problem.store, problem.nets, problem.global, &regions, refusal);
     var next: usize = 0;
     for (0..regions.len()) |r| {
         const rects = regions.rectsOf(@intCast(r));
@@ -121,6 +136,46 @@ pub fn nodeRectsInto(gpa: Allocator, problem: Problem, node: *std.ArrayList(Node
         // A net's last region is followed by its closing node.
         const closes = r + 1 == regions.len() or regions.net.items[r + 1] != regions.net.items[r];
         next += @as(usize, 1) + @intFromBool(closes);
+    }
+}
+
+/// Each site's node in the network `extractInto` builds over the same
+/// store, nets and global layers, as its index in its net's run of nodes
+/// (region `i` of a net is its node `i`): the region of the site's net, on
+/// one of its layers, whose rectangles touch or cover its box most (the
+/// lower on a tie), into `out`, one per site; `no_site` where none meets it
+/// (a net drawn only on global layers, a box no region of those layers
+/// touches). A corner is no touch. Errors: `InvalidGeometry`, as
+/// `extractInto` gives it.
+///
+/// ponytail: each site scans its net's regions; a spatial index per net
+/// when a net of thousands of regions carries thousands of sites.
+pub fn siteNodesInto(gpa: Allocator, store: *const GeometryStore, nets: *const NetPolys, global: []const LayerId, sites: Sites, out: []u32, refusal: *Refusal) Error!void {
+    assert(out.len == sites.net.len and sites.box.len == sites.net.len and sites.layer_start.len == sites.net.len + 1);
+    var regions: Regions = .empty;
+    defer regions.deinit(gpa);
+    try regionsInto(gpa, store, nets, global, &regions, refusal);
+    // Each net's regions are one run: nets ascend, so a CSR over them.
+    const net_count = nets.start.items.len -| 1;
+    const first = try gpa.alloc(u32, net_count + 1);
+    defer gpa.free(first);
+    @memset(first, 0);
+    for (regions.net.items) |n| first[n + 1] += 1;
+    for (1..first.len) |n| first[n] += first[n - 1];
+    for (sites.net, sites.box, out, 0..) |net, box, *node, i| {
+        node.* = no_site;
+        if (net >= net_count) continue;
+        const layers = sites.layer[sites.layer_start[i]..sites.layer_start[i + 1]];
+        var best: i128 = 0;
+        for (first[net]..first[net + 1]) |r| {
+            if (std.mem.findScalar(LayerId, layers, regions.layer.items[r]) == null) continue;
+            var touch: i128 = 0;
+            for (regions.rectsOf(@intCast(r))) |rect| touch += rect.contact(box);
+            if (touch > best) {
+                best = touch;
+                node.* = @intCast(r - first[net]);
+            }
+        }
     }
 }
 
@@ -143,13 +198,13 @@ fn refuseUndescribed(gpa: Allocator, problem: Problem, refusal: *Refusal) Error!
 
 /// Every net's regions, nets ascending, so the nodes `nodesInto` allocates
 /// are grouped by net. A global layer makes none.
-fn regionsInto(gpa: Allocator, problem: Problem, regions: *Regions, refusal: *Refusal) Error!void {
-    const keep = try gpa.alloc(bool, problem.store.layerCount());
+fn regionsInto(gpa: Allocator, store: *const GeometryStore, nets: *const NetPolys, global: []const LayerId, regions: *Regions, refusal: *Refusal) Error!void {
+    const keep = try gpa.alloc(bool, store.layerCount());
     defer gpa.free(keep);
-    for (keep, 0..) |*k, l| k.* = !stack_mod.isGlobal(problem.global, @fromBackingInt(@intCast(l)));
-    const net_count: u32 = @intCast(problem.nets.start.items.len -| 1);
+    for (keep, 0..) |*k, l| k.* = !stack_mod.isGlobal(global, @fromBackingInt(@intCast(l)));
+    const net_count: u32 = @intCast(nets.start.items.len -| 1);
     for (0..net_count) |net| {
-        if (try regions.pushNet(gpa, problem.store, problem.nets.polysOf(@intCast(net)), @intCast(net), keep)) |layer| {
+        if (try regions.pushNet(gpa, store, nets.polysOf(@intCast(net)), @intCast(net), keep)) |layer| {
             refusal.layer = layer;
             return error.InvalidGeometry;
         }

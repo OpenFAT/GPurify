@@ -18,14 +18,15 @@
 //!   `incremental`: `DrcState`, `check`, `recheck`, `reach` (incremental.zig)
 //! - `system`: `SystemRun`, `run`, `checkSystem`, `allModels` (system.zig); `system_checks`: bumps,
 //!   bonds, alignment, `assemble`, pins, ESD rails (system_checks.zig)
+//! - `subckt_build`: `buildInto`, the netlist in the reference's terms (subckt_build.zig)
 //! - `Die`, `loadDie`, `readDie` (load.zig)
 //! - `export`: the report writers (export/*.zig)
 //!   - `header`: `Header`, `Error`, `Diagnostic`
 //!   - `json`: `writeReport`, `writeString`
 //!   - `text`: `writeRuns`, `writeViolations`, `writeMerges`, `writeVerdict`, `writeSummary`, `Summary`, `StageStatus`
 //!   - `spef`: `writeSpef`, `writeSpefCorners`; `envelope`: `envelopeInto`
-//!   - `dspf`: `writeDspf`
-//!   - `netlist`: `writeSpice`
+//!   - `dspf`: `writeDspf`, `writeDspfSubckt`
+//!   - `netlist`: `writeSpice`; `subckt`: `Subckt`, `Value`, `writeCard`
 //!   - `network`: the checks and node naming the three share
 //! - `liberty`: Liberty generation (liberty/*.zig): `generate`, `Request`, `Generated`, `spec`
 //!   (also `numbers`, `write`, `circuit`, `spice`, `session`, `measure`, `measure_static`, `measure_constraint`,
@@ -49,6 +50,7 @@ pub const enhance = @import("enhance.zig");
 pub const incremental = @import("incremental.zig");
 pub const system = @import("system.zig");
 pub const system_checks = @import("system_checks.zig");
+pub const subckt_build = @import("subckt_build.zig");
 const run_ = @import("run.zig");
 pub const designExtent = @import("checks_erc.zig").designExtent;
 pub const paramNames = @import("checks_lvs.zig").paramNames;
@@ -98,6 +100,7 @@ pub const @"export" = struct {
     pub const spef = @import("export/spef.zig");
     pub const dspf = @import("export/dspf.zig");
     pub const netlist = @import("export/netlist.zig");
+    pub const subckt = @import("export/subckt.zig");
     pub const Header = header.Header;
     pub const Error = header.Error;
     pub const Diagnostic = header.Diagnostic;

@@ -24,6 +24,11 @@
 //! - `pub fn netRunEnd(node_net: []const u32, start: usize) usize`
 //! - `pub fn writeNodeName(w: *std.Io.Writer, network: *const ParasiticNetwork, node: NodeId, ports: *const PortTable, strings: *const StrTable, diag: *Diagnostic) Error!void`
 //! - `pub fn writeNetName(w: *std.Io.Writer, net: u32, ports: *const PortTable, strings: *const StrTable, diag: *Diagnostic) Error!void`
+//! - `pub const Spelling = enum { dspf, spice }`, `pub const Names = struct { net_name, spelling, pin_node }`
+//! - `pub fn writeNodeAs(w: *std.Io.Writer, network: *const ParasiticNetwork, node: NodeId, names: Names, diag: *Diagnostic) Error!void`
+//! - `pub fn writeNameAs(w: *std.Io.Writer, net: u32, names: Names, diag: *Diagnostic) Error!void`
+//! - `pub fn checkSpiceName(text: []const u8, diag: *Diagnostic) Error!void`
+//! - `pub fn writeElements(w: *std.Io.Writer, gpa: Allocator, network: *const ParasiticNetwork, couplings: []const ?Coupling, names: Names, diag: *Diagnostic) Error!void`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -37,6 +42,7 @@ const network_mod = @import("extract").network;
 const Kind = network_mod.Kind;
 const NodeId = network_mod.NodeId;
 const ParasiticNetwork = network_mod.ParasiticNetwork;
+const float = geom.float;
 const header = @import("header.zig");
 const Error = header.Error;
 const Diagnostic = header.Diagnostic;
@@ -49,6 +55,23 @@ pub const Card = struct { letter: u8, slot: u2, suffix: []const u8 };
 /// A mutual inductance as a `K` card states it: the rows of the two series
 /// inductances it couples, and `k = M / √(L_a L_b)`.
 pub const Coupling = struct { a: u32, b: u32, k: f64 };
+
+/// How a writer spells a node.
+pub const Spelling = enum {
+    /// `net:index`, every name escaped as SPEF escapes it.
+    dspf,
+    /// The net's bare name on its pin node, `net#index` on any other; a
+    /// name a SPICE card cannot carry is refused.
+    spice,
+};
+
+/// The names a writer gives nodes, by layout net: its name (null: none, so
+/// `UnnamedNet`) and, spelling SPICE, its pin node (`.ground`: none).
+pub const Names = struct {
+    net_name: []const ?[]const u8,
+    spelling: Spelling,
+    pin_node: []const NodeId = &.{},
+};
 
 pub fn card(kind: Kind) Card {
     return switch (kind) {
@@ -157,7 +180,85 @@ pub fn writeNetName(w: *Writer, net: u32, ports: *const PortTable, strings: *con
         diag.net = net;
         return error.UnnamedNet;
     };
-    const text = strings.resolve(name);
+    try writeEscaped(w, strings.resolve(name), diag);
+}
+
+/// `node` as `names` spells it.
+pub fn writeNodeAs(w: *Writer, network: *const ParasiticNetwork, node: NodeId, names: Names, diag: *Diagnostic) Error!void {
+    const place = try nodePlace(network, node, diag);
+    try writeNameAs(w, place.net, names, diag);
+    switch (names.spelling) {
+        .dspf => try w.print(":{d}", .{place.index}),
+        .spice => if (names.pin_node[place.net] != node) try w.print("#{d}", .{place.index}),
+    }
+}
+
+/// Net `net`'s name as `names` spells it; `UnnamedNet` for none, and
+/// SPICE's refusal of a name `checkSpiceName` refuses.
+pub fn writeNameAs(w: *Writer, net: u32, names: Names, diag: *Diagnostic) Error!void {
+    const text = (if (net < names.net_name.len) names.net_name[net] else null) orelse {
+        diag.net = net;
+        return error.UnnamedNet;
+    };
+    switch (names.spelling) {
+        .dspf => try writeEscaped(w, text, diag),
+        .spice => {
+            try checkSpiceName(text, diag);
+            try w.writeAll(text);
+        },
+    }
+}
+
+/// Refuses a name a SPICE card would read as syntax: empty, or holding a
+/// blank, a control byte, `=`, `,`, a quote, a parenthesis or `#` (the node
+/// suffix, so `out#3` cannot be another net's name).
+pub fn checkSpiceName(text: []const u8, diag: *Diagnostic) Error!void {
+    if (text.len == 0) return refuse(diag, "an empty name");
+    for (text) |c| if (c <= ' ' or c == 0x7f or std.mem.findScalar(u8, "=,'\"()#", c) != null)
+        return refuse(diag, "a name holding a character a SPICE card reads as syntax");
+}
+
+/// Every element as a card, `R`, `C`, `L` and `K` each numbered from 1,
+/// capacitances in `f` and inductances in `p`, a missing far end `0`; a
+/// `K` card names the two `L` cards `couplings` gives it and `k`. Numbered
+/// before writing, so a `K` card can name an `L` card written after it.
+/// `gpa` holds the numbers until it returns.
+pub fn writeElements(w: *Writer, gpa: Allocator, network: *const ParasiticNetwork, couplings: []const ?Coupling, names: Names, diag: *Diagnostic) Error!void {
+    const number = try gpa.alloc(u32, network.elementCount());
+    defer gpa.free(number);
+    var next: [4]u32 = @splat(1);
+    for (network.kind.items, number) |kind, *n| {
+        const slot = card(kind).slot;
+        n.* = next[slot];
+        next[slot] += 1;
+    }
+    for (0..network.elementCount()) |row| {
+        if (couplings[row]) |k| {
+            try w.print("K{d} L{d} L{d} ", .{ number[row], number[k.a], number[k.b] });
+            try float.fixed6(w, k.k);
+            try w.writeByte('\n');
+            continue;
+        }
+        const c = card(network.kind.items[row]);
+        try w.print("{c}{d} ", .{ c.letter, number[row] });
+        try writeNodeAs(w, network, network.from.items[row], names, diag);
+        // A missing far end is ground; checkCanonical allows it only on a
+        // capacitance or a substrate resistance.
+        const to = network.to.items[row];
+        if (to == .ground) try w.writeAll(" 0") else {
+            try w.writeByte(' ');
+            try writeNodeAs(w, network, to, names, diag);
+        }
+        try w.writeByte(' ');
+        try float.fixed6(w, network.value.items[row]);
+        try w.print("{s}\n", .{c.suffix});
+    }
+}
+
+// ---- private ----
+
+/// `text` escaped once (module doc); a blank or control byte refused.
+fn writeEscaped(w: *Writer, text: []const u8, diag: *Diagnostic) Error!void {
     for (text) |c| if (c <= ' ' or c == 0x7f) return refuse(diag, "a net name holding whitespace or a control character");
     for (text) |c| {
         const bare = std.ascii.isAlphanumeric(c) or c >= 0x80 or switch (c) {
@@ -168,8 +269,6 @@ pub fn writeNetName(w: *Writer, net: u32, ports: *const PortTable, strings: *con
         try w.writeByte(c);
     }
 }
-
-// ---- private ----
 
 fn refuse(diag: *Diagnostic, what: []const u8) error{Unrepresentable} {
     diag.what = what;

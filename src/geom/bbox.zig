@@ -13,7 +13,7 @@
 //!   `Bbox.contains(a: Bbox, b: Bbox) bool`,
 //!   `Bbox.within(a: Bbox, b: Bbox, distance: Dbu) bool`,
 //!   `Bbox.width(b: Bbox) Dbu`, `Bbox.height(b: Bbox) Dbu`,
-//!   `Bbox.area(b: Bbox) DbuArea`
+//!   `Bbox.area(b: Bbox) DbuArea`, `Bbox.contact(a: Bbox, b: Bbox) Dbu`
 
 const std = @import("std");
 const assert = std.debug.assert;
@@ -117,5 +117,15 @@ pub const Bbox = struct {
     /// back to the whole domain's `+2^82`.
     pub fn area(b: Bbox) DbuArea {
         return dbu.mulWide(@max(b.xhi - b.xlo, 0), @max(b.yhi - b.ylo, 0));
+    }
+
+    /// How much `a` touches or covers `b`: the two extents they share,
+    /// summed, so a box abutting along an edge scores that edge's length;
+    /// zero when apart or meeting only at a corner.
+    pub fn contact(a: Bbox, b: Bbox) Dbu {
+        const x = @min(a.xhi, b.xhi) - @max(a.xlo, b.xlo);
+        const y = @min(a.yhi, b.yhi) - @max(a.ylo, b.ylo);
+        if (x < 0 or y < 0 or (x == 0 and y == 0)) return 0;
+        return x + y;
     }
 };
