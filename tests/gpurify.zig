@@ -95,4 +95,5 @@ test {
     _ = @import("gpurify/lay_stacks.zig");
     _ = @import("gpurify/fuzz.zig");
     _ = @import("gpurify/xor.zig");
+    _ = @import("gpurify/supply_and_enclosure.zig");
 }
