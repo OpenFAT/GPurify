@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Cross-section: a met1 wire over the substrate, plate and fringe fields.
+  \fill[layer a] (0,0) rectangle (6,-0.25);
+  \draw[line width=0.6pt] (-0.3,0) -- (6.3,0);
+  \node[caption,anchor=west] at (6.4,-0.12) {substrate (ground)};
+  \fill[layer b] (2.5,1.4) rectangle (3.5,1.75);
+  \node[caption] at (3,1.575) {a};
+  \node[caption,anchor=west] at (3.6,1.9) {met1, \SI{0.14}{\micro\metre} wide};
+  \draw[dim] (5.6,0) -- (5.6,1.4) node[dim label,midway,right=2pt] {\SI{1.376}{\micro\metre}};
+  % Plate field straight down, fringe field from the sides.
+  \foreach \x in {2.7,3.0,3.3} \draw[-{Latex[length=1.5mm]}] (\x,1.35) -- (\x,0.05);
+  \draw[-{Latex[length=1.5mm]}] (2.45,1.55) to[out=180,in=90] (1.5,0.05);
+  \draw[-{Latex[length=1.5mm]}] (3.55,1.55) to[out=0,in=90] (4.5,0.05);
+  \node[caption] at (1.2,1.0) {fringe};
+  \node[caption] at (3.0,0.65) [fill=white,inner sep=1pt] {plate};
+  % The network GPurify extracts from the 10 um wire.
+  \draw (0,-1.4) node[circ,label=above:{a}]{}
+    to[R, l=\SI{8.93}{\ohm}] (3,-1.4) node[circ,label=above:{a:1}]{};
+  \draw (0,-1.4) to[C, l_=\SI{0.859}{\femto\farad}] (0,-3) node[ground]{};
+  \node[caption,anchor=west] at (3.6,-2.2) {$\SI{25.78}{aF/\micro\metre^2}\times\SI{1.4}{\micro\metre^2}$};
+  \node[caption,anchor=west] at (3.6,-2.7) {$+\ \SI{40.57}{aF/\micro\metre}\times\SI{20.28}{\micro\metre}$};
+\end{circuitikz}
+\end{document}

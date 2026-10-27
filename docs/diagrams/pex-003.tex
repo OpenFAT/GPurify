@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Layout from above: a and b on met1, c on met2 crossing over both.
+  \fill[layer a] (0,0) rectangle (6,0.3);
+  \fill[layer a] (0,0.6) rectangle (6,0.9);
+  \fill[layer c,opacity=0.9] (3,-0.6) rectangle (3.4,1.5);
+  \node[caption] at (0.3,0.15) {a};
+  \node[caption] at (0.3,0.75) {b};
+  \node[caption,fill=white,inner sep=1pt] at (3.2,1.25) {c};
+  \node[caption,anchor=east] at (-0.1,0.45) {met1};
+  \node[caption,anchor=west] at (3.5,1.3) {met2};
+  \draw (6.2,0.3) -- (6.3999999999999995,0.3); \draw (6.2,0.6) -- (6.3999999999999995,0.6); \draw (6.3,0.3) -- (6.3,0.6);
+  \node[caption,anchor=west] at (6.45,0.45) {\SI{0.14}{\micro\metre}};
+  \draw[dim] (0,-0.85) -- (6,-0.85) node[dim label,midway] {\SI{10}{\micro\metre}};
+  % The coupling network GPurify extracts.
+  \draw (0.5,-2) node[circ,label=left:{a}]{} to[C, l=\SI{1.025}{\femto\farad}] (0.5,-4) node[circ,label=left:{b}]{};
+  \draw (4.5,-3) node[circ,label=right:{c}]{};
+  \draw (0.5,-2) -- (2.5,-2) to[C, l=\SI{6.2}{aF}] (4.5,-2) -- (4.5,-3);
+  \draw (0.5,-4) -- (2.5,-4) to[C, l_=\SI{6.2}{aF}] (4.5,-4) -- (4.5,-3);
+\end{circuitikz}
+\end{document}
