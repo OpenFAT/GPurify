@@ -45,6 +45,40 @@ gpurify drc layout.gds --deck two_metal.deck
 `--deck` also takes the name of a deck GPurify ships: `sky130`, `gf180mcu`, `ihp_sg13g2` or
 `asap7`. A shipped name wins over a file of the same name in the working directory.
 
+## See what a deck compiled to
+
+`gpurify deck` reads a deck without a layout and prints what it compiled to, as one JSON document
+on standard output. It takes a deck file or a shipped deck's name:
+
+```sh
+gpurify deck two_metal.deck --format json
+```
+
+```text
+{"format":"gpurify-deck/1","deck":"two_metal.deck","grid_nm":5,
+"layers":[
+{"id":0,"name":"met1","gds":[10,0]},
+{"id":1,"name":"met1_label","gds":[10,5]},
+{"id":2,"name":"met2","gds":[12,0]},
+{"id":3,"name":"via1","gds":[11,0]}
+],
+"rules":[
+{"id":"M1.W","kind":"min_width","keyword":"width","domain":"drc","severity":"error","layers":[0],"params":[{"name":"limit","value":140,"unit":"nm"}]},
+...
+"connectivity":{"conductors":[0,2],"vias":[{"cut":3,"connects":[0,2]}],"touch_within_layer":true,"global":[],"labels":[{"layer":1,"names":0}]},
+...
+```
+
+Each layer gets a number, and every rule, via and label refers to layers by it. A derived layer
+shows its operation and the layers it reads, as
+`{"id":2,"name":"m1_no_via","derived":{"op":"not_interacting","operands":[0,1]}}`. Every length is
+in whole nanometres and every area in square nanometres, and `null` means the deck states no
+value. The document goes on with the devices, the `lvs` controls, the `pex` stack, and a summary
+per layer of what the rules require of it, such as its minimum width and spacing.
+
+A deck that does not load prints the same errors as any other command, on standard error, and
+exits 1 with nothing on standard output.
+
 ## File structure
 
 - **One statement per line.** The first word names the statement (`layer`, `rule`, `connect`).
