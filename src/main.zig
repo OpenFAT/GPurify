@@ -196,7 +196,7 @@ fn system(env: Env, arena: Allocator, cli_: *const args.Cli, path: []const u8, o
                 error.WriteFailed => return error.WriteFailed,
             };
         },
-        .text, .spef, .dspf => {
+        .text, .spef, .dspf, .spice => {
             try gpurify.@"export".text.writeViolations(&text.writer, &ran.strings, ran.grid, &o.violations, &o.waived);
             try gpurify.@"export".text.writeSummary(&text.writer, ran.summary);
         },
@@ -253,30 +253,74 @@ fn render(env: Env, arena: Allocator, cli_: *const args.Cli, text: *Writer, err:
             },
             error.WriteFailed => return error.WriteFailed,
         },
-        .spef, .dspf => {
+        .spef, .dspf, .spice => {
             // An empty netlist would read as a design with no parasitics.
             const network = if (o.parasitics) |*n| n else {
                 _ = fail(err, "--format {t} asked for a parasitic network, but extraction produced none, and an empty netlist would read as a design with no parasitics", .{cli_.format});
                 return error.Reported;
             };
-            const ports = &ran.extracted.?.ports;
-            var diag: gpurify.@"export".Diagnostic = .{};
-            const written = if (cli_.format == .spef) blk: {
+            if (cli_.format == .spef) {
                 // The deck's process corners, if any, as min:typ:max triplets.
                 const corners = try arena.alloc(*const @TypeOf(network.*), o.corners.items.len);
                 for (o.corners.items, corners) |*c, *p| p.* = &c.network;
-                break :blk gpurify.@"export".spef.writeSpefCorners(text, arena, network, corners, ports, strings, &header, &diag);
-            } else gpurify.@"export".dspf.writeDspf(text, arena, network, ports, strings, &header, &diag);
-            written catch |e| switch (e) {
-                error.OutOfMemory, error.WriteFailed => |x| return x,
-                else => {
-                    _ = fail(err, "{t}: {t}: {s} net {d}", .{ cli_.format, e, diag.what, diag.net });
-                    return error.Reported;
-                },
-            };
+                var diag: gpurify.@"export".Diagnostic = .{};
+                const written = gpurify.@"export".spef.writeSpefCorners(text, arena, network, corners, &ran.extracted.?.ports, strings, &header, &diag);
+                try writerRefusal(err, cli_.format, written, &diag);
+            } else try writeNetlist(env, arena, cli_, ran, network, text, err);
         },
     }
     return ran.summary;
+}
+
+/// `--format dspf` or `spice`: the network with its devices, named in the
+/// reference's terms (PEX-017); SPICE's process corners each into
+/// `-o`'s `FILE.<corner>`.
+fn writeNetlist(env: Env, arena: Allocator, cli_: *const args.Cli, ran: Ran, network: *const gpurify.foreign.ParasiticNetwork, text: *Writer, err: *Writer) Failure!void {
+    const ex = gpurify.@"export";
+    const inputs = cli_.inputs;
+    const reference: ?[]const u8 = if (inputs.reference.len > 0) inputs.reference[0] else null;
+    const header: ex.Header = .{ .tool_version = tool_version, .deck_path = inputs.deck, .layout_path = inputs.layout, .reference_path = reference };
+    if (reference == null) try err.writeAll("warning: no --reference, so devices are named by layout index and pins come in label order: this netlist cannot be back-annotated\n");
+    var s: ex.subckt.Subckt = .{};
+    var why: []const u8 = "";
+    var diag: ex.Diagnostic = .{};
+    try build(arena, cli_.format, ran, inputs.layout, network, &s, &why, err);
+    if (cli_.format == .dspf) return writerRefusal(err, .dspf, ex.dspf.writeDspfSubckt(text, arena, network, &s, &header, &diag), &diag);
+    try writerRefusal(err, .spice, ex.netlist.writeSpice(text, arena, network, &s, "nominal", &header, &diag), &diag);
+    const file = cli_.output orelse return;
+    for (ran.outputs.corners.items) |*c| {
+        const corner = ran.loaded.strings.resolve(c.name);
+        try build(arena, .spice, ran, inputs.layout, &c.network, &s, &why, err);
+        var bytes: Writer.Allocating = .init(arena);
+        try writerRefusal(err, .spice, ex.netlist.writeSpice(&bytes.writer, arena, &c.network, &s, corner, &header, &diag), &diag);
+        const path = try std.fmt.allocPrint(arena, "{s}.{s}", .{ file, corner });
+        env.dir.writeFile(env.io, .{ .sub_path = path, .data = bytes.written() }) catch |e| {
+            _ = fail(err, "{s}: {t}", .{ path, e });
+            return error.Reported;
+        };
+        try err.print("wrote {s}: corner {s}\n", .{ path, corner });
+    }
+}
+
+fn build(arena: Allocator, format: args.Format, ran: Ran, layout: []const u8, network: *const gpurify.foreign.ParasiticNetwork, s: *gpurify.@"export".subckt.Subckt, why: *[]const u8, err: *Writer) Failure!void {
+    gpurify.subckt_build.buildInto(arena, ran.loaded, ran.extracted.?, ran.outputs, layout, network, s, why) catch |e| switch (e) {
+        error.Refused => {
+            _ = fail(err, "--format {t}: {s}", .{ format, why.* });
+            return error.Reported;
+        },
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+}
+
+/// A writer's refusal on stderr, naming what it refused.
+fn writerRefusal(err: *Writer, format: args.Format, written: gpurify.@"export".Error!void, diag: *const gpurify.@"export".Diagnostic) Failure!void {
+    written catch |e| switch (e) {
+        error.OutOfMemory, error.WriteFailed => |x| return x,
+        else => {
+            _ = fail(err, "{t}: {t}: {s} net {d}", .{ format, e, diag.what, diag.net });
+            return error.Reported;
+        },
+    };
 }
 
 /// The text report: rule records, violations, LVS merges and verdict, summary.

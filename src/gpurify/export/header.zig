@@ -29,6 +29,9 @@ pub const Header = struct {
     /// Passed in, never read from the clock. Null writes SPEF's required
     /// `*DATE` as `""` and leaves DSPF's and SPICE's date line out.
     timestamp: ?[]const u8 = null,
+    /// The reference netlist's path, as the caller spelled it; null without
+    /// one. SPICE's header names it.
+    reference_path: ?[]const u8 = null,
 };
 
 /// Why a writer refused; the `Diagnostic` names what.

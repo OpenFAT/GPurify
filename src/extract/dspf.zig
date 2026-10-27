@@ -7,7 +7,8 @@
 //! and `*|S` node declarations, and the `R`, `C` and `L` cards, with SPICE
 //! scale suffixes and `+` continuations. A `K` card (mutual inductance) and
 //! an instance (`X`) card are skipped, as `compare` reads neither; so is
-//! every other `*` or `.` line. The driver is a net's first `*|P` of
+//! every other `*` or `.` line, and every card after a `* instance section`
+//! comment (the devices, whose `R`, `C` and `L` are no parasitics). The driver is a net's first `*|P` of
 //! direction `I`, else its first `*|I` of direction `O`. A card belongs to
 //! the net of its first node's declaration, else the section it stands in.
 //! Names are unescaped once, after splitting, so a `\(` or `\)` is part of
@@ -53,8 +54,12 @@ pub fn readInto(gpa: Allocator, text: []const u8, out: *Read, diag: *Diagnostic)
             try card_line.append(arena, number);
         }
     }
+    var devices = false;
     for (cards.items, card_line.items) |card, line| {
         diag.* = .{ .line = line };
+        const words = std.mem.trim(u8, card, " \t\r*");
+        if (card.len > 0 and card[0] == '*' and std.ascii.eqlIgnoreCase(words, "instance section")) devices = true;
+        if (devices and !std.mem.startsWith(u8, card, "*|")) continue;
         // Split on blanks and parentheses; a `\`-escaped byte stays in its
         // token, for `foreign.unescape` to undo once.
         var tokens_buf: [max_tokens][]const u8 = undefined;

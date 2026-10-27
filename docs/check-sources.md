@@ -58,14 +58,14 @@ feature tag (`deck:`, `drc:`, `erc:`, `lvs:`, `pex:`, `ingest:`, `lib:`).
 | `MR` | Metamorphic relation (plan L5) |
 | `NV` | Naive reference implementation (dense nodal solve, BFS, brute-force colouring) |
 
-**Snapshot, 2026-10-10** (261 rows):
+**Snapshot, 2026-10-10** (262 rows):
 
 | Domain | implemented | expressible | partial | missing | verify | out of scope |
 |---|---:|---:|---:|---:|---:|---:|
 | DRC | 56 | 6 | 44 | 0 | 0 | 0 |
 | LVS | 31 | 1 | 15 | 1 | 0 | 0 |
 | ERC | 64 | 4 | 13 | 0 | 0 | 0 |
-| PEX | 9 | 0 | 7 | 0 | 0 | 0 |
+| PEX | 9 | 0 | 8 | 0 | 0 | 0 |
 | Flow | 2 | 0 | 8 | 0 | 0 | 0 |
 
 These numbers come from the TSV. Once `tests/catalog.rs` exists, it computes

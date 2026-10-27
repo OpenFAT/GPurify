@@ -461,8 +461,9 @@ protection and needs simulation.
 
 ## Parasitics
 
-`pex --format spef` writes a SPEF file for a timing tool, and `--format dspf`
-writes a DSPF file for a simulator. SPEF lists a coupling capacitance in
+`pex --format spef` writes a SPEF file for a timing tool, `--format dspf`
+a DSPF file for a simulator, and `--format spice` a `.subckt` a simulator
+runs on its own (below). SPEF lists a coupling capacitance in
 the `*CAP` section of both nets it joins, as OpenSTA and other readers that
 take one net at a time expect. Every net is extracted with closed-form
 resistance and capacitance. Nets named with `--quasistatic` are solved from
@@ -509,7 +510,8 @@ not one circuit and is refused. A net named twice is solved once.
 A deck with process corners (`corner` lines, see
 [deck.md](deck.md#process-corners)) is extracted at the nominal stack and
 at every corner in the one run, and `--format spef` writes every value as a
-`min:typ:max` triplet over them; `--format dspf` writes the nominal.
+`min:typ:max` triplet over them; `--format dspf` writes the nominal, and
+`--format spice` the nominal and, with `-o`, each corner to a file.
 
 The deck's `extraction` line picks which parasitics are written: resistance
 and capacitance with or without the coupling between nets, capacitance alone
@@ -517,8 +519,9 @@ lumped on one node per net, or resistance alone, and a threshold below which
 a coupling capacitance is grounded (see
 [deck.md](deck.md#extraction-type)). Without one, everything is written.
 
-A net with no text label in the layout has no name to write, and the run
-refuses it rather than inventing one. A label on two nets that are not
+A net with no text label in the layout has no name to write in SPEF, and
+the run refuses it rather than inventing one; DSPF and SPICE carry the
+devices and name it as below. A label on two nets that are not
 connected cannot name either in a SPEF or DSPF file, which would merge them,
 so the file is refused, naming the label. Two labels on one net, a short
 that fails the run anyway, cannot both name it, as both formats give a net
@@ -540,6 +543,81 @@ parasitics, not zero ones, so PEX is refused and names the layer. Layers in
 `connect global` (the substrate) carry no parasitics and need no line.
 
 The same inputs always give a byte-identical report.
+
+### A simulator-ready netlist
+
+```sh
+gpurify pex ota.gds --deck sky130 --reference ota.spice --format spice > ota.pex.spice
+```
+
+`--format spice` writes one `.subckt` for the top cell, ready for a
+simulator (ESPice in any dialect, ngspice, or Spectre through `simulator
+lang=spice`), so a post-layout bench runs the frozen schematic testbench on
+the extracted view by including this file in place of the schematic's
+subcircuit (catalog PEX-017):
+
+```spice
+* 0.1.0 pex: ota.gds, deck sky130, reference ota.spice, corner nominal
+* sizes in units of 1e-6 m: a bench's .option scale must say the same
+.subckt ota inp inn out vdd vss ib
+XM1 out#3 inp#1 tail#2 vss sky130_fd_pr__nfet_01v8 w=4.2 l=0.5 nf=1 as=1.218 ad=1.218 ps=9.98 pd=9.98
+...
+R1 out out#1 12.400000
+C1 out#1 0 3.100000f
+C2 out#2 inp#4 0.210000f
+.ends ota
+```
+
+- With `--reference`, `pex` also runs LVS, and the netlist is named in the
+  reference's terms through the pairing LVS found: the `.subckt` is the
+  reference's top cell, its pins that cell's ports in their order, each net
+  the reference net LVS paired it with, and each device the reference card
+  it paired with (`XM1`; a device under a placement as ngspice flattens it,
+  `x1.xm1`, or `m.x1.m1` for a primitive card). Where the layout draws one
+  reference device as several (fingers LVS merged in parallel), each is its
+  own card on its own nodes, the extra ones `XM1_2`, `XM1_3`; a layout net
+  no pair names (one a series merge consumed, or a floating piece) is
+  `n<id>`, lengthened with `_` while another net has that name.
+- The model is the deck's `device` statement's, and the sizes the
+  extraction's: W, L, nf, junction areas and perimeters (`as`, `ad`, `ps`,
+  `pd`, a diffusion shared by several transistors split evenly), a
+  passive's `area` and `perim`, a diode's `pj`. They are written in the
+  deck's `netlist_scale` unit (sky130's 1 µm, whose models set `.option
+  scale=1.0u`), or in metres without one; the header says which.
+- Each device terminal sits on the extracted node of the region of its net
+  it touches most, on a layer the deck's `device` statements for that model
+  name (a MOS's gate on its poly, its source and drain on their diffusion,
+  never a strap above), and each pin on the region its label is on. A pin
+  node keeps the net's bare name; every other node is `net#n`, `n` its
+  place among the net's nodes as DSPF numbers them. A terminal on a net
+  with no node (one drawn only on `connect global` layers, the substrate)
+  is the net's bare name. Under a `c` or `cc` extraction, and on a
+  field-solved net, every terminal is on the net's one node.
+- The R, C, L and K cards follow the deck's `extraction` line exactly as
+  DSPF writes them, coupling included.
+- `--format dspf` carries the same devices: a node a terminal sits on is
+  declared by one `*|I (node instance pin B 0 L<layer>)` line per terminal
+  in place of its `*|S` (pin `d`, `g`, `s`, `b`; `c`, `b`, `e`, `s`; or its
+  position from 1), and after the element cards a `* instance section`
+  holds each device's card on the same node names. `gpurify compare` reads
+  such a file and skips the instance section.
+- Corners: with `-o FILE`, a deck with `corner` lines also writes each
+  corner's `.subckt` to `FILE.<corner>`; the nominal one is on stdout.
+- Refused, each naming what: a layout that fails LVS against the reference
+  (no netlist is written for a layout that does not match), a comparison
+  that did not run or did not conclude, a reference pin no layout net pairs
+  with, a layout with black boxes or a deck that joins must-connect nets
+  for LVS (neither is the layout's nets one to one), a name a SPICE card
+  would read as syntax (a blank, `=`, `,`, a quote, a parenthesis, `#`),
+  and two devices of one name.
+- Without `--reference`, the `.subckt` is the layout's file stem, the pins
+  its labelled nets in ascending net order, each device its family's letter
+  and layout index (`M3`), and a warning on stderr says the netlist cannot
+  be back-annotated. A label on two nets, or two labels on one, is refused
+  as for SPEF.
+
+Not done: the LOD and WPE parameters (`sa`, `sb`, `sca`..`scc`) LVS
+measures under `lvs lde` are not written yet.
 
 ### Point to point and net to net
 

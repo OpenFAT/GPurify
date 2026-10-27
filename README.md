@@ -51,7 +51,7 @@ verifier is expected to handle, by how far GPurify covers them. What a
 | DRC | 56 | 6 | 44 | 0 |
 | LVS | 31 | 1 | 15 | 1 |
 | ERC | 64 | 4 | 13 | 0 |
-| PEX | 9 | 0 | 7 | 0 |
+| PEX | 9 | 0 | 8 | 0 |
 | Flow | 2 | 0 | 8 | 0 |
 
 ## How it is tested

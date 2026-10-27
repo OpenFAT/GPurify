@@ -1,0 +1,6 @@
+* The schematic of tests/fixtures/pex_spice/diffpair.gds (diffpair.py):
+* two sky130 nfets on a shared source, bulk on the substrate tap.
+.subckt diffpair inp inn outp outn tail vss
+XM1 outp inp tail vss sky130_fd_pr__nfet_01v8 W=2 L=0.5
+XM2 outn inn tail vss sky130_fd_pr__nfet_01v8 W=2 L=0.5
+.ends diffpair

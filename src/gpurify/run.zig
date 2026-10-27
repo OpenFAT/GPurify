@@ -95,6 +95,9 @@ pub const Outputs = struct {
     waived: Violations = .{},
     /// The same extraction at each process corner, in deck order.
     corners: std.ArrayList(Corner) = .empty,
+    /// The nets PEX field-solved, ascending: each is one node and its far
+    /// end, not a node per region.
+    field_solved: []const u32 = &.{},
 };
 
 /// What happened at a glance; `passed` is the criterion.
