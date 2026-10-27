@@ -139,7 +139,7 @@ pub fn devices(b: *Builder, out: *Circuit) Allocator.Error!void {
         const marker = store.polyBbox(table.marker.items[d]);
         const terms = table.terminalsOf(@fromBackingInt(@intCast(d)));
         card.clearRetainingCapacity();
-        for (terms.nets, terms.roles) |net, role| try card.append(a, .{ .rank = topology.device.cardRank(role), .net = net, .role = role });
+        for (terms.nets, terms.roles) |net, role| try card.append(a, .{ .rank = topology.card.cardRank(role), .net = net, .role = role });
         std.sort.insertion(Card, card.items, {}, Card.lessThan);
         try out.device_kind.append(a, kind);
         try out.device_model.append(a, b.loaded.strings.resolve(table.model.items[d]));

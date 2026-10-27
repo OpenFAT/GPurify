@@ -121,7 +121,6 @@ pub fn compareInto(scratch: Allocator, run_arena: Allocator, loaded: *const Load
 }
 
 /// The SPICE names of width, length, fingers, fins, multiplier, the diffusions,
-
 /// the passive values, inductance and stress, as both netlists intern
 /// them; null for a name no netlist interned.
 pub fn paramNames(strings: *const StrTable) ParamNames {

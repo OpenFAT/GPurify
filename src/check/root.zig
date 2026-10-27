@@ -207,7 +207,7 @@
 //! - `proximity_distance`: `pairDistancesInto`, the `cappedDist2` row kernel
 //! - `proximity_inside`: `insideWhere`, `taggedFigures`, `mergedInto`
 //! - `topology`: `net` (`NetTable`, `extractNetsInto`, edge builders), `device` (`DeviceTable`,
-//!   `recogniseInto`), `channel` (`refuseConductingChannels`), `port` (`PortTable`, `bindPortsInto`),
+//!   `recogniseInto`), `card` (`cardRank`, `cardName`), `channel` (`refuseConductingChannels`), `port` (`PortTable`, `bindPortsInto`),
 //!   `taps` (`untiedPoints*`); aliases `NetId`, `NetTable`, `extractNetsInto`, `DeviceId`,
 //!   `DeviceTable`, `TerminalRole`, `recogniseInto`, `refuseConductingChannels`, `PortTable`, `bindPortsInto`
 //! - `drc` (drc/root.zig): `Kind`, `Rule`, `RuleSet`, `fromDeck`, `run`, the kind tables and families
@@ -245,6 +245,7 @@ pub const deck = struct {
 pub const topology = struct {
     pub const net = @import("topology/net.zig");
     pub const device = @import("topology/device.zig");
+    pub const card = @import("topology/card.zig");
     pub const channel = @import("topology/channel.zig");
     pub const port = @import("topology/port.zig");
     pub const taps = @import("topology/taps.zig");
@@ -292,6 +293,7 @@ test {
     _ = proximity_inside;
     _ = topology.net;
     _ = topology.device;
+    _ = topology.card;
     _ = topology.channel;
     _ = topology.port;
     _ = topology.taps;

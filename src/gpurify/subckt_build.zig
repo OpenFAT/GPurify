@@ -125,7 +125,7 @@ pub fn buildInto(arena: Allocator, loaded: *const Loaded, extracted: *const Extr
         try out.terminal_start.append(arena, @intCast(out.terminal_net.items.len));
         const params = devices.paramsOf(id);
         for (params.names, params.measures) |param, measure| {
-            const name = topology.device.cardName(kind, param) orelse continue;
+            const name = topology.card.cardName(kind, param) orelse continue;
             try out.param_name.append(arena, name);
             try out.param_value.append(arena, switch (measure) {
                 .length => |v| .{ .length = @floatFromInt(v) },
@@ -327,7 +327,7 @@ fn refuse(arena: Allocator, why: *[]const u8, comptime fmt: []const u8, args: an
 }
 
 fn rankLess(roles: []const topology.TerminalRole, a: u32, b: u32) bool {
-    return topology.device.cardRank(roles[a]) < topology.device.cardRank(roles[b]);
+    return topology.card.cardRank(roles[a]) < topology.card.cardRank(roles[b]);
 }
 
 fn orderU32(want: u32, item: u32) std.math.Order {
