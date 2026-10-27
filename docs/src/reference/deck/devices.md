@@ -20,12 +20,13 @@ device inductor  ind   model "spiral_2n" terminals [met2, met2] inductance 2nH
 
 ## Kinds and terminals
 
-The terminals are listed in a fixed order for each kind:
+The terminals are listed in a fixed order for each kind. A row with a number of terminals its kind
+does not take is an error at its line.
 
 | Kind | Terminals, in order |
 |---|---|
 | `mos` | gate, source, drain, and optionally bulk |
-| `bjt` | base, emitter, collector |
+| `bjt` | base, emitter, collector, and optionally substrate |
 | `diode` | anode, cathode |
 | `capacitor` | top plate, bottom plate |
 | `resistor` | two ends |
