@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % poly 500 wide under rpm; 1 unit = 250 nm
+  \draw[layer d] (-1,-0.6) rectangle (3,6);
+  \node[caption,anchor=south] at (1,6.05) {rpm};
+  \draw[layer a] (0,0) rectangle (2,5.4);
+  \node[caption,anchor=north] at (1,-0.65) {prec\_res = poly and rpm};
+  \draw[dim] (0,2.7) -- (2,2.7);
+  \node[dim label,anchor=south] at (1,2.75) {\SI{0.50}{\micro\metre}};
+  \node[violation label,anchor=west,align=left] at (3.3,3.2) {not in the list};
+  \node[caption,anchor=west,align=left] at (3.3,2.3) {0.35, 0.69, 1.41,\\2.85, \SI{5.73}{\micro\metre}};
+\end{circuitikz}
+\end{document}

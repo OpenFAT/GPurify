@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 4 um plate, stub 1 um long 200 wide; 1 unit = 0.5 um
+  \draw[layer a] (0,0) -- (8,0) -- (8,2) -- (10,2) -- (10,2.4) -- (8,2.4) -- (8,8) -- (0,8) -- cycle;
+  \node[caption] at (4,4) {met1, \SI{4}{\micro\metre} wide};
+  \draw[dim] (10.5,2) -- (10.5,2.4);
+  \node[dim label,anchor=west] at (10.6,2.2) {\SI{0.20}{\micro\metre}};
+  \draw[violation] (7.9,1.8) rectangle (10.1,2.6);
+  \node[violation label,anchor=west] at (10.6,1.3) {stub $<$ \SI{0.30}{\micro\metre}};
+  \node[caption,anchor=west] at (10.6,3.2) {on a part where a \SI{3}{\micro\metre} square fits};
+\end{circuitikz}
+\end{document}

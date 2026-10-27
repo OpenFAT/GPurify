@@ -1,0 +1,14 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % res 400 x 400; 1 unit = 100 nm
+  \draw[layer a] (0,0) rectangle (4,4);
+  \node[caption,anchor=south] at (2,4.05) {res};
+  \draw[dim] (0,-0.4) -- (4,-0.4);
+  \node[dim label,anchor=north] at (2,-0.5) {longer side \SI{0.40}{\micro\metre}};
+  \draw[marker] (0,0) rectangle (5,4);
+  \node[caption,anchor=west] at (5.1,3.5) {\SI{0.50}{\micro\metre} needed};
+  \node[violation label,anchor=west] at (5.1,2) {short\_res: forbidden};
+\end{circuitikz}
+\end{document}
