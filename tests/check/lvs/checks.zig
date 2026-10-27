@@ -194,7 +194,10 @@ test "two names on one net are one seed conflict row at the first label" {
     // Oracle: construct-from-answer, F13, F14. Two touching rectangles are
     // one net; labelled VDD (right) and VSS (left) they are a short: one
     // `lvs.net_seed_conflict` row naming VDD's shape then VSS's, at (90, 0)
-    // on metal, measured 2 against 1. With one label, no conflict.
+    // on metal, measured 2 against 1, and one `lvs.short_path` row (the
+    // shapes touch), each carrying the labels VDD and VSS in `StrId` order
+    // (`Violations.labelsOf`); no other row carries labels. With one label,
+    // no conflict.
     var d: Drawn = .{};
     defer d.deinit();
     const polys = try draw(&d, 1, &.{ .{ metal, 0, 0, 100, 100 }, .{ metal, 90, 0, 200, 100 } }, null);
@@ -223,6 +226,18 @@ test "two names on one net are one seed conflict row at the first label" {
             try expectAt(found[0], 90, 0, metal);
             try expectCounts(found[0], 2, 1);
         }
+        const path_rule = d.strings.get("lvs.short_path").?;
+        var labelled: usize = 0;
+        for (0..out.len()) |row| {
+            const r = out.get(@intCast(row));
+            const short = r.rule == rule or r.rule == path_rule;
+            if (out.labelsOf(@intCast(row))) |names| {
+                try testing.expect(short);
+                try testing.expectEqual([2]StrId{ vdd, vss }, names);
+                labelled += 1;
+            } else try testing.expect(!short);
+        }
+        try testing.expectEqual(2 * case[1], labelled);
     }
 }
 

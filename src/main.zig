@@ -340,7 +340,7 @@ fn writeText(w: *Writer, ran: Ran) Writer.Error!void {
     const traced = if (o.lvs) |*t| t else &none;
     const placements = if (ran.loaded.reference) |*r| r.placements.items else &.{};
     try text.writeMerges(w, strings, placements, o.lvs_unpaired.items, &traced.layout_merges, &traced.reference_merges);
-    try text.writeVerdict(w, if (o.lvs) |t| t.verdict else null, traced.found.items);
+    try text.writeVerdict(w, strings, if (o.lvs) |t| t.verdict else null, traced.found.items);
     try text.writeSummary(w, ran.summary);
 }
 

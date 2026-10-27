@@ -6,7 +6,8 @@
 //! Keys in this order: `header` (`tool_version`, `deck_path`,
 //! `layout_path`, `timestamp` or `null`); `violations`, one object per row
 //! (`rule`, `layer`, `layer_name`, `severity`, `at`, `measured`, `limit`,
-//! `shapes`, `fix` where the row has a hint, and `load`, the simulated
+//! `shapes`, `labels`, a short's two label names, where the row has them,
+//! `fix` where the row has a hint, and `load`, the simulated
 //! `instance` and `terminal` loading it most, where the row has one);
 //! `waived`, only when non-empty; `runs` (`rule`, `domain`, `outcome`,
 //! `examined`, `violations`); `summary`, the text report's `summary:`
@@ -163,6 +164,13 @@ fn writeRows(w: *Writer, strings: *const StrTable, layers: *const LayerTable, gr
         try w.writeByte(',');
         try writeShape(w, r.shape_b);
         try w.writeByte(']');
+        if (v.labelsOf(row)) |names| {
+            try w.writeAll(",\"labels\":[");
+            try writeString(w, strings.resolve(names[0]));
+            try w.writeByte(',');
+            try writeString(w, strings.resolve(names[1]));
+            try w.writeByte(']');
+        }
         if (v.fixOf(row)) |fix| {
             try w.writeAll(",\"fix\":");
             try writeMeasurement(w, grid, fix);

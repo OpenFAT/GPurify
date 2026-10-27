@@ -34,6 +34,8 @@
 //!   `setFix(v: *Violations, gpa: Allocator, row: u32, fix: Measurement) Allocator.Error!void`,
 //!   `loadOf(v: *const Violations, row: u32) ?Load`,
 //!   `setLoad(v: *Violations, gpa: Allocator, row: u32, load: Load) Allocator.Error!void`,
+//!   `labelsOf(v: *const Violations, row: u32) ?[2]StrId`,
+//!   `setLabels(v: *Violations, gpa: Allocator, row: u32, names: [2]StrId) Allocator.Error!void`,
 //!   `pushRow(v: *Violations, gpa: Allocator, other: *const Violations, row: u32) Allocator.Error!void`,
 //!   `extend(v: *Violations, gpa: Allocator, other: *const Violations) Allocator.Error!void`,
 //!   `truncate(v: *Violations, new_len: u32) void`,
@@ -229,8 +231,8 @@ pub const Violation = struct {
 pub const Load = struct { instance: StrId, terminal: StrId };
 
 /// Every violation from a run, SoA. Invariant: every row column holds `len()`
-/// rows; `fix_row` and `load_row` ascend only until the next `setFix` or
-/// `setLoad`, and name rows below `len()`. Read the columns directly; write
+/// rows; `fix_row`, `load_row` and `label_row` ascend only until the next
+/// `setFix`, `setLoad` or `setLabels`, and name rows below `len()`. Read the columns directly; write
 /// through the methods.
 pub const Violations = struct {
     rule: std.ArrayList(StrId) = .empty,
@@ -252,6 +254,11 @@ pub const Violations = struct {
     /// ERC-E14).
     load_row: std.ArrayList(u32) = .empty,
     load: std.ArrayList(Load) = .empty,
+    /// Sparse label pairs: row `label_row[i]` is about a short between the
+    /// two labels `labels[i]` (`lvs.net_seed_conflict`, `lvs.short_path`;
+    /// catalog LVS-005).
+    label_row: std.ArrayList(u32) = .empty,
+    labels: std.ArrayList([2]StrId) = .empty,
 
     pub fn deinit(v: *Violations, gpa: Allocator) void {
         inline for (@typeInfo(Violations).@"struct".field_names) |name| @field(v, name).deinit(gpa);
@@ -337,11 +344,34 @@ pub const Violations = struct {
         v.load_row.appendAssumeCapacity(row);
     }
 
-    /// Appends row `row` of `other`, its fix hint and attribution included.
+    /// Row `row`'s two shorted labels, or null for most rows.
+    /// ponytail: a linear scan, as `fixOf`.
+    pub fn labelsOf(v: *const Violations, row: u32) ?[2]StrId {
+        for (v.label_row.items, v.labels.items) |r, l| if (r == row) return l;
+        return null;
+    }
+
+    /// Attaches (or replaces) row `row`'s two shorted labels. Asserts the
+    /// row exists and the labels differ.
+    pub fn setLabels(v: *Violations, gpa: Allocator, row: u32, names: [2]StrId) Allocator.Error!void {
+        assert(row < v.len());
+        assert(names[0] != names[1]);
+        for (v.label_row.items, v.labels.items) |r, *l| if (r == row) {
+            l.* = names;
+            return;
+        };
+        try v.label_row.ensureUnusedCapacity(gpa, 1);
+        try v.labels.append(gpa, names);
+        v.label_row.appendAssumeCapacity(row);
+    }
+
+    /// Appends row `row` of `other`, its fix hint, attribution and labels
+    /// included.
     pub fn pushRow(v: *Violations, gpa: Allocator, other: *const Violations, row: u32) Allocator.Error!void {
         try v.push(gpa, other.get(row));
         if (other.fixOf(row)) |fix| try v.setFix(gpa, v.len() - 1, fix);
         if (other.loadOf(row)) |load| try v.setLoad(gpa, v.len() - 1, load);
+        if (other.labelsOf(row)) |names| try v.setLabels(gpa, v.len() - 1, names);
     }
 
     /// Appends `other`'s rows after this table's, in their order. The result
@@ -355,15 +385,19 @@ pub const Violations = struct {
         try v.fix_value.ensureUnusedCapacity(gpa, other.fix_value.items.len);
         try v.load_row.ensureUnusedCapacity(gpa, other.load_row.items.len);
         try v.load.ensureUnusedCapacity(gpa, other.load.items.len);
+        try v.label_row.ensureUnusedCapacity(gpa, other.label_row.items.len);
+        try v.labels.ensureUnusedCapacity(gpa, other.labels.items.len);
         inline for (row_columns) |name| @field(v, name).appendSliceAssumeCapacity(@field(other, name).items);
         for (other.fix_row.items) |r| v.fix_row.appendAssumeCapacity(base + r);
         v.fix_value.appendSliceAssumeCapacity(other.fix_value.items);
         for (other.load_row.items) |r| v.load_row.appendAssumeCapacity(base + r);
         v.load.appendSliceAssumeCapacity(other.load.items);
+        for (other.label_row.items) |r| v.label_row.appendAssumeCapacity(base + r);
+        v.labels.appendSliceAssumeCapacity(other.labels.items);
     }
 
-    /// Drops every row from `new_len` on, with their fix hints and
-    /// attributions.
+    /// Drops every row from `new_len` on, with their fix hints,
+    /// attributions and labels.
     pub fn truncate(v: *Violations, new_len: u32) void {
         assert(new_len <= v.len());
         inline for (row_columns) |name| @field(v, name).shrinkRetainingCapacity(new_len);
@@ -385,6 +419,15 @@ pub const Violations = struct {
         }
         v.load_row.shrinkRetainingCapacity(loads);
         v.load.shrinkRetainingCapacity(loads);
+        var pairs: usize = 0;
+        for (v.label_row.items, v.labels.items) |r, l| {
+            if (r >= new_len) continue;
+            v.label_row.items[pairs] = r;
+            v.labels.items[pairs] = l;
+            pairs += 1;
+        }
+        v.label_row.shrinkRetainingCapacity(pairs);
+        v.labels.shrinkRetainingCapacity(pairs);
     }
 
     /// Establishes the canonical order: rule id, layer, `at.y`, `at.x`,
@@ -406,6 +449,7 @@ pub const Violations = struct {
         for (perm, 0..) |old, new| inverse[old] = @intCast(new);
         for (v.fix_row.items) |*r| r.* = inverse[r.*];
         for (v.load_row.items) |*r| r.* = inverse[r.*];
+        for (v.label_row.items) |*r| r.* = inverse[r.*];
     }
 
     // ---- private ----
