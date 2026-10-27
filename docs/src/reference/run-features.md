@@ -287,7 +287,7 @@ Open issue: [FLOW-005: In-design / live DRC](https://github.com/OmarSiwy/GPurify
 
 **Sources.** Siemens Calibre RealTime; Synopsys IC Validator Live; Cadence Pegasus.
 
-### FLOW-006: Custom rules in code
+### FLOW-006: User-programmable rules
 
 **What it catches.** A process or design rule that no built-in check expresses. A team writes it
 once, and it runs and reports like any other rule.
