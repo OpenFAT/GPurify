@@ -1,0 +1,21 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=3cm,y=3cm]
+  % The tutorial layout, 1 unit = 1 um, and its two violations.
+  \fill[layer a] (0,0) rectangle (2,0.2);
+  \fill[layer a] (0,0.5) rectangle (2,0.6);
+  \fill[layer c,opacity=0.85] (1.75,-0.2) rectangle (2,1);
+  \fill[layer b] (1.8,0.025) rectangle (1.95,0.175);
+  \node[caption,anchor=east] at (-0.05,0.1) {met1 A};
+  \node[caption,anchor=east] at (-0.05,0.55) {met1 B};
+  \node[caption,anchor=south] at (1.875,1) {met2};
+  \node[caption,anchor=south] at (1.875,0.18) {via1};
+  % M1.W: B is 100 nm wide.
+  \draw[violation] (0.95,0.47) rectangle (1.05,0.63);
+  \draw[-{Latex[length=2mm]}] (1.0,0.85) node[violation label,anchor=south] {M1.W: \SI{100}{\nano\metre} wide, limit \SI{140}{\nano\metre}} -- (1.0,0.64);
+  % V1.EN: 25 nm of met1 below the cut.
+  \draw[violation] (1.79,-0.01) rectangle (1.96,0.035);
+  \draw[-{Latex[length=2mm]}] (1.2,-0.35) node[violation label,anchor=north] {V1.EN: \SI{25}{\nano\metre} of met1 below via1, limit \SI{30}{\nano\metre}} -- (1.78,0.0);
+\end{circuitikz}
+\end{document}
