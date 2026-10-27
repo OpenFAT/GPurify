@@ -65,7 +65,11 @@ fn simulate(a: Allocator, dir: std.Io.Dir, espice: []const u8, pdk: []const u8, 
     const pins = text[at + marker.len .. std.mem.indexOfScalarPos(u8, text, at, '\n').?];
     const deck_name = try a.print("{s}.sp", .{name});
     try dir.writeFile(io, .{ .sub_path = deck_name, .data = try a.print(bench, .{ pdk, name, pins }) });
-    const ran = try std.process.run(a, io, .{ .argv = &.{ espice, deck_name }, .cwd = .{ .dir = dir } });
+    const ran = std.process.run(a, io, .{ .argv = &.{ espice, deck_name }, .cwd = .{ .dir = dir } }) catch |err| {
+        // `.#comparison` carries no ESPice; a comparison that did not run fails.
+        std.debug.print("cannot run ESPice as `{s}` ({t}): set ESPICE to its binary or put espice on PATH\n", .{ espice, err });
+        return err;
+    };
     var out: Result = undefined;
     inline for (.{ "gain_se", "gain_diff", "bw" }) |key| {
         @field(out, key) = measure(ran.stdout, key) orelse {
