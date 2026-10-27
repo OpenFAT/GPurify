@@ -44,7 +44,7 @@ pub fn writeAnswers(w: *Writer, scratch: Allocator, cd: *const CompiledDeck, str
     try w.writeAll("{\"layers\":[");
     for (0..n) |i| {
         try item(w, i);
-        try layer(w, scratch, cd, strings, @fromBackingInt(@as(u16, @intCast(i))));
+        try layerEntry(w, scratch, cd, strings, @fromBackingInt(@as(u16, @intCast(i))));
     }
     try close(w, n);
     try pairs(w, scratch, cd);
@@ -115,7 +115,7 @@ pub fn matchingObject(w: *Writer, m: Matching) Error!void {
 // ---- private ----
 
 /// One layer's entry: every single-layer query.
-fn layer(w: *Writer, scratch: Allocator, cd: *const CompiledDeck, strings: *const StrTable, l: LayerId) Error!void {
+fn layerEntry(w: *Writer, scratch: Allocator, cd: *const CompiledDeck, strings: *const StrTable, l: LayerId) Error!void {
     try w.print("{{\"layer\":{d},\"min_width_nm\":", .{@backingInt(l)});
     try optInt(w, query.minWidth(cd, l));
     try w.writeAll(",\"min_area_nm2\":");
