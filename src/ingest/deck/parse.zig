@@ -43,14 +43,27 @@ const Header = struct { pattern: []const parser.Ident, items: []const Val, open:
 /// `Malformed` for the first contradiction; on error `strings` may have
 /// gained names.
 pub fn parseDeck(arena: Allocator, gpa: Allocator, text: []const u8, layout: Grid, strings: *StrTable, diag: *Diag) Error!Deck {
-    const doc = try parseSource(arena, gpa, text, layout, diag);
-    return lower(arena, gpa, &doc, strings, diag);
+    var grid_nm: ?f64 = null;
+    const doc = try parseWith(arena, gpa, text, layout, diag, &grid_nm);
+    var deck = try lower(arena, gpa, &doc, strings, diag);
+    deck.grid_nm = grid_nm;
+    return deck;
 }
 
 /// Parses deck text to its `DeckSource` in `arena`, every value on
 /// `layout`'s grid and every name still a name; `gpa` backs the parse's
 /// scratch, freed before return. `Invalid`, as `parseDeck` gives it.
 pub fn parseSource(arena: Allocator, gpa: Allocator, text: []const u8, layout: Grid, diag: *Diag) Error!DeckSource {
+    var grid_nm: ?f64 = null;
+    return parseWith(arena, gpa, text, layout, diag, &grid_nm);
+}
+
+// ---- private ----
+
+/// `parseSource`, and the deck's `grid` statement in nm into `grid_nm`: a
+/// `DeckSource` holds lengths on the layout grid alone, so the deck's own
+/// grid reaches only the lowered `Deck`.
+fn parseWith(arena: Allocator, gpa: Allocator, text: []const u8, layout: Grid, diag: *Diag, grid_nm: *?f64) Error!DeckSource {
     var scratch_state: std.heap.ArenaAllocator = .init(gpa);
     defer scratch_state.deinit();
     const scratch = scratch_state.allocator();
@@ -69,10 +82,9 @@ pub fn parseSource(arena: Allocator, gpa: Allocator, text: []const u8, layout: G
         diag.diagnostics = found;
         return error.Invalid;
     }
+    grid_nm.* = if (p.deck_grid) |g| g.toF64() else null;
     return p.out;
 }
-
-// ---- private ----
 
 /// Statements until token index `end`.
 fn statements(p: *Parser, end: usize) Allocator.Error!void {

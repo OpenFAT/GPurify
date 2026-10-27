@@ -3,6 +3,7 @@
 test {
     _ = @import("gpurify");
     _ = @import("gpurify/export.zig");
+    _ = @import("gpurify/deck_dump.zig");
     _ = @import("gpurify/pex_spice.zig");
     if (@import("paths").comparison_tests) _ = @import("gpurify/pex_magic.zig");
     _ = @import("gpurify/engine.zig");
@@ -94,4 +95,5 @@ test {
     _ = @import("gpurify/lay_stacks.zig");
     _ = @import("gpurify/fuzz.zig");
     _ = @import("gpurify/xor.zig");
+    _ = @import("gpurify/supply_and_enclosure.zig");
 }

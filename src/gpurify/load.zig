@@ -20,6 +20,7 @@
 //! - `pub const Die = struct { grid, deck, store, provenance }`
 //! - `pub fn loadDie(gpa: Allocator, load_arena: Allocator, io: std.Io, dir: std.Io.Dir, layout: []const u8, deck: []const u8, strings: *StrTable, diag: *Diagnostic) Error!Die`
 //! - `pub fn readDie(load_arena: Allocator, gds: []const u8, deck: []const u8, deck_file: []const u8, strings: *StrTable, diag: *Diagnostic) Error!Die`
+//! - `pub fn loadDeck(load_arena: Allocator, io: std.Io, dir: std.Io.Dir, deck: []const u8, grid: Grid, decks: []const NamedDeck, strings: *StrTable, diag: *Diagnostic) Error!CompiledDeck`
 //! - `pub fn isDef(layout: []const u8) bool`
 //! - `pub fn internReportIds(gpa: Allocator, strings: *StrTable) Allocator.Error!void`
 
@@ -161,6 +162,15 @@ pub fn readDie(load_arena: Allocator, gds: []const u8, deck: []const u8, deck_fi
     return out;
 }
 
+/// Compiles one deck with no layout, a carried one by name or a file
+/// under `dir`, on `grid` into `strings`: the reader, the refusals and the
+/// `diag` a run's load gives for the same deck. The deck lives in
+/// `load_arena`.
+pub fn loadDeck(load_arena: Allocator, io: std.Io, dir: std.Io.Dir, deck: []const u8, grid: Grid, decks: []const NamedDeck, strings: *StrTable, diag: *Diagnostic) Error!CompiledDeck {
+    const d = try deckIn(load_arena, io, dir, deck, decks, diag);
+    return compileDeck(load_arena, d, grid, strings, diag);
+}
+
 /// Whether `layout` names a DEF (`*.def`, any case).
 pub fn isDef(layout: []const u8) bool {
     return std.ascii.endsWithIgnoreCase(layout, ".def");
@@ -178,9 +188,7 @@ pub fn internReportIds(gpa: Allocator, strings: *StrTable) Allocator.Error!void 
 // ---- private ----
 
 fn loadFrom(gpa: Allocator, arena: Allocator, io: std.Io, dir: std.Io.Dir, inputs: Inputs, gds: ?[]const u8, decks: []const NamedDeck, diag: *Diagnostic) Error!Loaded {
-    const builtin: ?DeckFn = for (decks) |d| (if (std.mem.eql(u8, d.name, inputs.deck)) break d.build) else null;
-    const deck_text: []const u8 = if (builtin == null) try readFile(arena, io, dir, inputs.deck, .deck, diag) else "";
-    const deck_in: DeckIn = .{ .builtin = builtin, .text = deck_text, .path = inputs.deck };
+    const deck_in = try deckIn(arena, io, dir, inputs.deck, decks, diag);
 
     var out: Loaded = .{ .strings = .empty, .grid = undefined, .deck = undefined, .store = .empty, .provenance = .{}, .reference = null, .intent = null, .design = null };
     // ponytail: the parsed library interns into `strings`, so it shares the
@@ -219,6 +227,13 @@ fn loadFrom(gpa: Allocator, arena: Allocator, io: std.Io, dir: std.Io.Dir, input
         out.currents = try ingest.currents.readCurrents(arena, arena, io, dir, path, &out.strings, &diag.currents);
     }
     return out;
+}
+
+/// A carried deck named `deck`, else the text of the file `deck`.
+fn deckIn(arena: Allocator, io: std.Io, dir: std.Io.Dir, deck: []const u8, decks: []const NamedDeck, diag: *Diagnostic) Error!DeckIn {
+    const builtin: ?DeckFn = for (decks) |d| (if (std.mem.eql(u8, d.name, deck)) break d.build) else null;
+    const text: []const u8 = if (builtin == null) try readFile(arena, io, dir, deck, .deck, diag) else "";
+    return .{ .builtin = builtin, .text = text, .path = deck };
 }
 
 fn compileDeck(arena: Allocator, d: DeckIn, grid: Grid, strings: *StrTable, diag: *Diagnostic) Error!CompiledDeck {

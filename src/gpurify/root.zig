@@ -19,10 +19,11 @@
 //! - `system`: `SystemRun`, `run`, `checkSystem`, `allModels` (system.zig); `system_checks`: bumps,
 //!   bonds, alignment, `assemble`, pins, ESD rails (system_checks.zig)
 //! - `subckt_build`: `buildInto`, the netlist in the reference's terms (subckt_build.zig)
-//! - `Die`, `loadDie`, `readDie` (load.zig)
+//! - `Die`, `loadDie`, `readDie`, `loadDeck` (load.zig)
 //! - `export`: the report writers (export/*.zig)
 //!   - `header`: `Header`, `Error`, `Diagnostic`
 //!   - `json`: `writeReport`, `writeString`
+//!   - `deck`: `writeDeck`, `format`; `deck_answers`: `writeAnswers`, `spacingQueries`
 //!   - `text`: `writeRuns`, `writeViolations`, `writeMerges`, `writeVerdict`, `writeSummary`, `Summary`, `StageStatus`
 //!   - `spef`: `writeSpef`, `writeSpefCorners`; `envelope`: `envelopeInto`
 //!   - `dspf`: `writeDspf`, `writeDspfSubckt`
@@ -67,6 +68,7 @@ pub const isDef = load_.isDef;
 pub const Die = load_.Die;
 pub const loadDie = load_.loadDie;
 pub const readDie = load_.readDie;
+pub const loadDeck = load_.loadDeck;
 pub const internReportIds = load_.internReportIds;
 
 pub const Extracted = extracted.Extracted;
@@ -101,6 +103,8 @@ pub const @"export" = struct {
     pub const dspf = @import("export/dspf.zig");
     pub const netlist = @import("export/netlist.zig");
     pub const subckt = @import("export/subckt.zig");
+    pub const deck = @import("export/deck.zig");
+    pub const deck_answers = @import("export/deck_answers.zig");
     pub const Header = header.Header;
     pub const Error = header.Error;
     pub const Diagnostic = header.Diagnostic;
