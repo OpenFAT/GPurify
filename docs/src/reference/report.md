@@ -189,7 +189,8 @@ indented for reading and cut to one violation and one rule:
   "violations": [
     {
       "rule": "licon.15",
-      "layer": "poly_licon",
+      "layer": 113,
+      "layer_name": "poly_licon",
       "severity": "error",
       "at": { "unit": "nm", "x": 1250.000000, "y": 2950.000000 },
       "measured": { "kind": "length", "unit": "nm", "value": 0.000000 },
@@ -215,7 +216,8 @@ A violation object:
 | Key | Content |
 |---|---|
 | `rule` | The rule id. |
-| `layer` | The deck layer's name. |
+| `layer` | The layer's number in the deck's layer table, the `id` that [`gpurify deck`](../how-to/dump-a-deck.md) gives it. Use `layer_name`; the number is kept for older readers. |
+| `layer_name` | The deck layer's name, as the text report prints it. `null` for a row with no layer, such as an LVS discrepancy. |
 | `severity` | `"error"` or `"warning"`. |
 | `at` | `{"unit": "nm", "x": ..., "y": ...}`, the point, as in the text report. |
 | `measured`, `limit` | `{"kind": ..., "unit": ..., "value": ...}`. `kind` is `length`, `area`, `count`, `ratio`, `voltage`, `current` or `resistance`; `unit` is `nm`, `nm^2`, `mV`, `uA`, `ohm`, or `""` for a count or ratio. |

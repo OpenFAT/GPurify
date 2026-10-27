@@ -21,6 +21,7 @@
 - [Compare two layouts](how-to/compare-layouts.md)
 - [Check a multi-die system](how-to/check-a-system.md)
 - [Characterise a cell library](how-to/characterise-a-library.md)
+- [Dump a deck as JSON](how-to/dump-a-deck.md)
 - [Run on the GPU](how-to/run-on-the-gpu.md)
 - [Use GPurify in CI](how-to/use-in-ci.md)
 

@@ -11,6 +11,7 @@ gpurify xor <layout> <other> --deck <deck> [options]
 gpurify <fill|enhance> <layout> <output.gds> --deck <deck> [options]
 gpurify system <system.json> --reference <netlist> [options]
 gpurify compare <reference> <candidate> [--spec <compare.json>]
+gpurify deck <deck> [--format json]
 ```
 
 The command comes first. Options and file arguments follow in any order. Every option that takes
@@ -32,6 +33,7 @@ is refused. GPurify has no `--help`; run it with no arguments to list the comman
 | `enhance` | `<layout> <output.gds>` | Writes the layout with redundant vias and widened straps, then runs DRC on the file it wrote. |
 | `system` | `<system.json>` | Checks several dies, placed and bonded as the system file says, against one system netlist. |
 | `compare` | `<reference> <candidate>` | Compares two parasitic netlists (SPEF or DSPF) net by net. |
+| `deck` | `<deck>` | Compiles a deck without a layout and writes it as JSON: layers, rules, connectivity, devices, LVS and PEX settings, and each layer's worked-out limits. [Dump a deck as JSON](../how-to/dump-a-deck.md) reads one. |
 
 A layout is a GDS file, or a DEF file when its name ends in `.def`. `fill`, `enhance` and `lib`
 take GDS only.
@@ -40,7 +42,7 @@ take GDS only.
 
 | Option | Value | Default | Commands | Meaning |
 |---|---|---|---|---|
-| `--deck` | file or shipped name | None, required | every command but `system` and `compare` | The deck: a path, or `sky130`, `gf180mcu`, `ihp_sg13g2` or `asap7` (also `generic_finfet`). A shipped name wins over a file of that name. |
+| `--deck` | file or shipped name | None, required | every command but `system`, `compare` and `deck` | The deck: a path, or `sky130`, `gf180mcu`, `ihp_sg13g2` or `asap7` (also `generic_finfet`). A shipped name wins over a file of that name. |
 | `--reference` | file | None | `lvs` (required), `pex`, `all`, `lib`, `system` (exactly one), `erc` (only with `--currents`) | The reference netlist: SPICE, CDL or Spectre. Repeat it to give Verilog files (`.v`) for the top level beside one SPICE or Spectre cell library. |
 | `--intent` | file | None | `erc`, `all` | The design intent file: supply voltages and per-net limits. Without it, the rules that need it are skipped. |
 | `--currents` | file | None | `erc`, `all` | Simulated per-terminal currents (`espice-emir/1`) for the electromigration and IR-drop rules. Requires `--reference`. |
@@ -50,8 +52,8 @@ take GDS only.
 | `--lef` | file | None | any command on a `.def` layout; `lib` (at most one) | A LEF file the DEF layout reads, technology LEF first, then cell LEFs. Repeat for more. For `lib`, the macro's LEF, whose pins are checked against the spec. |
 | `--spec` | file | None | `lib` (required), `compare` | `lib`: the macro spec. `compare`: a JSON file stating the tolerance, `{"tolerance": 5}` in percent. |
 | `--output-dir` | directory | None | `lib` (required) | Where `lib` writes its Liberty files. |
-| `--backend` | `auto`, `cpu`, `cuda`, `hip` | `auto` | every command but `compare` | Where kernels run. `auto` uses the first GPU that loads, CUDA before HIP, else the CPU. A named GPU backend that does not load is refused. |
-| `--threads` | 1 to 65535 | one per CPU | every command but `compare` | CPU worker threads. |
+| `--backend` | `auto`, `cpu`, `cuda`, `hip` | `auto` | every command but `compare` and `deck` | Where kernels run. `auto` uses the first GPU that loads, CUDA before HIP, else the CPU. A named GPU backend that does not load is refused. |
+| `--threads` | 1 to 65535 | one per CPU | every command but `compare` and `deck` | CPU worker threads. |
 
 ### Formats
 
@@ -69,6 +71,8 @@ Without a reference, GPurify writes the netlist with layout names and warns on s
 it cannot be back-annotated.
 
 `compare` takes only `--spec`. Without it the tolerance is 5%.
+
+`deck` takes only `--format json`, which is also its default. It names the deck as `--deck` does, by path or shipped name, and refuses a deck with the message `drc` gives for it.
 
 ### Refused options
 
@@ -109,7 +113,7 @@ Standard error carries:
 
 | Code | Meaning |
 |---|---|
-| 0 | Pass. Every selected check ran, no rule was skipped or refused, and no error was found. Warnings do not fail a run. For `lib`, every file was written. For `compare`, every compared value is within the tolerance and both files hold the same nets. |
+| 0 | Pass. Every selected check ran, no rule was skipped or refused, and no error was found. Warnings do not fail a run. For `lib`, every file was written. For `compare`, every compared value is within the tolerance and both files hold the same nets. For `deck`, the deck compiled and the whole dump was written. |
 | 1 | Anything else: an error found, a rule or check skipped or refused, an input missing or refused, a command line refused. |
 
 [How a run passes](../explanation/outcomes.md) explains why a skipped rule fails the run.
