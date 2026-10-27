@@ -1,0 +1,18 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Net a in the reference file and in the candidate file, compared row by row.
+  \node[caption,font=\small\bfseries,anchor=west] at (-2.6,1) {reference: field.spef};
+  \draw (0,0) node[circ,label=above:{a}]{} to[R, l=\SI{8.93}{\ohm}] (2.5,0) node[circ,label=above:{a:1}]{};
+  \draw (0,0) to[C, l=\SI{1.543}{\femto\farad}] (0,-2.2) node[circ,label=below:{b}]{};
+  \draw (0,0) -- (-1.6,0) to[C, l_=\SI{0.542}{\femto\farad}] (-1.6,-1.5) node[ground]{};
+  \begin{scope}[xshift=6.5cm]
+  \node[caption,font=\small\bfseries,anchor=west] at (-2.6,1) {candidate: closed.spef};
+  \draw (0,0) node[circ,label=above:{a}]{} to[R, l=\SI{8.93}{\ohm}] (2.5,0) node[circ,label=above:{a:1}]{};
+  \draw (0,0) to[C, l=\SI{1.025}{\femto\farad}] (0,-2.2) node[circ,label=below:{b}]{};
+  \draw (0,0) -- (-1.6,0) to[C, l_=\SI{0.859}{\femto\farad}] (-1.6,-1.5) node[ground]{};
+  \end{scope}
+  \node[caption,anchor=west,align=left] at (-2.6,-3.6) {ground\_cap a: +58.4\,\%\quad coupling\_cap a/b: $-$33.6\,\%\quad pin\_to\_pin\_res a: 0\,\%};
+\end{circuitikz}
+\end{document}

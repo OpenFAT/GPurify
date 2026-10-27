@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Net a from above with the two points of the report p2p line.
+  \fill[layer a] (0,0) rectangle (6,0.3);
+  \fill[layer a] (5.75,-0.15) rectangle (6.25,0.45);
+  \fill[layer b,opacity=0.85] (5.75,-0.15) rectangle (6.25,3);
+  \fill[layer c] (5.88,0.02) rectangle (6.12,0.28);
+  \node[caption,anchor=east] at (-0.1,0.15) {met1};
+  \node[caption,anchor=west] at (6.35,2) {met2};
+  \node[caption,anchor=west] at (6.35,0.15) {via};
+  \node[circ,label=above right:{(0, 0.07)}] (p1) at (0.05,0.15) {};
+  \node[circ,label=right:{(9.85, 3)}] (p2) at (6.0,2.85) {};
+  % The resistance between them: wire, via, wire.
+  \draw (0,-1.4) node[circ,label=below:{(0, 0.07)}]{}
+    to[R, l=met1] (3,-1.4) to[R, l=via] (6,-1.4) to[R, l=met2] (9,-1.4) node[circ,label=below:{(9.85, 3)}]{};
+  \draw[dim] (0,-2.4) -- (9,-2.4) node[dim label,midway] {\SI{14.515476}{\ohm}};
+\end{circuitikz}
+\end{document}
