@@ -40,7 +40,7 @@ GPurify builds on Linux (x86-64 and AArch64) and macOS (x86-64 and Apple silicon
    ```
 
    ```text
-   error: expected a subcommand: drc, erc, lvs, pex, all, lib, xor, fill, enhance, system or compare
+   error: expected a subcommand: drc, erc, lvs, pex, all, lib, xor, fill, enhance, system, compare or deck
    ```
 
    The message lists every command. [Command line](../reference/cli.md) describes each one.
