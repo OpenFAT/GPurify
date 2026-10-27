@@ -26,12 +26,14 @@
 //! - `pub const Millivolts`, `pub const Microamps`, `pub const Ohms`
 //! - `pub const nowhere: Point`, `pub const no_layer: LayerId`, `pub const no_shape: PolyId`
 //! - `pub fn ruleId(strings: *const StrTable, name: []const u8) StrId`
-//! - `pub const Violation = struct`
+//! - `pub const Violation = struct`, `pub const Load = struct { instance: StrId, terminal: StrId }`
 //! - `pub const Violations = struct`, `deinit`, `len(v: *const Violations) u32`,
 //!   `push(v: *Violations, gpa: Allocator, row: Violation) Allocator.Error!void`,
 //!   `get(v: *const Violations, row: u32) Violation`,
 //!   `fixOf(v: *const Violations, row: u32) ?Measurement`,
 //!   `setFix(v: *Violations, gpa: Allocator, row: u32, fix: Measurement) Allocator.Error!void`,
+//!   `loadOf(v: *const Violations, row: u32) ?Load`,
+//!   `setLoad(v: *Violations, gpa: Allocator, row: u32, load: Load) Allocator.Error!void`,
 //!   `pushRow(v: *Violations, gpa: Allocator, other: *const Violations, row: u32) Allocator.Error!void`,
 //!   `extend(v: *Violations, gpa: Allocator, other: *const Violations) Allocator.Error!void`,
 //!   `truncate(v: *Violations, new_len: u32) void`,
@@ -222,9 +224,14 @@ pub const Violation = struct {
     shape_b: PolyId,
 };
 
+/// The simulated terminal a finding is attributed to (`--currents`): the
+/// simulator's instance (`x1.mn1`) and terminal (`d`).
+pub const Load = struct { instance: StrId, terminal: StrId };
+
 /// Every violation from a run, SoA. Invariant: every row column holds `len()`
-/// rows; `fix_row` ascends only until the next `setFix`, and names rows
-/// below `len()`. Read the columns directly; write through the methods.
+/// rows; `fix_row` and `load_row` ascend only until the next `setFix` or
+/// `setLoad`, and name rows below `len()`. Read the columns directly; write
+/// through the methods.
 pub const Violations = struct {
     rule: std.ArrayList(StrId) = .empty,
     layer: std.ArrayList(LayerId) = .empty,
@@ -240,6 +247,11 @@ pub const Violations = struct {
     /// finding, the least diode area that clears it; catalog ERC-A15).
     fix_row: std.ArrayList(u32) = .empty,
     fix_value: std.ArrayList(Measurement) = .empty,
+    /// Sparse attributions: row `load_row[i]` is a grid finding whose
+    /// current comes most from the simulated terminal `load[i]` (catalog
+    /// ERC-E14).
+    load_row: std.ArrayList(u32) = .empty,
+    load: std.ArrayList(Load) = .empty,
 
     pub fn deinit(v: *Violations, gpa: Allocator) void {
         inline for (@typeInfo(Violations).@"struct".field_names) |name| @field(v, name).deinit(gpa);
@@ -305,10 +317,31 @@ pub const Violations = struct {
         v.fix_row.appendAssumeCapacity(row);
     }
 
-    /// Appends row `row` of `other`, its fix hint included.
+    /// Row `row`'s attributed terminal, or null for most rows.
+    /// ponytail: a linear scan, as `fixOf`.
+    pub fn loadOf(v: *const Violations, row: u32) ?Load {
+        for (v.load_row.items, v.load.items) |r, l| if (r == row) return l;
+        return null;
+    }
+
+    /// Attaches (or replaces) row `row`'s attributed terminal. Asserts the
+    /// row exists.
+    pub fn setLoad(v: *Violations, gpa: Allocator, row: u32, load: Load) Allocator.Error!void {
+        assert(row < v.len());
+        for (v.load_row.items, v.load.items) |r, *l| if (r == row) {
+            l.* = load;
+            return;
+        };
+        try v.load_row.ensureUnusedCapacity(gpa, 1);
+        try v.load.append(gpa, load);
+        v.load_row.appendAssumeCapacity(row);
+    }
+
+    /// Appends row `row` of `other`, its fix hint and attribution included.
     pub fn pushRow(v: *Violations, gpa: Allocator, other: *const Violations, row: u32) Allocator.Error!void {
         try v.push(gpa, other.get(row));
         if (other.fixOf(row)) |fix| try v.setFix(gpa, v.len() - 1, fix);
+        if (other.loadOf(row)) |load| try v.setLoad(gpa, v.len() - 1, load);
     }
 
     /// Appends `other`'s rows after this table's, in their order. The result
@@ -320,12 +353,17 @@ pub const Violations = struct {
         try v.ensureUnusedCapacity(gpa, other.len());
         try v.fix_row.ensureUnusedCapacity(gpa, other.fix_row.items.len);
         try v.fix_value.ensureUnusedCapacity(gpa, other.fix_value.items.len);
+        try v.load_row.ensureUnusedCapacity(gpa, other.load_row.items.len);
+        try v.load.ensureUnusedCapacity(gpa, other.load.items.len);
         inline for (row_columns) |name| @field(v, name).appendSliceAssumeCapacity(@field(other, name).items);
         for (other.fix_row.items) |r| v.fix_row.appendAssumeCapacity(base + r);
         v.fix_value.appendSliceAssumeCapacity(other.fix_value.items);
+        for (other.load_row.items) |r| v.load_row.appendAssumeCapacity(base + r);
+        v.load.appendSliceAssumeCapacity(other.load.items);
     }
 
-    /// Drops every row from `new_len` on, with their fix hints.
+    /// Drops every row from `new_len` on, with their fix hints and
+    /// attributions.
     pub fn truncate(v: *Violations, new_len: u32) void {
         assert(new_len <= v.len());
         inline for (row_columns) |name| @field(v, name).shrinkRetainingCapacity(new_len);
@@ -338,6 +376,15 @@ pub const Violations = struct {
         }
         v.fix_row.shrinkRetainingCapacity(kept);
         v.fix_value.shrinkRetainingCapacity(kept);
+        var loads: usize = 0;
+        for (v.load_row.items, v.load.items) |r, l| {
+            if (r >= new_len) continue;
+            v.load_row.items[loads] = r;
+            v.load.items[loads] = l;
+            loads += 1;
+        }
+        v.load_row.shrinkRetainingCapacity(loads);
+        v.load.shrinkRetainingCapacity(loads);
     }
 
     /// Establishes the canonical order: rule id, layer, `at.y`, `at.x`,
@@ -358,6 +405,7 @@ pub const Violations = struct {
         defer gpa.free(inverse);
         for (perm, 0..) |old, new| inverse[old] = @intCast(new);
         for (v.fix_row.items) |*r| r.* = inverse[r.*];
+        for (v.load_row.items) |*r| r.* = inverse[r.*];
     }
 
     // ---- private ----

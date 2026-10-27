@@ -178,6 +178,7 @@ fn writeRows(w: *Writer, strings: *const StrTable, grid: Grid, v: *const Violati
         try writeMeasurement(w, grid, r.limit);
         try w.print(" on shape {d}", .{@backingInt(r.shape_a)});
         if (r.shape_b != report.no_shape) try w.print(" and shape {d}", .{@backingInt(r.shape_b)});
+        if (v.loadOf(row)) |load| try w.print(" loaded most by {s} {s}", .{ strings.resolve(load.instance), strings.resolve(load.terminal) });
         if (v.fixOf(row)) |fix| {
             try w.writeAll(" fix ");
             try writeMeasurement(w, grid, fix);

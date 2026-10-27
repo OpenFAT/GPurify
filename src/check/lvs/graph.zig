@@ -69,6 +69,10 @@ pub const Graph = struct {
     net_terminal_role: std.ArrayList(TerminalRole) = .empty,
     /// The reference's net name, or the layout's port label.
     net_name: std.ArrayList(?StrId) = .empty,
+    /// Each net's row in the graph a comparison was given: `compareTraced`
+    /// numbers its working copies so, and every transform that drops nets
+    /// keeps a survivor's. Empty outside a comparison.
+    net_origin: std.ArrayList(u32) = .empty,
     /// Nets that are ports of this cell; a series merge never consumes one.
     port_net: std.ArrayList(u32) = .empty,
 
@@ -131,6 +135,7 @@ pub const Graph = struct {
             on_nets += @intFromBool(n != no_net);
         }
         for (g.port_net.items) |n| assert(n < nets);
+        assert(g.net_origin.items.len == 0 or g.net_origin.items.len == nets);
         assert(g.net_terminal_device.items.len == on_nets);
         for (0..nets) |n| {
             const on = g.terminalsOn(@intCast(n));

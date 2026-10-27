@@ -30,6 +30,7 @@ pub fn writeLoad(w: *Writer, err: anyerror, d: *const gpurify.LoadDiagnostic) Wr
             if (d.netlist.has().len > 0) try w.print("  the deck has: {s}\n", .{d.netlist.has()});
         },
         .intent => try w.print("  {s}\n", .{d.intent.text()}),
+        .currents => try w.print("  {s}\n", .{d.currents.text()}),
         .lefdef => try w.print("  {s} line {d}: {s}\n", .{ d.lefdef.file, d.lefdef.line, d.lefdef.message() }),
         .labels => try w.print("  label: {any}\n", .{d.label}),
     }

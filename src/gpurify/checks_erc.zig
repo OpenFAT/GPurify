@@ -6,10 +6,12 @@
 //! shorted: design intent on it refuses the stage. A layout with no
 //! geometry has no die to divide a density by, so ERC skips. Otherwise ERC
 //! refuses row by row (a supply grid that cannot be built or solved refuses
-//! the rows that read it).
+//! the rows that read it). With a simulator's terminal currents, LVS
+//! places them first (currents.zig), and a file it cannot place refuses
+//! the stage.
 //!
 //! Contents:
-//! - `pub fn runErc(scratch: Allocator, run_arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, out: *Outputs) Allocator.Error!StageStatus`
+//! - `pub fn runErc(scratch: Allocator, run_arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, options: CompareOptions, out: *Outputs) Allocator.Error!StageStatus`
 //! - `pub fn designExtent(loaded: *const Loaded) Bbox`
 
 const std = @import("std");
@@ -27,6 +29,8 @@ const MacroPinAntenna = erc.antenna_tables.MacroPinAntenna;
 const PinValue = erc.antenna_tables.PinValue;
 const Loaded = @import("load.zig").Loaded;
 const Extracted = @import("extracted.zig").Extracted;
+const CompareOptions = check.lvs.CompareOptions;
+const placeCurrents = @import("currents.zig").placeCurrents;
 const run_ = @import("run.zig");
 const Outputs = run_.Outputs;
 const StageStatus = run_.StageStatus;
@@ -43,7 +47,7 @@ const Key = struct {
     }
 };
 
-pub fn runErc(scratch: Allocator, run_arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, out: *Outputs) Allocator.Error!StageStatus {
+pub fn runErc(scratch: Allocator, run_arena: Allocator, loaded: *const Loaded, extracted: *const Extracted, options: CompareOptions, out: *Outputs) Allocator.Error!StageStatus {
     if (loaded.intent != null) if (extracted.ports.shortedNet()) |net| {
         var names: std.ArrayList(u8) = .empty;
         for (extracted.ports.namesOf(net), 0..) |name, i| {
@@ -60,6 +64,11 @@ pub fn runErc(scratch: Allocator, run_arena: Allocator, loaded: *const Loaded, e
         error.UndefinedLayer => return .{ .refused = why },
         error.OutOfMemory => return error.OutOfMemory,
     };
+    var placed: erc.TerminalCurrents = .{};
+    if (loaded.currents != null) placed = placeCurrents(scratch, run_arena, loaded, extracted, options, &why) catch |err| switch (err) {
+        error.Refused => return .{ .refused = why },
+        error.OutOfMemory => return error.OutOfMemory,
+    };
     const deck = &loaded.deck.deck;
     const inputs: erc.Inputs = .{
         .design = .{ .store = &loaded.store, .nets = &extracted.nets, .devices = &extracted.devices },
@@ -71,6 +80,7 @@ pub fn runErc(scratch: Allocator, run_arena: Allocator, loaded: *const Loaded, e
         .temperature = if (loaded.intent) |i| i.temperature orelse deck.temperature else deck.temperature,
         .antenna_pins = pins,
         .strings = &loaded.strings,
+        .currents = if (loaded.currents != null) &placed else null,
     };
     var violations: report.Violations = .{};
     var runs: std.ArrayList(report.RuleRun) = .empty;

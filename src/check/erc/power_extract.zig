@@ -1,6 +1,7 @@
 //! The supply grid and the forced-current stress networks, built from
 //! layout. In: the store, nets, devices, the intent's supplies and budgets
-//! (or one `Stress`), the process. Out: a `PowerGrid` (or a `StressGrid`)
+//! or simulated terminal loads (or one `Stress`), the process. Out: a
+//! `PowerGrid` (or a `StressGrid`)
 //! whose every polygon is a chain of resistors along its long box axis,
 //! tapped where something connects and once at its own centre (so an
 //! unconnected shape is an island, not absent). Ported from
@@ -8,7 +9,7 @@
 //! `Stress`, `StressGrid`, `discarded_budget`, `tap_nearest`).
 //!
 //! Contents:
-//! - `pub fn extractInto(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable, devices: *const DeviceTable, intent: *const IntentMap, process: Process, out: *PowerGrid, diag: *PowerDiag) (PowerError || Allocator.Error)!void`
+//! - `pub fn extractInto(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable, devices: *const DeviceTable, intent: *const IntentMap, loads: Loads, process: Process, out: *PowerGrid, diag: *PowerDiag) (PowerError || Allocator.Error)!void`
 //! - `pub const Stress = struct`, `pub const StressGrid = struct`, `StressGrid.deinit`
 //! - `pub fn extractStressInto(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable, devices: *const DeviceTable, process: Process, stress: Stress, out: *StressGrid, diag: *PowerDiag) (PowerError || Allocator.Error)!void`
 //! - `pub fn discardedBudget(gpa: Allocator, grid: *const PowerGrid, intent: *const IntentMap) Allocator.Error!bool`
@@ -35,6 +36,7 @@ const IntentMap = @import("facts.zig").IntentMap;
 const grid_ = @import("power_grid.zig");
 const Process = grid_.Process;
 const PowerGrid = grid_.PowerGrid;
+const Loads = grid_.Loads;
 const PowerError = grid_.PowerError;
 const PowerDiag = grid_.PowerDiag;
 const not_a_node = grid_.not_a_node;
@@ -141,6 +143,17 @@ const Builder = struct {
         return try b.taps.push(b.gpa, span[0] + local, chain.tapOn(host, Bbox.point(at.x, at.y)));
     }
 
+    /// A tap request for a device with marker `marker` on the shapes the
+    /// index holds (from shape `from`): on the one its marker touches, else
+    /// the nearest, under the marker's centre.
+    fn tapDevice(b: *Builder, from: u32, marker: PolyId) Allocator.Error!u32 {
+        const marker_box = b.store.polyBbox(marker);
+        const at = centre(marker_box);
+        const host_index = from + b.index.host(marker_box);
+        const host = b.store.polyBbox(b.shape.items[host_index]);
+        return b.taps.push(b.gpa, host_index, chain.tapOn(host, Bbox.point(at.x, at.y)));
+    }
+
     /// The node at shape `s`'s own centre (after `finish`).
     fn centreNode(b: *const Builder, s: u32) u32 {
         const host = b.store.polyBbox(b.shape.items[s]);
@@ -165,6 +178,19 @@ const Builder = struct {
     }
 };
 
+/// A net of the supply grid: a declared supply (`supply` its row) or a net
+/// `Loads` names (`loads` its rows), or both.
+const Rail = struct {
+    net: NetId,
+    supply: u32 = not_a_node,
+    loads: [2]u32 = .{ 0, 0 },
+
+    /// The voltage its pad holds: its supply's, else 0 mV.
+    fn nominal(r: Rail, intent: *const IntentMap) report.Millivolts {
+        return if (r.supply == not_a_node) .{ .raw = 0.0 } else intent.heldAt(r.supply);
+    }
+};
+
 /// The span of shapes each path net owns.
 const RunOf = struct {
     nets: []const NetId,
@@ -181,51 +207,69 @@ const RunOf = struct {
     }
 };
 
-/// Builds the supply grid; `out` is cleared and refilled. Only declared
-/// supplies get nodes. Each rail's budget spreads uniformly over its
-/// device terminals (one number per net is all the intent carries), and the
-/// rail is anchored at one pad, its feed shape's centre, which
-/// over-reports drop. `NoSheetResistance` (`diag` the layer) whether or not
-/// any supply is declared, with `out` left empty.
-pub fn extractInto(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable, devices: *const DeviceTable, intent: *const IntentMap, process: Process, out: *PowerGrid, diag: *PowerDiag) (PowerError || Allocator.Error)!void {
+/// Builds the supply grid; `out` is cleared and refilled. Its nets are the
+/// declared supplies and every net `loads` names. A supply's budget spreads
+/// uniformly over its device terminals (one number per net is all the
+/// intent carries); a net `loads` names carries those loads instead, each
+/// at its device's tap, recorded in `out.term_*`. Each net is anchored at
+/// one pad, its feed shape's centre, held at its supply's voltage (0 mV on
+/// a net that is no supply), which over-reports drop; a net with no
+/// conducting shape (only a global layer) carries nothing.
+/// `NoSheetResistance` (`diag` the layer) whether or not any supply is
+/// declared, with `out` left empty.
+pub fn extractInto(gpa: Allocator, store: *const GeometryStore, nets: *const NetTable, devices: *const DeviceTable, intent: *const IntentMap, loads: Loads, process: Process, out: *PowerGrid, diag: *PowerDiag) (PowerError || Allocator.Error)!void {
     out.clear();
     var b: Builder = .{ .gpa = gpa, .store = store };
     defer b.deinit();
     try b.prepare(process, store.layerCount(), diag);
-    // Every supply's conducting shapes, grouped by supply.
-    var supply_of_shape: std.ArrayList(u32) = .empty;
-    defer supply_of_shape.deinit(gpa);
-    var supply_start: std.ArrayList(u32) = .empty;
-    defer supply_start.deinit(gpa);
-    try supply_start.append(gpa, 0);
-    for (intent.supply_net.items, 0..) |net, s| {
-        try links_.conductingInto(gpa, store, nets, b.conductor.items, net, &b.shape);
-        try supply_of_shape.appendNTimes(gpa, @intCast(s), b.shape.items.len - supply_of_shape.items.len);
-        try supply_start.append(gpa, @intCast(b.shape.items.len));
+    var rails: std.ArrayList(Rail) = .empty;
+    defer rails.deinit(gpa);
+    try railsInto(gpa, intent.supply_net.items, loads.net, &rails);
+    // Every rail's conducting shapes, grouped by rail.
+    var rail_of_shape: std.ArrayList(u32) = .empty;
+    defer rail_of_shape.deinit(gpa);
+    var rail_start: std.ArrayList(u32) = .empty;
+    defer rail_start.deinit(gpa);
+    try rail_start.append(gpa, 0);
+    for (rails.items, 0..) |r, k| {
+        try links_.conductingInto(gpa, store, nets, b.conductor.items, r.net, &b.shape);
+        try rail_of_shape.appendNTimes(gpa, @intCast(k), b.shape.items.len - rail_of_shape.items.len);
+        try rail_start.append(gpa, @intCast(b.shape.items.len));
     }
     try b.linkShapes(process);
 
-    // One tap per device on the rail, on the nearest shape its marker
-    // touches (else the nearest), and one load share per terminal it lands
-    // on the rail (source and drain both draw).
+    // A loaded rail: one tap per row, at its device. A supply: one tap per
+    // device on the rail, on the nearest shape its marker touches (else the
+    // nearest), and one load share per terminal it lands on the rail
+    // (source and drain both draw).
     var attach: std.ArrayList(u32) = .empty;
     defer attach.deinit(gpa);
     const Load = struct { req: u32, share: f64 };
     var load: std.ArrayList(Load) = .empty;
     defer load.deinit(gpa);
-    for (intent.supply_net.items, 0..) |net, s| {
-        const from = supply_start.items[s];
-        const to = supply_start.items[s + 1];
+    var term: std.ArrayList(Load) = .empty;
+    defer term.deinit(gpa);
+    var term_row: std.ArrayList(u32) = .empty;
+    defer term_row.deinit(gpa);
+    for (rails.items, 0..) |r, k| {
+        const from = rail_start.items[k];
+        const to = rail_start.items[k + 1];
         attach.clearRetainingCapacity();
         if (to == from) continue;
         try b.index.buildInto(gpa, store, b.shape.items[from..to]);
-        for (devices.devicesOn(net)) |d| {
-            const marker_box = store.polyBbox(devices.marker.items[@backingInt(d)]);
-            const marker = centre(marker_box);
-            const host_index = from + b.index.host(marker_box);
-            const host = store.polyBbox(b.shape.items[host_index]);
-            const req = try b.taps.push(gpa, host_index, chain.tapOn(host, Bbox.point(marker.x, marker.y)));
-            const here = std.mem.count(NetId, devices.terminalsOf(d).nets, &.{net});
+        if (r.loads[1] > r.loads[0]) {
+            for (r.loads[0]..r.loads[1]) |row| {
+                const req = try b.tapDevice(from, devices.marker.items[@backingInt(loads.device[row])]);
+                try load.append(gpa, .{ .req = req, .share = loads.value[row] });
+                try term.append(gpa, .{ .req = req, .share = loads.value[row] });
+                try term_row.append(gpa, @intCast(row));
+            }
+            continue;
+        }
+        const s = r.supply;
+        for (devices.devicesOn(r.net)) |d| {
+            const req = try b.tapDevice(from, devices.marker.items[@backingInt(d)]);
+            const here = std.mem.count(NetId, devices.terminalsOf(d).nets, &.{r.net});
             try attach.appendNTimes(gpa, req, here);
         }
         // A rail with no terminal stays unloaded; `discardedBudget` reports
@@ -234,29 +278,34 @@ pub fn extractInto(gpa: Allocator, store: *const GeometryStore, nets: *const Net
             .power => 1.0,
             .ground => -1.0,
         };
-        const share = sign * (intent.limitsOf(net).budget_current_ua orelse 0.0) / @as(f64, @floatFromInt(attach.items.len));
+        const share = sign * (intent.limitsOf(r.net).budget_current_ua orelse 0.0) / @as(f64, @floatFromInt(attach.items.len));
         for (attach.items) |req| try load.append(gpa, .{ .req = req, .share = share });
     }
 
     // Nodes: one per distinct tap, ascending by shape then along its chain.
     try b.taps.finish(gpa, @intCast(b.shape.items.len));
     for (b.taps.node_shape.items, b.taps.node_along.items) |owner, along| {
-        const s = supply_of_shape.items[owner];
+        const r = rails.items[rail_of_shape.items[owner]];
         const poly = b.shape.items[owner];
-        try out.pushNode(gpa, .{ .net = intent.supply_net.items[s], .at = chain.tapPoint(store.polyBbox(poly), along), .poly = poly, .layer = store.polyLayer(poly), .nominal = intent.heldAt(s), .load = .{ .raw = 0.0 } });
+        try out.pushNode(gpa, .{ .net = r.net, .at = chain.tapPoint(store.polyBbox(poly), along), .poly = poly, .layer = store.polyLayer(poly), .nominal = r.nominal(intent), .load = .{ .raw = 0.0 } });
     }
     for (load.items) |l| {
         const node = b.taps.req_node.items[l.req];
         out.node_load.items[node] = out.node_load.items[node].add(.{ .raw = l.share });
     }
+    for (term.items, term_row.items) |t, row| {
+        try out.term_node.append(gpa, b.taps.req_node.items[t.req]);
+        try out.term_load.append(gpa, .{ .raw = t.share });
+        try out.term_name.append(gpa, loads.name[row]);
+    }
     // The anchor: no input marks pads, and supply enters from the top.
-    for (0..intent.supply_net.items.len) |s| {
-        const from = supply_start.items[s];
-        const to = supply_start.items[s + 1];
+    for (rails.items, 0..) |r, k| {
+        const from = rail_start.items[k];
+        const to = rail_start.items[k + 1];
         if (to == from) continue;
         const anchor = from + links_.feedShape(store, process, b.shape.items[from..to]);
         try out.source_node.append(gpa, b.centreNode(anchor));
-        try out.source_voltage.append(gpa, intent.heldAt(s));
+        try out.source_voltage.append(gpa, r.nominal(intent));
     }
     try b.edges(process, out);
 }
@@ -374,6 +423,27 @@ pub fn discardedBudget(gpa: Allocator, grid: *const PowerGrid, intent: *const In
 }
 
 // ---- private ----
+
+/// The supplies (ascending) merged with the nets of the load rows
+/// (ascending, repeated per row) into rails ascending by net, `out` refilled.
+fn railsInto(gpa: Allocator, supplies: []const NetId, load_net: []const NetId, out: *std.ArrayList(Rail)) Allocator.Error!void {
+    out.clearRetainingCapacity();
+    var s: u32 = 0;
+    var row: u32 = 0;
+    while (s < supplies.len or row < load_net.len) {
+        const take_supply = row == load_net.len or (s < supplies.len and @backingInt(supplies[s]) <= @backingInt(load_net[row]));
+        const net = if (take_supply) supplies[s] else load_net[row];
+        var rail: Rail = .{ .net = net };
+        if (s < supplies.len and supplies[s] == net) {
+            rail.supply = s;
+            s += 1;
+        }
+        const first = row;
+        while (row < load_net.len and load_net[row] == net) row += 1;
+        rail.loads = .{ first, row };
+        try out.append(gpa, rail);
+    }
+}
 
 fn orderNet(a: NetId, b: NetId) std.math.Order {
     return std.math.order(@backingInt(a), @backingInt(b));

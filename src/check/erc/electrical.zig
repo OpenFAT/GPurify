@@ -39,6 +39,7 @@ const Solved = grid_.Solved;
 const Scratch = @import("scratch.zig").Scratch;
 const discardedBudget = @import("power_extract.zig").discardedBudget;
 const probe = @import("power_probe.zig");
+const attribution = @import("power_attribution.zig");
 const transient = @import("power_transient.zig");
 const tables = @import("electrical_tables.zig");
 const Kelvin = tables.Kelvin;
@@ -124,7 +125,9 @@ pub fn checkP2pResistance(r: Record, design: Design, networks: ?*const NetNetwor
 /// Every row over the solved supply grid. `examined` counts nodes whose
 /// net states a drop, fractional drop or overvoltage limit; a violation sits
 /// at the node and measures the drop (or overvoltage) against the broken
-/// limit, a node possibly breaking several.
+/// limit, a node possibly breaking several. A net that is no supply (on a
+/// grid loaded with simulated currents) has no domain: its drop to its
+/// port, either way, is held to `max_drop_mv` alone.
 pub fn checkIrDrop(r: Record, power: Power, intent: *const IntentMap, t: *const IrDropTable) Allocator.Error!void {
     const solved = try solvedOrFill(r, power, intent, &t.head) orelse return;
     const g = solved.grid;
@@ -136,8 +139,10 @@ pub fn checkIrDrop(r: Record, power: Power, intent: *const IntentMap, t: *const 
             const net = g.node_net.items[node];
             const limits = intent.limitsOf(net);
             examined += @intFromBool(limits.max_drop != null or limits.max_drop_fraction != null or limits.max_overvoltage != null);
-            // Every grid node is on a declared supply.
-            const supply = intent.supply(net).?;
+            const supply = intent.supply(net) orelse {
+                if (limits.max_drop) |limit| try reportNode(r, g, @intCast(node), head, .{ .raw = @abs(solved.solution.node_drop.items[node].raw) }, limit);
+                continue;
+            };
             // A loss moves toward the other rail: down for power, up for ground.
             const drop = signedDrop(supply.role, solved.solution.node_drop.items[node]);
             if (limits.max_drop) |limit| try reportNode(r, g, @intCast(node), head, drop, limit);
@@ -262,7 +267,8 @@ fn signedDrop(role: @import("ingest").intent.SupplyRole, drop: Millivolts) Milli
     };
 }
 
-/// One node's voltage finding when it is over `limit`.
+/// One node's voltage finding when it is over `limit`, named by the
+/// simulated terminal that loads it most where the grid has them.
 fn reportNode(r: Record, g: *const PowerGrid, node: u32, head: Head, measured: Millivolts, limit: Millivolts) Allocator.Error!void {
     const m = Measurement.voltage(measured);
     const l = Measurement.voltage(limit);
@@ -277,6 +283,7 @@ fn reportNode(r: Record, g: *const PowerGrid, node: u32, head: Head, measured: M
         .shape_a = g.node_poly.items[node],
         .shape_b = report.no_shape,
     });
+    if (try attribution.dominantLoad(r.gpa, g, .{ .node = node })) |load| try r.out.setLoad(r.gpa, r.out.len() - 1, load);
 }
 
 /// The switching event of every node whose net states `dynamic`: the

@@ -166,5 +166,5 @@ fn refAll(comptime T: type) void {
 
 test {
     refAll(@This());
-    inline for (.{ @import("checks_drc.zig"), @import("checks_erc.zig"), @import("checks_lvs.zig"), @import("checks_pex.zig"), @import("checks_after.zig") }) |file| refAll(file);
+    inline for (.{ @import("checks_drc.zig"), @import("checks_erc.zig"), @import("checks_lvs.zig"), @import("checks_pex.zig"), @import("checks_after.zig"), @import("currents.zig") }) |file| refAll(file);
 }

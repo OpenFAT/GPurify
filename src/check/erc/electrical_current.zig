@@ -44,6 +44,7 @@ const Kelvin = electrical.Kelvin;
 const Narrow = electrical.Narrow;
 const EmAcTable = electrical.EmAcTable;
 const allowedCurrent = @import("em_allowed.zig").allowedCurrent;
+const attribution = @import("power_attribution.zig");
 
 /// One row's per-layer current limits; `blech` and `narrow` empty when the
 /// kind states none.
@@ -221,7 +222,8 @@ pub fn tableDensity(gpa: Allocator, frequencies: []const f64, widths: []const f6
 }
 
 /// A finding on one edge: at its first node, on its layer, naming the
-/// shapes at both ends.
+/// shapes at both ends, and the simulated terminal that loads it most
+/// where the grid has them.
 pub fn edgeViolation(r: Record, power: *const PowerGrid, edge: u32, head: Head, measured: Measurement, limit: Measurement) Allocator.Error!void {
     const from = power.edge_from.items[edge];
     const to = power.edge_to.items[edge];
@@ -235,6 +237,7 @@ pub fn edgeViolation(r: Record, power: *const PowerGrid, edge: u32, head: Head, 
         .shape_a = power.node_poly.items[from],
         .shape_b = power.node_poly.items[to],
     });
+    if (try attribution.dominantLoad(r.gpa, power, .{ .edge = edge })) |load| try r.out.setLoad(r.gpa, r.out.len() - 1, load);
 }
 
 // ---- private ----

@@ -15,6 +15,8 @@
 //! - `pub const Symmetry = struct { turns: u8, mirror: bool }`, `Symmetry.identity`, `apply(s, p: [2]i64) [2]i64`
 //! - `pub const Want = enum { ran, skipped, refused }`, `pub const Finding = struct`, `pub const Expect = struct`
 //! - `pub const Fixture = struct`, `transformed(f, arena, s: Symmetry, dx, dy) !Fixture`
+//! - `pub const SimLoad = struct`, `pub const Built = struct`, `deinit`, `design`, `process`
+//! - `pub fn build(arena: Allocator, f: *const Fixture, out: *Built) !void`, `pub fn placed(arena: Allocator, b: *Built, loads: []const SimLoad) !erc.TerminalCurrents`
 //! - `pub const Ran = struct`, `pub fn run(arena: Allocator, f: *const Fixture) !Ran`
 //! - `pub fn brokenInto(arena: Allocator, f: *const Fixture, out: *std.ArrayList([]const u8)) !void`
 //! - `pub fn checkAll(fixtures: []const Fixture) !void`
@@ -141,6 +143,8 @@ pub const Fixture = struct {
     layout: Layout = .{},
     /// Design-intent JSON for the intent-gated rules.
     intent: ?[]const u8 = null,
+    /// Simulated terminal currents in place of the intent's budgets.
+    currents: []const SimLoad = &.{},
     expect: []const Expect = &.{},
 
     /// The fixture under `s` and a translation; every pinned marker moves
@@ -168,19 +172,60 @@ pub const Row = struct { id: []const u8, outcome: Outcome, examined: u64 };
 
 /// One finding of a run, names resolved, the marker in nanometres; its
 /// layer's deck name and its limit.
-pub const Found = struct { id: []const u8, measured: Measurement, at: [2]i64, layer: []const u8 = "", limit: ?Measurement = null };
+/// `load`: the simulated instance loading it most, or empty.
+pub const Found = struct { id: []const u8, measured: Measurement, at: [2]i64, layer: []const u8 = "", limit: ?Measurement = null, load: []const u8 = "" };
 
 /// What a run produced, in the caller's arena.
 pub const Ran = struct { rows: []const Row, findings: []const Found };
 
-/// Runs a fixture's ERC rows in memory. A stage that refuses the inputs
-/// is an error, its cause printed.
-pub fn run(arena: Allocator, f: *const Fixture) !Ran {
-    const grid = try geom.Grid.init(1000);
-    var strings: StrTable = .empty;
-    defer strings.deinit(gpa);
+/// One simulated terminal current (catalog ERC-E14): on terminal
+/// `terminal` of the device whose marker holds `at` (nm), `ua` µA drawn
+/// (avg, EM average, RMS and peak alike), named `instance` in reports.
+pub const SimLoad = struct { at: [2]i64, terminal: u8 = 0, ua: f64, instance: []const u8 = "x" };
+
+/// A fixture's design built as the engine builds it, in `gpa` memory its
+/// `deinit` frees (the intent and the compiled deck's slices in the
+/// caller's arena).
+pub const Built = struct {
+    strings: StrTable = .empty,
+    store: GeometryStore = .empty,
+    provenance: ingest.Provenance = .{},
+    /// Valid once `compiled`.
+    cd: check.deck.compile.CompiledDeck = undefined,
+    compiled: bool = false,
+    nets: topology.NetTable = .{},
+    devices: topology.DeviceTable = .{},
+    ports: topology.PortTable = .{},
+    intent: ?ingest.intent.DesignIntent = null,
+    grid: geom.Grid = undefined,
+
+    pub fn deinit(b: *Built) void {
+        b.ports.deinit(gpa);
+        b.devices.deinit(gpa);
+        b.nets.deinit(gpa);
+        if (b.compiled) b.cd.deinit(gpa);
+        b.provenance.deinit(gpa);
+        b.store.deinit(gpa);
+        b.strings.deinit(gpa);
+    }
+
+    pub fn design(b: *const Built) erc.Design {
+        return .{ .store = &b.store, .nets = &b.nets, .devices = &b.devices };
+    }
+
+    pub fn process(b: *const Built) erc.power_grid.Process {
+        return .{ .grid = b.grid, .stack = &b.cd.deck.stack, .connectivity = &b.cd.deck.connectivity };
+    }
+};
+
+/// Builds a fixture's design into `out` (`.{}` on entry; `deinit` it even
+/// on error). A stage that refuses the inputs is an error, its cause printed.
+pub fn build(arena: Allocator, f: *const Fixture, out: *Built) !void {
+    out.grid = try geom.Grid.init(1000);
+    const grid = out.grid;
+    const strings = &out.strings;
     var diag: check.deck.compile.Diag = .{};
-    const parsed = ingest.deck.parseDeck(arena, gpa, f.deck, grid, &strings, &diag.deck) catch |e| {
+    const parsed = ingest.deck.parseDeck(arena, gpa, f.deck, grid, strings, &diag.deck) catch |e| {
         for (diag.deck.diagnostics) |d| std.debug.print("{s}: deck: {s}\n", .{ f.name, d.message });
         if (diag.deck.malformed.len > 0) std.debug.print("{s}: deck: {s}\n", .{ f.name, diag.deck.malformed });
         return e;
@@ -188,63 +233,101 @@ pub fn run(arena: Allocator, f: *const Fixture) !Ran {
     var lb = testgen.shapes.LayoutBuilder.init(@intCast(parsed.layers.len()));
     defer lb.deinit(gpa);
     for (f.layout.shapes.items) |sh| {
-        const id = parsed.layers.id(&strings, sh.layer) orelse {
+        const id = parsed.layers.id(strings, sh.layer) orelse {
             std.debug.print("{s}: layout: {s} is not a deck layer\n", .{ f.name, sh.layer });
             return error.UnknownLayer;
         };
         _ = try lb.push(gpa, @backingInt(id), sh.xs, sh.ys);
     }
-    var store: GeometryStore = .empty;
-    defer store.deinit(gpa);
     var ids: testgen.shapes.Ids = .{};
     defer ids.deinit(gpa);
-    try lb.finish(gpa, &store, &ids);
-    var provenance: ingest.Provenance = .{};
-    defer provenance.deinit(gpa);
+    try lb.finish(gpa, &out.store, &ids);
     for (f.layout.labels.items) |t| {
-        const id = parsed.layers.id(&strings, t.layer) orelse {
+        const id = parsed.layers.id(strings, t.layer) orelse {
             std.debug.print("{s}: layout: {s} is not a deck layer\n", .{ f.name, t.layer });
             return error.UnknownLayer;
         };
-        try provenance.placeLabel(gpa, .{ .x = t.x, .y = t.y, .layer = id, .name = try strings.intern(gpa, t.text) });
+        try out.provenance.placeLabel(gpa, .{ .x = t.x, .y = t.y, .layer = id, .name = try strings.intern(gpa, t.text) });
     }
-    try ingest.layout.deriveLayersInto(gpa, &store, &parsed.layers, &provenance, &strings, &.{});
+    try ingest.layout.deriveLayersInto(gpa, &out.store, &parsed.layers, &out.provenance, strings, &.{});
     var unplaced: ingest.provenance.PlacedLabel = undefined;
-    ingest.resolveLabels(gpa, &provenance, &store, &parsed.connectivity, &unplaced) catch |e| {
+    ingest.resolveLabels(gpa, &out.provenance, &out.store, &parsed.connectivity, &unplaced) catch |e| {
         std.debug.print("{s}: labels: {t}\n", .{ f.name, e });
         return e;
     };
     var intent_diag: ingest.intent.Diagnostic = .{};
-    const intent: ?ingest.intent.DesignIntent = if (f.intent) |text| ingest.intent.parseIntent(arena, gpa, text, &strings, &intent_diag) catch |e| {
+    out.intent = if (f.intent) |text| ingest.intent.parseIntent(arena, gpa, text, strings, &intent_diag) catch |e| {
         std.debug.print("{s}: intent: {t} {s}\n", .{ f.name, e, intent_diag.text() });
         return e;
     } else null;
-    var cd = check.deck.compile.fromDeck(gpa, parsed, grid, &strings, &diag) catch |e| {
+    _ = try strings.intern(gpa, erc.check_.budget_unused_id);
+    out.cd = check.deck.compile.fromDeck(gpa, parsed, grid, strings, &diag) catch |e| {
         std.debug.print("{s}: compile: {t} rule {s} param {s} {s}\n", .{ f.name, e, if (@backingInt(diag.rule.rule) != std.math.maxInt(u32)) strings.resolve(diag.rule.rule) else "?", diag.rule.param, diag.rule.why });
         return e;
     };
-    defer cd.deinit(gpa);
+    out.compiled = true;
 
     var channel_diag: topology.channel.ChannelDiagnostic = undefined;
-    try topology.refuseConductingChannels(gpa, &store, &cd.deck.connectivity, &cd.deck.devices, &channel_diag);
-    var nets: topology.NetTable = .{};
-    defer nets.deinit(gpa);
-    try topology.extractNetsInto(gpa, &store, &cd.deck.connectivity, &nets);
-    var devices: topology.DeviceTable = .{};
-    defer devices.deinit(gpa);
-    try topology.recogniseInto(gpa, &store, &nets, &cd.deck.devices, &devices);
-    var ports: topology.PortTable = .{};
-    defer ports.deinit(gpa);
-    try topology.bindPortsInto(gpa, &nets, provenance.labels(), &ports);
-    if (intent != null and ports.shortedNet() != null) {
+    try topology.refuseConductingChannels(gpa, &out.store, &out.cd.deck.connectivity, &out.cd.deck.devices, &channel_diag);
+    try topology.extractNetsInto(gpa, &out.store, &out.cd.deck.connectivity, &out.nets);
+    try topology.recogniseInto(gpa, &out.store, &out.nets, &out.cd.deck.devices, &out.devices);
+    try topology.bindPortsInto(gpa, &out.nets, out.provenance.labels(), &out.ports);
+    if (out.intent != null and out.ports.shortedNet() != null) {
         std.debug.print("{s}: erc: one net carries two labels\n", .{f.name});
         return error.ShortedLabels;
     }
+}
 
+/// `loads` placed on `b`'s devices, ascending by net then device, in
+/// `arena`: what LVS hands ERC (gpurify/currents.zig), without the LVS.
+pub fn placed(arena: Allocator, b: *Built, loads: []const SimLoad) !erc.TerminalCurrents {
+    const Placed = struct { net: topology.NetId, device: topology.DeviceId, ua: f64, name: report.Load };
+    const rows = try arena.alloc(Placed, loads.len);
+    for (rows, loads) |*r, l| {
+        const device: u32 = for (0..b.devices.len()) |d| {
+            const box = b.store.polyBbox(b.devices.marker.items[d]);
+            if (box.xlo <= l.at[0] and l.at[0] <= box.xhi and box.ylo <= l.at[1] and l.at[1] <= box.yhi) break @intCast(d);
+        } else return error.NoDeviceThere;
+        r.* = .{
+            .net = b.devices.terminalsOf(@fromBackingInt(device)).nets[l.terminal],
+            .device = @fromBackingInt(device),
+            .ua = l.ua,
+            .name = .{ .instance = try b.strings.intern(gpa, l.instance), .terminal = try b.strings.intern(gpa, "t") },
+        };
+    }
+    std.mem.sort(Placed, rows, {}, struct {
+        fn less(_: void, x: Placed, y: Placed) bool {
+            if (x.net != y.net) return @backingInt(x.net) < @backingInt(y.net);
+            return @backingInt(x.device) < @backingInt(y.device);
+        }
+    }.less);
+    const net = try arena.alloc(topology.NetId, rows.len);
+    const device = try arena.alloc(topology.DeviceId, rows.len);
+    const ua = try arena.alloc(f64, rows.len);
+    const name = try arena.alloc(report.Load, rows.len);
+    for (rows, net, device, ua, name) |r, *n, *d, *u, *m| {
+        n.* = r.net;
+        d.* = r.device;
+        u.* = r.ua;
+        m.* = r.name;
+    }
+    return .{ .net = net, .device = device, .avg = ua, .em = ua, .rms = ua, .peak = ua, .name = name };
+}
+
+/// Runs a fixture's ERC rows in memory. A stage that refuses the inputs
+/// is an error, its cause printed.
+pub fn run(arena: Allocator, f: *const Fixture) !Ran {
+    var b: Built = .{};
+    defer b.deinit();
+    try build(arena, f, &b);
+    const store = &b.store;
+    const cd = &b.cd;
+    const strings = &b.strings;
+    const intent = b.intent;
     // The deck's `boundary`, as the engine reads it; else every drawn layer.
     var die = Bbox.empty;
-    if (cd.deck.boundary) |b| if (@backingInt(b) < store.layerCount()) {
-        for (store.layerBboxes(b)) |box| die = die.merge(box);
+    if (cd.deck.boundary) |bd| if (@backingInt(bd) < store.layerCount()) {
+        for (store.layerBboxes(bd)) |box| die = die.merge(box);
     };
     if (die.isEmpty()) {
         die = Bbox.empty;
@@ -255,18 +338,20 @@ pub fn run(arena: Allocator, f: *const Fixture) !Ran {
         }
     }
     const temperature = (if (intent) |i| i.temperature else null) orelse cd.deck.temperature;
+    const currents = if (f.currents.len > 0) try placed(arena, &b, f.currents) else null;
     var out: report.Violations = .{};
     defer out.deinit(gpa);
     var runs: std.ArrayList(report.RuleRun) = .empty;
     defer runs.deinit(gpa);
     try erc.check(gpa, &cd.erc, .{
-        .design = .{ .store = &store, .nets = &nets, .devices = &devices },
-        .ports = &ports,
-        .intent = if (intent) |*i| i else null,
-        .process = .{ .grid = grid, .stack = &cd.deck.stack, .connectivity = &cd.deck.connectivity },
+        .design = b.design(),
+        .ports = &b.ports,
+        .intent = if (b.intent) |*i| i else null,
+        .process = b.process(),
         .die = die,
         .temperature = temperature,
-        .strings = &strings,
+        .strings = strings,
+        .currents = if (currents) |*c| c else null,
     }, &out, &runs);
 
     const rows = try arena.alloc(Row, runs.items.len);
@@ -274,7 +359,8 @@ pub fn run(arena: Allocator, f: *const Fixture) !Ran {
     const found = try arena.alloc(Found, out.len());
     for (found, 0..) |*fd, i| {
         const v = out.get(@intCast(i));
-        fd.* = .{ .id = try arena.dupe(u8, strings.resolve(v.rule)), .measured = v.measured, .at = .{ v.at.x, v.at.y }, .layer = if (@backingInt(v.layer) < cd.deck.layers.len()) try arena.dupe(u8, strings.resolve(cd.deck.layers.name(v.layer))) else "", .limit = v.limit };
+        const load = if (out.loadOf(@intCast(i))) |l| try arena.dupe(u8, strings.resolve(l.instance)) else "";
+        fd.* = .{ .id = try arena.dupe(u8, strings.resolve(v.rule)), .measured = v.measured, .at = .{ v.at.x, v.at.y }, .layer = if (@backingInt(v.layer) < cd.deck.layers.len()) try arena.dupe(u8, strings.resolve(cd.deck.layers.name(v.layer))) else "", .limit = v.limit, .load = load };
     }
     return .{ .rows = rows, .findings = found };
 }

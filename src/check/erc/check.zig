@@ -1,7 +1,8 @@
 //! The ERC spine (ARCHITECTURE.md, Spines: `erc`): classifyNets → intent →
 //! netTypes → propagateVoltage (and per power state) → networks →
-//! powerGrid → solveIrDrop (and the AC grids) → rules. In: a `RuleSet` and
-//! the extracted design (`Inputs`). Out: violations and exactly one
+//! powerGrid → solveIrDrop (and the AC grids, and with simulated terminal
+//! currents the grids they load) → rules. In: a `RuleSet` and the
+//! extracted design (`Inputs`). Out: violations and exactly one
 //! `RuleRun` per rule row, appended. A network that could not be built (a
 //! conductor with no stated sheet resistance) or a failed solve refuses
 //! only the rows that read it; rows that need intent record themselves
@@ -12,7 +13,7 @@
 //! Contents:
 //! - `pub const Inputs = struct`
 //! - `pub fn check(gpa: Allocator, rs: *const RuleSet, in: Inputs, out: *Violations, runs: *std.ArrayList(RuleRun)) Allocator.Error!void`
-//! - `pub const boltzmann_ev_per_k: f64`
+//! - `pub const boltzmann_ev_per_k: f64`, `pub const budget_unused_id: []const u8`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -37,6 +38,8 @@ const PowerDiag = grid_.PowerDiag;
 const Power = grid_.Power;
 const Process = grid_.Process;
 const NetNetworks = grid_.NetNetworks;
+const TerminalCurrents = grid_.TerminalCurrents;
+const Loads = grid_.Loads;
 const power_extract = @import("power_extract.zig");
 const power_nets = @import("power_nets.zig");
 const power_solve = @import("power_solve.zig");
@@ -48,6 +51,10 @@ const run_ = @import("run.zig");
 
 /// Boltzmann's constant in eV/K: activation energies are stated in eV.
 pub const boltzmann_ev_per_k = @import("electrical_tables.zig").boltzmann_ev_per_k;
+
+/// The warning row of a net whose budget simulated currents replaced
+/// (catalog ERC-E14); a caller passing `Inputs.currents` interns it.
+pub const budget_unused_id = "erc.budget_unused";
 
 /// What one ERC run reads.
 pub const Inputs = struct {
@@ -68,6 +75,11 @@ pub const Inputs = struct {
     antenna_pins: []const MacroPinAntenna = &.{},
     /// Label text, which the intent's net types match by name.
     strings: *const StrTable,
+    /// A simulator's terminal currents on the layout (`--currents`, catalog
+    /// ERC-E14): they load `ir_drop`'s grid (`avg`), the DC EM rules'
+    /// (`em`), `em_rms`'s and `em_peak`'s, each net they reach in place of
+    /// its budget. Null: the budgets alone.
+    currents: ?*const TerminalCurrents = null,
 };
 
 /// Runs every row of `rs` over one extracted design, appending to `out`
@@ -127,26 +139,36 @@ pub fn check(gpa: Allocator, rs: *const RuleSet, in: Inputs, out: *Violations, r
     var solution: PowerSolution = .{};
     defer solution.deinit(gpa);
     // No declared supply: no grid, and the electrical rules skip.
-    const power = try buildAndSolve(gpa, d, &intent, in.process, &scratch, &grid, &solution);
+    const power = try buildAndSolve(gpa, d, &intent, .{}, in.process, &scratch, &grid, &solution);
 
     // The AC current rules' grids: the supply grid again, each net loaded
     // with its RMS, then its peak, current in place of its budget; built
-    // only for rows that read them, and only when some net states one.
+    // only for rows that read them, and only when some net states one or
+    // simulated currents load it. With those, the same for the DC grids of
+    // `ir_drop` (average) and the EM rules (EM average).
     var rms_intent = try intent.withBudget(gpa, .rms_current_ua);
     defer rms_intent.deinit(gpa);
     var peak_intent = try intent.withBudget(gpa, .peak_current_ua);
     defer peak_intent.deinit(gpa);
-    var ac_grid: [2]PowerGrid = .{ .{}, .{} };
-    var ac_solution: [2]PowerSolution = .{ .{}, .{} };
-    defer for (&ac_grid, &ac_solution) |*g, *s| {
+    var more_grid: [4]PowerGrid = @splat(.{});
+    var more_solution: [4]PowerSolution = @splat(.{});
+    defer for (&more_grid, &more_solution) |*g, *s| {
         g.deinit(gpa);
         s.deinit(gpa);
     };
-    const ac_intent = [2]*const IntentMap{ &rms_intent, &peak_intent };
-    const wanted = [2]bool{ rs.tables.em_rms.head.len() > 0, rs.tables.em_peak.head.len() > 0 };
-    var ac: [2]Power = .{ .no_supply, .no_supply };
-    for (0..2) |k| if (wanted[k] and ac_intent[k].limit_net.items.len > 0) {
-        ac[k] = try buildAndSolve(gpa, d, ac_intent[k], in.process, &scratch, &ac_grid[k], &ac_solution[k]);
+    const picks = [4]grid_.Pick{ .rms, .peak, .avg, .em };
+    const more_intent = [4]*const IntentMap{ &rms_intent, &peak_intent, &intent, &intent };
+    const simulated = in.currents != null;
+    const wanted = [4]bool{
+        rs.tables.em_rms.head.len() > 0 and (rms_intent.limit_net.items.len > 0 or simulated),
+        rs.tables.em_peak.head.len() > 0 and (peak_intent.limit_net.items.len > 0 or simulated),
+        simulated,
+        simulated,
+    };
+    var more: [4]Power = @splat(.no_supply);
+    for (0..4) |k| if (wanted[k]) {
+        const loads: Loads = if (in.currents) |c| c.loads(picks[k]) else .{};
+        more[k] = try buildAndSolve(gpa, d, more_intent[k], loads, in.process, &scratch, &more_grid[k], &more_solution[k]);
     };
 
     try run_.run(gpa, rs, .{
@@ -160,23 +182,48 @@ pub fn check(gpa: Allocator, rs: *const RuleSet, in: Inputs, out: *Violations, r
         .switched = switched.items,
         .networks = if (built) &networks else null,
         .power = power,
+        .ir = if (simulated) more[2] else null,
+        .em = if (simulated) more[3] else null,
         .rms_intent = &rms_intent,
-        .rms = ac[0],
+        .rms = more[0],
         .peak_intent = &peak_intent,
-        .peak = ac[1],
+        .peak = more[1],
         .die = in.die,
         .process = in.process,
         .temperature = in.temperature,
         .antenna_pins = in.antenna_pins,
     }, &scratch, out, runs);
+    if (in.currents) |c| try recordBudgetsUnused(gpa, d, c, &intent, in.strings, out, runs);
 }
 
 // ---- private ----
 
-/// One supply grid built from `intent` and solved: what its rules read.
-fn buildAndSolve(gpa: Allocator, d: Design, intent: *const IntentMap, process: Process, scratch: *Scratch, grid: *PowerGrid, solution: *PowerSolution) Allocator.Error!Power {
+/// One `erc.budget_unused` warning per net whose budget the simulated
+/// currents replaced, at the net's lowest polygon: measured the net's
+/// simulated draw (its average loads' sum, by magnitude), limit the budget
+/// no rule read. Its run examines every net the currents reach.
+fn recordBudgetsUnused(gpa: Allocator, d: Design, c: *const TerminalCurrents, intent: *const IntentMap, strings: *const StrTable, out: *Violations, runs: *std.ArrayList(RuleRun)) Allocator.Error!void {
+    const rule = report.ruleId(strings, budget_unused_id);
+    const r: @import("head.zig").Record = .{ .gpa = gpa, .out = out, .runs = runs };
+    const before = out.len();
+    var examined: u64 = 0;
+    var i: usize = 0;
+    while (i < c.net.len) {
+        const net = c.net[i];
+        var drawn: f64 = 0.0;
+        while (i < c.net.len and c.net[i] == net) : (i += 1) drawn += c.avg[i];
+        examined += 1;
+        const budget = intent.limitsOf(net).budget_current_ua orelse continue;
+        try r.netViolations(d, &.{@backingInt(net)}, rule, .warning, .current(.{ .raw = @abs(drawn) }), .current(.{ .raw = budget }));
+    }
+    try r.run(rule, before, .ran, examined);
+}
+
+/// One supply grid built from `intent` and `loads` and solved: what its
+/// rules read.
+fn buildAndSolve(gpa: Allocator, d: Design, intent: *const IntentMap, loads: Loads, process: Process, scratch: *Scratch, grid: *PowerGrid, solution: *PowerSolution) Allocator.Error!Power {
     var diag: PowerDiag = .{};
-    power_extract.extractInto(gpa, d.store, d.nets, d.devices, intent, process, grid, &diag) catch |e| return switch (e) {
+    power_extract.extractInto(gpa, d.store, d.nets, d.devices, intent, loads, process, grid, &diag) catch |e| return switch (e) {
         error.OutOfMemory => error.OutOfMemory,
         else => |pe| .{ .failed = pe },
     };

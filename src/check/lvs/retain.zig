@@ -100,6 +100,7 @@ pub fn retainDevices(gpa: Allocator, g: *Graph, kept: []const u32) Allocator.Err
     var out: Graph = .{};
     errdefer out.deinit(gpa);
     for (g.net_name.items, new_net) |name, slot| if (slot != no_net) try out.net_name.append(gpa, name);
+    for (g.net_origin.items, 0..) |origin, n| if (new_net[n] != no_net) try out.net_origin.append(gpa, origin);
     for (g.port_net.items) |n| try out.port_net.append(gpa, new_net[n]);
     try out.device_terminal_start.append(gpa, 0);
     try out.device_param_start.append(gpa, 0);
@@ -134,6 +135,8 @@ pub fn mustConnect(name: StrId, strings: *const StrTable, controls: *const LvsCo
 /// The open stays an open on the layout: `checkLayout` reports it.
 pub fn joinMustConnect(gpa: Allocator, g: *Graph, controls: *const LvsControls, strings: *const StrTable) Allocator.Error!void {
     if (controls.connect_implicit.len == 0 and controls.connect_explicit.len == 0) return;
+    // Joined before a comparison numbers origins, so none to keep here.
+    std.debug.assert(g.net_origin.items.len == 0);
     // Each must-connect net's key: `(0, group)` explicit, `(1, label)`
     // implicit; the first net of a key stays.
     var first: std.ArrayList(struct { key: [2]u32, row: u32 }) = .empty;

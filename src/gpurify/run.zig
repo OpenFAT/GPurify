@@ -138,7 +138,7 @@ pub fn runChecks(gpa: Allocator, run_arena: Allocator, loaded: *const Loaded, ex
     var resident: geom.ResidentStore = .empty;
     defer resident.deinit();
     const drc: StageStatus = if (options.checks.drc) try domain(gpa, checks_drc.runDrc, .{ run_arena, options.device, &resident, loaded, extracted, out }) else .not_selected;
-    const erc: StageStatus = if (options.checks.erc) try domain(gpa, checks_erc.runErc, .{ run_arena, loaded, extracted, out }) else .not_selected;
+    const erc: StageStatus = if (options.checks.erc) try domain(gpa, checks_erc.runErc, .{ run_arena, loaded, extracted, options.lvs, out }) else .not_selected;
     if (staged) try checks_after.holdBackLaterStages(run_arena, loaded, out);
     const lvs_status: StageStatus = if (options.checks.lvs) try domain(gpa, checks_lvs.runLvs, .{ run_arena, loaded, extracted, options.lvs, out }) else .not_selected;
     const pex: StageStatus = if (options.checks.pex) try domain(gpa, checks_pex.runPex, .{ run_arena, options.device, loaded, extracted, options.quasistatic_nets, out }) else .not_selected;

@@ -76,12 +76,12 @@ pub const Cli = struct {
 pub const Error = error{ Usage, OutOfMemory };
 
 /// The flags that take a value.
-const Flag = enum { deck, intent, reference, quasistatic, spec, @"output-dir", lef, format, backend, threads };
+const Flag = enum { deck, intent, currents, reference, quasistatic, spec, @"output-dir", lef, format, backend, threads };
 
 const Subcommand = enum { drc, erc, lvs, pex, all, lib, xor, fill, enhance, system };
 
 /// What a subcommand checks, and which of the optional inputs it reads.
-const Takes = struct { checks: gpurify.Checks, intent: bool = false, reference: bool = false, quasistatic: bool = false };
+const Takes = struct { checks: gpurify.Checks, intent: bool = false, currents: bool = false, reference: bool = false, quasistatic: bool = false };
 
 /// A flag the command line no longer takes, and what says it now.
 const moved = std.StaticStringMap([]const u8).initComptime(.{
@@ -102,6 +102,7 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
     var lef: std.ArrayList([]const u8) = .empty;
     var deck: ?[]const u8 = null;
     var intent: ?[]const u8 = null;
+    var currents: ?[]const u8 = null;
     var spec: ?[]const u8 = null;
     var output_dir: ?[]const u8 = null;
     var format: Format = .text;
@@ -121,6 +122,7 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
             switch (f) {
                 .deck => deck = value,
                 .intent => intent = value,
+                .currents => currents = value,
                 .reference => try reference.append(arena, value),
                 .quasistatic => try quasistatic.append(arena, value),
                 .spec => spec = value,
@@ -151,11 +153,12 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
         // `xor` reports as the DRC stage; `fill` and `enhance` report DRC
         // on the layout they write.
         .drc, .xor, .fill, .enhance => .{ .checks = .{ .drc = true } },
-        .erc => .{ .checks = .{ .erc = true }, .intent = true },
+        // ERC reads a reference only to place `--currents` through LVS.
+        .erc => .{ .checks = .{ .erc = true }, .intent = true, .currents = true, .reference = true },
         .lvs => .{ .checks = .{ .lvs = true }, .reference = true },
         .pex => .{ .checks = .{ .pex = true }, .quasistatic = true },
         // `all` keeps LVS selected without a reference, so it reports Skipped.
-        .all => .{ .checks = .all, .intent = true, .reference = true },
+        .all => .{ .checks = .all, .intent = true, .currents = true, .reference = true },
         // `lib` cross-checks a reference against its spec's pins; `system`'s
         // reference is the system netlist.
         .lib, .system => .{ .checks = .{}, .reference = true },
@@ -187,13 +190,16 @@ pub fn parse(arena: Allocator, argv: []const []const u8, message: *[]const u8) E
     if (is_lib and output_dir == null) return usage(arena, message, "lib requires --output-dir", .{});
     if (intent != null and !takes.intent) return usage(arena, message, "{s} takes no --intent", .{word});
     if (reference.items.len > 0 and !takes.reference) return usage(arena, message, "{s} takes no --reference", .{word});
+    if (currents != null and !takes.currents) return usage(arena, message, "{s} takes no --currents", .{word});
+    if (currents != null and reference.items.len == 0) return usage(arena, message, "--currents needs the reference netlist (--reference): LVS is what places each simulated instance on a layout device", .{});
+    if (sub == .erc and reference.items.len > 0 and currents == null) return usage(arena, message, "erc takes --reference only with --currents, which LVS places through it", .{});
     if (quasistatic.items.len > 0 and !takes.quasistatic) return usage(arena, message, "{s} takes no --quasistatic", .{word});
     if (sub == .lvs and reference.items.len == 0) return usage(arena, message, "lvs requires a reference netlist (--reference)", .{});
     // A check with no parasitic network would write an empty file that reads as clean.
     if ((format == .spef or format == .dspf) and !takes.checks.pex) return usage(arena, message, "--format {t} is not something this check produces", .{format});
 
     var cli: Cli = .{
-        .inputs = .{ .layout = "", .deck = "", .reference = reference.items, .intent = intent },
+        .inputs = .{ .layout = "", .deck = "", .reference = reference.items, .intent = intent, .currents = currents },
         .options = .{ .checks = takes.checks, .quasistatic_nets = quasistatic.items },
         .format = format,
         .command = .check,
@@ -392,7 +398,9 @@ test "every malformed command line is refused with its message" {
         .{ "drc t --deck d --check-determinism", "unknown option --check-determinism" },
         .{ "lib t --deck d --spec s --output-dir o --work w", "unknown option --work" },
         .{ "drc t --deck d --intent i", "drc takes no --intent" },
-        .{ "erc t --deck d --reference r", "erc takes no --reference" },
+        .{ "erc t --deck d --reference r", "erc takes --reference only with --currents, which LVS places through it" },
+        .{ "erc t --deck d --currents c", "--currents needs the reference netlist (--reference): LVS is what places each simulated instance on a layout device" },
+        .{ "lvs t --deck d --reference r --currents c", "lvs takes no --currents" },
         .{ "all t --deck d --quasistatic n", "all takes no --quasistatic" },
         .{ "pex t --deck d --quasistatic-inductance", "unknown option --quasistatic-inductance" },
         .{ "lib t --deck d --spec s --output-dir o --format json", "lib writes its files under --output-dir and takes no --format" },
@@ -406,6 +414,17 @@ test "every malformed command line is refused with its message" {
         std.debug.print("command line: {s}\n", .{c[0]});
         return err;
     };
+}
+
+test "erc reads a current file with its reference" {
+    // Oracle: construct-from-answer, against docs/usage.md's `--currents`
+    // command line (catalog ERC-E14): both paths read back as given.
+    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena.deinit();
+    const cli = try parseLine(arena.allocator(), "erc top.gds --deck d --reference top.spice --intent i.json --currents hot.emir.json");
+    try testing.expectEqualStrings("hot.emir.json", cli.inputs.currents.?);
+    try testing.expectEqualStrings("top.spice", cli.inputs.reference[0]);
+    try testing.expect(cli.options.checks.erc and !cli.options.checks.lvs);
 }
 
 test "an empty value is refused" {

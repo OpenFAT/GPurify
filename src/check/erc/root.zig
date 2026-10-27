@@ -14,7 +14,8 @@
 //! - `head`: `Design`, `RuleHead`, `Record`
 //! - `facts`: `RoleMask`, `NetFacts`, `IntentMap`, `StateMap`, `NetTypes`, `classifyNetsInto`, `resolveIntentInto`, `resolveStatesInto`, `resolveNetTypesInto`
 //! - `voltage`: `NetVoltage`, `isChannel`, `propagateInto`
-//! - `power_grid`: `PowerGrid`, `NetNetworks`, `PowerSolution`, `Solved`, `Power`, `PowerError`, `PowerDiag`, `Process`, `EdgeKind`
+//! - `power_grid`: `PowerGrid`, `NetNetworks`, `PowerSolution`, `Solved`, `Power`, `PowerError`, `PowerDiag`, `Process`, `EdgeKind`,
+//!   `TerminalCurrents`, `Loads`, `Pick`; `power_attribution`: `Probe`, `dominantLoad`
 //! - `power_chain`, `power_taps`, `power_links`: the chain model, taps, conductors and edges
 //! - `power_extract`: `extractInto`, `Stress`, `StressGrid`, `extractStressInto`, `discardedBudget`
 //! - `power_nets`: `extractNetsInto`, `extractPointsInto`
@@ -29,7 +30,7 @@
 //! - `run_` (run.zig): `RunInputs`, `run`; `check_` (check.zig): `Inputs`, `check`
 //! - the electrical and antenna families' parts: `electrical_current` (branch-current rows), `electrical_thermal`
 //!   (`em_thermal`), `antenna_stage` (stage nets, figures), `antenna_row` (the row model), `antenna_density` (windows)
-//! - aliases: `Kind`, `RuleSet`, `Design`, `Inputs`, `check`, `fromDeck`
+//! - aliases: `Kind`, `RuleSet`, `Design`, `Inputs`, `check`, `fromDeck`, `TerminalCurrents`
 //! - family parts: `domain_spacing` (voltage spacing, dielectric field, hv tag), `esd_path`, `esd_pins`, `esd_cross`, `esd_exposed`
 
 pub const kinds = @import("kinds.zig");
@@ -45,6 +46,7 @@ pub const power_nets = @import("power_nets.zig");
 pub const power_solve = @import("power_solve.zig");
 pub const power_transient = @import("power_transient.zig");
 pub const power_probe = @import("power_probe.zig");
+pub const power_attribution = @import("power_attribution.zig");
 pub const topology_tables = @import("topology_tables.zig");
 pub const supply_tables = @import("supply_tables.zig");
 pub const antenna_tables = @import("antenna_tables.zig");
@@ -91,6 +93,7 @@ pub const esd_cross = @import("esd_cross.zig");
 pub const esd_exposed = @import("esd_exposed.zig");
 
 pub const Kind = kinds.Kind;
+pub const TerminalCurrents = power_grid.TerminalCurrents;
 pub const RuleSet = rule_set.RuleSet;
 pub const Design = head.Design;
 pub const Inputs = check_.Inputs;
@@ -111,6 +114,7 @@ test {
     _ = power_solve;
     _ = power_transient;
     _ = power_probe;
+    _ = power_attribution;
     _ = rule_set;
     _ = build_domain;
     _ = compile;

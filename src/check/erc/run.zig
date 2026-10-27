@@ -64,8 +64,14 @@ pub const RunInputs = struct {
     switched: []const NetId = &.{},
     /// The per-net networks, or null when they could not be built.
     networks: ?*const NetNetworks,
-    /// The solved supply grid.
+    /// The solved supply grid, loaded with the intent's budgets.
     power: Power,
+    /// The grid `ir_drop` reads, and the grid the DC EM rules read
+    /// (`em_current_density`, `electromigration`, `em_thermal`): loaded with
+    /// simulated terminal currents, average and EM average, where the run has
+    /// them; null reads `power`.
+    ir: ?Power = null,
+    em: ?Power = null,
     /// The supply grid loaded with each net's RMS current and the intent
     /// whose budgets are those currents; `.no_supply` when no `em_rms` row
     /// or no net states one.
@@ -117,17 +123,19 @@ pub fn run(gpa: Allocator, rs: *const RuleSet, in: RunInputs, scratch: *Scratch,
     try antenna.checkDensityCmp(r, d, in.die, &t.density_cmp, scratch);
 
     try electrical.checkP2pResistance(r, d, in.networks, &t.p2p_resistance, scratch);
-    try electrical.checkIrDrop(r, in.power, in.intent, &t.ir_drop);
-    try electrical.checkEmCurrentDensity(r, in.power, in.intent, grid, &t.em_current_density);
+    const ir = in.ir orelse in.power;
+    const em = in.em orelse in.power;
+    try electrical.checkIrDrop(r, ir, in.intent, &t.ir_drop);
+    try electrical.checkEmCurrentDensity(r, em, in.intent, grid, &t.em_current_density);
     try electrical.checkEmAc(r, in.rms, in.rms_intent, grid, &t.em_rms);
     try electrical.checkEmAc(r, in.peak, in.peak_intent, grid, &t.em_peak);
     const usable = in.intent.isUsable();
     if (in.temperature) |temp| {
-        try electrical.checkElectromigration(r, in.power, in.intent, grid, temp, &t.electromigration);
+        try electrical.checkElectromigration(r, em, in.intent, grid, temp, &t.electromigration);
     } else try r.noTemperature(usable, &t.electromigration.head);
     try electrical.checkDynamicIrDrop(r, in.power, in.intent, &t.dynamic_ir_drop, scratch);
     if (in.temperature) |temp| {
-        try electrical.checkEmThermal(r, in.power, in.intent, grid, temp, &t.em_thermal, rs.height_nm);
+        try electrical.checkEmThermal(r, em, in.intent, grid, temp, &t.em_thermal, rs.height_nm);
         try reliability.checkReliability(r, in.power, in.intent, temp, &t.reliability);
     } else {
         try r.noTemperature(usable, &t.em_thermal.head);

@@ -9,7 +9,7 @@
 //! `report_unpaired`).
 //!
 //! Contents:
-//! - `pub fn interpretInto(gpa: Allocator, layout: *const Graph, reference: *const Graph, partition: *const Partition, tolerance: f64, names: ParamNames, controls: *const LvsControls, found: *std.ArrayList(Discrepancy)) Allocator.Error!Verdict`
+//! - `pub fn interpretInto(gpa: Allocator, layout: *const Graph, reference: *const Graph, partition: *const Partition, tolerance: f64, names: ParamNames, controls: *const LvsControls, found: *std.ArrayList(Discrepancy), mates: ?*std.ArrayList(u32)) Allocator.Error!Verdict`
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -59,7 +59,9 @@ const Scratch = struct {
 /// when there are none, `mismatch` otherwise. A paired device's parameters
 /// compared are those its reference card states (F68), each within the
 /// deck's bound for its model or the run's `tolerance` (a count exactly).
-pub fn interpretInto(gpa: Allocator, layout: *const Graph, reference: *const Graph, partition: *const Partition, tolerance: f64, names: ParamNames, controls: *const LvsControls, found: *std.ArrayList(Discrepancy)) Allocator.Error!Verdict {
+/// `mates`, when given, is refilled with each reference node's layout
+/// partner (devices, then nets), `maxInt(u32)` for none.
+pub fn interpretInto(gpa: Allocator, layout: *const Graph, reference: *const Graph, partition: *const Partition, tolerance: f64, names: ParamNames, controls: *const LvsControls, found: *std.ArrayList(Discrepancy), mates: ?*std.ArrayList(u32)) Allocator.Error!Verdict {
     const before = found.items.len;
     const ld = layout.deviceCount();
     const rd = reference.deviceCount();
@@ -82,6 +84,10 @@ pub fn interpretInto(gpa: Allocator, layout: *const Graph, reference: *const Gra
         assert(mate != no_net and (node < ld) == (mate < rd));
         layout_mate[node] = mate;
         ref_mate[mate] = @intCast(node);
+    }
+    if (mates) |m| {
+        m.clearRetainingCapacity();
+        try m.appendSlice(gpa, ref_mate);
     }
     var scratch: Scratch = .{};
     defer scratch.deinit(gpa);
