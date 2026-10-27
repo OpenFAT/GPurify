@@ -62,10 +62,18 @@ pub fn lex(arena: Allocator, source: []const u8, errors: *std.ArrayList(Diagnost
             '0'...'9' => {
                 at = numberEnd(source, at);
                 const unit_at = at;
-                // A unit is a word, `%`, or a per-unit such as `/K`.
+                // A unit is a word, `%`, or a per-unit such as `/K`; a `·`
+                // or `.` before a letter joins two (`mV·um`, `mV.um`).
                 if (at < source.len and (std.ascii.isAlphabetic(source[at]) or source[at] == '%' or source[at] == '/')) {
                     at += 1;
-                    while (at < source.len and (std.ascii.isAlphanumeric(source[at]) or source[at] == '/')) at += 1;
+                    while (at < source.len) {
+                        const join: usize = if (std.mem.startsWith(u8, source[at..], "·")) 2 else @intFromBool(source[at] == '.');
+                        if (std.ascii.isAlphanumeric(source[at]) or source[at] == '/') {
+                            at += 1;
+                        } else if (join > 0 and at + join < source.len and std.ascii.isAlphabetic(source[at + join])) {
+                            at += join;
+                        } else break;
+                    }
                 }
                 try out.append(arena, .{ .tok = .num, .start = @intCast(start), .end = @intCast(at), .unit_at = @intCast(unit_at) });
             },
@@ -150,4 +158,19 @@ test "a number keeps its unit and an exponent needs digits" {
     try std.testing.expectEqual(Tok.newline, toks[2].tok);
     try std.testing.expectEqual(Tok.punct, toks[3].tok);
     try std.testing.expectEqual(Tok.ident, toks[5].tok); // no newline inside `(`
+}
+
+test "a middle dot or a period before a letter joins a unit" {
+    // Oracle: docs/deck.md, Basics, by hand: `mV·um` and `%.um` are one unit
+    // each; `um` then `.` then `)` ends the unit at the period.
+    var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
+    defer arena.deinit();
+    var errors: std.ArrayList(Diagnostic) = .empty;
+    const src = "5mV·um 1.2%.um 3um.)";
+    const toks = try lex(arena.allocator(), src, &errors);
+    try std.testing.expectEqual(0, errors.items.len);
+    try std.testing.expectEqualStrings("mV·um", src[toks[0].unit_at..toks[0].end]);
+    try std.testing.expectEqualStrings("%.um", src[toks[1].unit_at..toks[1].end]);
+    try std.testing.expectEqualStrings("um", src[toks[2].unit_at..toks[2].end]);
+    try std.testing.expectEqualStrings(".", src[toks[3].start..toks[3].end]);
 }

@@ -1,7 +1,8 @@
 //! A deck built in code, or a compiled deck overridden: statements by name
 //! into a `DeckSource`, then lowered and compiled as deck text is. In:
 //! layers, derived layers, rules (`RuleRow`: a kind, layer expressions and
-//! named parameters), custom rules, and the overrides `add`, `replace`, `remove`.
+//! named parameters), custom rules, the overrides `add`, `replace`, `remove`,
+//! and `matching` statements, each added or replacing the model's own.
 //! Out: a `CompiledDeck` whose provenance says where each rule came from.
 //! What the builder refuses (an id used twice, an override of something
 //! absent, a length off the grid) is gathered, at most 50, and reported by
@@ -22,6 +23,7 @@
 //! - `rule(b, id: []const u8, row: RuleRow) Allocator.Error!void`, `add(b, id, row) Allocator.Error!void`,
 //!   `replace(b, id, row) Allocator.Error!void`, `remove(b, id: []const u8) Allocator.Error!void`
 //! - `custom(b, id: []const u8, inputs: []const []const u8, severity: Severity, check: CustomCheck) Allocator.Error!void`
+//! - `matching(b, row: MatchingSource) Allocator.Error!void`
 //! - `finish(b: *DeckBuilder, gpa: Allocator, diag: *Diag) Error!CompiledDeck`
 
 const std = @import("std");
@@ -35,6 +37,7 @@ const ingest_deck = @import("ingest").deck;
 const DeckSource = ingest_deck.DeckSource;
 const RuleSource = ingest_deck.RuleSource;
 const NamedSource = ingest_deck.NamedSource;
+const MatchingSource = ingest_deck.MatchingSource;
 const Severity = @import("../report.zig").Severity;
 const compile = @import("compile.zig");
 const CompiledDeck = compile.CompiledDeck;
@@ -227,6 +230,18 @@ pub const DeckBuilder = struct {
         if (!try b.checkId(id)) return;
         if (inputs.len == 0) return b.refuse("{s}: a custom rule reads at least one layer", .{id});
         try b.customs.append(b.arena, .{ .id = id, .inputs = try b.arena.dupe([]const u8, inputs), .severity = severity, .check = check, .origin = if (b.based) .added else .base });
+    }
+
+    /// `matching "model" ..`: the statement for `row.model`, replacing the
+    /// deck's own when it has one. A model no `device` of a stated key's
+    /// kind declares, or a value that is not positive, is refused when the
+    /// deck is finished, as text is.
+    pub fn matching(b: *DeckBuilder, row: MatchingSource) Allocator.Error!void {
+        for (b.doc.matching.items) |*own| if (std.mem.eql(u8, own.model, row.model)) {
+            own.* = row;
+            return;
+        };
+        try b.doc.matching.append(b.arena, row);
     }
 
     /// Lowers and compiles the deck, as `compile` does deck text, recording

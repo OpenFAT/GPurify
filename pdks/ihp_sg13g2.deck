@@ -7,7 +7,8 @@
 #  [PS]  SG13G2 Process Specification Rev. 1.2 (2023-12-20),
 #        ihp-sg13g2/libs.doc/doc/SG13G2_os_process_spec.pdf, last changed in commit 5de3340987
 #        (supply voltages §1, sheet and via resistances §2.13/2.14, current limits
-#        §2.15, layer thicknesses §2.16, measured capacitance §2.17, εr Fig. 1.1.1).
+#        §2.15, layer thicknesses §2.16, measured capacitance §2.17, εr Fig. 1.1.1,
+#        resistor matching coefficients §2.8/2.9 and their definition, condition A.ac).
 #  [DRC] Open KLayout deck, ihp-sg13g2/libs.tech/klayout/tech/drc, last changed in commit 3e4a6c5021;
 #        AFil.d, AFil.j and MIM.h follow it at 5e6d592e4002 and its unit cells
 #        (testing/testcases/unit; ledger docs/xcheck/ihp_sg13g2.tsv)
@@ -17,6 +18,13 @@
 #        (device recognition layers and model names).
 #  [ITF] ihp-sg13g2/libs.tech/parasitics/itf/sg13g2_typ.itf, last changed in commit 26a376352f
 #        (Activ sheet resistance, field-oxide εr).
+#  [MM]  ngspice MOS mismatch models, ihp-sg13g2/libs.tech/ngspice/models, read at 5e6d592e4002:
+#        the parameters of sg13g2_moslv_mismatch.lib and sg13g2_moshv_mismatch.lib (last
+#        changed in commit 881e55a269), applied per device in sg13g2_moslv_mod_mismatch.lib
+#        and sg13g2_moshv_mod_mismatch.lib (last changed in commit c51005cb4f) as
+#        delvto = agauss(0, delvto_mm/sqrt(m*l*w*1e12)) and factuo = agauss(1,
+#        factuo_mm/sqrt(m*l*w*1e12)): one device's σ of its threshold voltage (V·µm) and of
+#        its mobility factor, so its β (a fraction times µm), over its drawn area in µm².
 #
 # Grid: [LR] §3.1, "All features are on a drawing grid of 5 nm".
 
@@ -764,6 +772,20 @@ device capacitor mim model "cap_cmim" terminals [topmetal1, metal5]
 # ESD diodes as the LVS extracts them (bjt3: base, emitter, collector).
 device bjt esd_vdd model "diodevdd_2kv" terminals [ntap, psd_c, ptap]
 device bjt esd_vss model "diodevss_2kv" terminals [ptap, nsd_c, ntap]
+
+# ======================= Matching ([PS], [MM]) =======================
+# [PS] fits resistor pairs to s(dR/R) = k*A^-0.5 (measurement condition A.ac)
+# and states k in nm, a fraction times a length: 15 nm is 1.5 %·um.
+# [MM] states one device's σ, so its lines are `single`. Not stated: rsil,
+# whose two [PS] §2.7 coefficients (MATRSIL1 6 nm, MATRSIL2 1.4 nm) share one
+# definition and neither is named the area term; any MOS gradient; and k_A,
+# since the deck declares no HBT.
+matching "rppd" pair ar 1.5%·um                              # [PS] §2.8 MATRPPD 15 nm
+matching "rhigh" pair ar 4.8%·um                             # [PS] §2.9 MATRHIGH 48 nm
+matching "sg13_lv_nmos" single avt 3.9mV·um abeta 0.5%·um    # [MM] sg13g2_lv_nmos_delvto_mm 0.0039, sg13g2_lv_nmos_factuo_mm 0.005
+matching "sg13_lv_pmos" single avt 2.2mV·um abeta 0.33%·um   # [MM] sg13g2_lv_pmos_delvto_mm 0.0022, sg13g2_lv_pmos_factuo_mm 0.0033
+matching "sg13_hv_nmos" single avt 7mV·um abeta 0.5%·um      # [MM] sg13g2_hv_nmos_delvto_mm 0.007, sg13g2_hv_nmos_factuo_mm 0.005
+matching "sg13_hv_pmos" single avt 4.5mV·um abeta 0.4%·um    # [MM] sg13g2_hv_pmos_delvto_mm 0.0045, sg13g2_hv_pmos_factuo_mm 0.004
 
 # ======================= Parasitic stack =======================
 # Heights above the silicon under the 400 nm STI, from [PS] §2.16: STI 400,

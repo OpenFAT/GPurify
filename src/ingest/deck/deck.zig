@@ -7,9 +7,9 @@
 //! - `parseDeck`, `parseSource` (parse.zig); `lower` (lower.zig); `print`, `PrintError` (print.zig)
 //! - `fromTables`, `fromControls` (decompile.zig)
 //! - `Error`, `Diag`, `Diagnostic`, `render`, `locate` (diagnostic.zig)
-//! - tables.zig: `Deck`, `Reports`, `Edits`, `FillSpec`, `WidenSpec`, `PexModels`, `FillTreatment`, `SubstrateModel`, `TsvModel`, `DeviceParasitics`, `TemperatureLaw`, `Stages`, `ProcessCorner`, `CornerValues`, `Extraction`, `ExtractionKind`, `RuleSpec`, `ParamValue`, `NamedValue`, `RuleTable`, `Connectivity`, `Waiver`, `DeviceRecognition`, `DeviceValue`, `DeviceKind`, `LvsControls`, `UnusedFilter`, `ModelParam`, `Permute`, `SameNets`, `LdeWell`, `LvsLde`, `LvsCount`, `LvsRange`, `LvsLimit`, `LvsTolerance`, `ProcessStack`, `absoluteUnit`, `pinNames`
+//! - tables.zig: `Deck`, `Reports`, `Edits`, `FillSpec`, `WidenSpec`, `PexModels`, `FillTreatment`, `SubstrateModel`, `TsvModel`, `DeviceParasitics`, `TemperatureLaw`, `Stages`, `ProcessCorner`, `CornerValues`, `Extraction`, `ExtractionKind`, `RuleSpec`, `ParamValue`, `NamedValue`, `RuleTable`, `Connectivity`, `Waiver`, `DeviceRecognition`, `DeviceValue`, `DeviceKind`, `Matching`, `MatchingBasis`, `LvsControls`, `UnusedFilter`, `ModelParam`, `Permute`, `SameNets`, `LdeWell`, `LvsLde`, `LvsCount`, `LvsRange`, `LvsLimit`, `LvsTolerance`, `ProcessStack`, `absoluteUnit`, `pinNames`
 //! - layers.zig: `LayerTable`, `DerivedOp`, `Range`, `max_cell_selections`
-//! - source.zig: `DeckSource`, `DerivedSource`, `RuleSource`, `ParamSource`, `NamedSource`, `ConnectivitySource`, `DeviceSource`, `StackSource`, `CornerSource`, `LvsSrc`
+//! - source.zig: `DeckSource`, `DerivedSource`, `RuleSource`, `ParamSource`, `NamedSource`, `ConnectivitySource`, `DeviceSource`, `MatchingSource`, `StackSource`, `CornerSource`, `LvsSrc`
 
 const tables = @import("tables.zig");
 const layers = @import("layers.zig");
@@ -55,6 +55,8 @@ pub const Waiver = tables.Waiver;
 pub const DeviceRecognition = tables.DeviceRecognition;
 pub const DeviceValue = tables.DeviceValue;
 pub const DeviceKind = tables.DeviceKind;
+pub const Matching = tables.Matching;
+pub const MatchingBasis = tables.MatchingBasis;
 pub const LvsControls = tables.LvsControls;
 pub const UnusedFilter = tables.UnusedFilter;
 pub const ModelParam = tables.ModelParam;
@@ -82,6 +84,7 @@ pub const ParamSource = source.ParamSource;
 pub const NamedSource = source.NamedSource;
 pub const ConnectivitySource = source.ConnectivitySource;
 pub const DeviceSource = source.DeviceSource;
+pub const MatchingSource = source.MatchingSource;
 pub const StackSource = source.StackSource;
 pub const CornerSource = source.CornerSource;
 pub const LvsSrc = source.LvsSrc;

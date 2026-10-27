@@ -109,6 +109,7 @@ fn statement(p: *Parser) PErr!void {
     if (eql(w, "if")) return ifBlock(p);
     if (eql(w, "connect")) return statements_mod.connect(p);
     if (eql(w, "device")) return statements_mod.device(p);
+    if (eql(w, "matching")) return statements_mod.matching(p);
     if (eql(w, "pex")) return pex.pex(p);
     if (eql(w, "pex_fill")) return pex.pexFill(p);
     if (eql(w, "pex_device")) return pex.pexDevice(p);
@@ -126,7 +127,7 @@ fn statement(p: *Parser) PErr!void {
     if (eql(w, "fill")) return statements_mod.fill(p);
     if (eql(w, "widen")) return statements_mod.widen(p);
     if (eql(w, "report")) return statements_mod.report(p);
-    return p.fail(span, "unknown statement `{s}`; expected grid, let, layer, ignore, rule, for, if, connect, device, pex, pex_fill, pex_device, pex_tsv, pex_substrate, temperature, lvs, extraction, corner, stage, waive, boundary, netlist_scale, fill, widen or report", .{w});
+    return p.fail(span, "unknown statement `{s}`; expected grid, let, layer, ignore, rule, for, if, connect, device, matching, pex, pex_fill, pex_device, pex_tsv, pex_substrate, temperature, lvs, extraction, corner, stage, waive, boundary, netlist_scale, fill, widen or report", .{w});
 }
 
 fn eql(a: []const u8, b: []const u8) bool {

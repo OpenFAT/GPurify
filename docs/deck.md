@@ -1,7 +1,8 @@
 # Writing a deck
 
 A deck describes your process: its layers, how they connect, what a device
-looks like, the metal stack for parasitics, and the rules a layout must meet.
+looks like and how closely two match, the metal stack for parasitics, and the
+rules a layout must meet.
 It is plain text. Four examples ship in `pdks/`.
 
 The format is strict on purpose. Every parameter of every rule must be
@@ -89,6 +90,12 @@ Numbers carry units. `140nm`, `0.14um` and `0.00014mm` are the same length.
 | electric field | `V/um`, `V/nm`, `MV/cm` |
 | fraction | `%`, or a bare number from 0 to 1 |
 | angle | `deg` |
+| threshold-voltage mismatch | `mV·um` |
+| mismatch of a ratio | `%·um` |
+| threshold-voltage gradient | `uV/um` |
+
+The three mismatch units belong to `matching` (see [Matching](#matching)).
+`·` may be written `.`: `mV.um`, `%.um`.
 
 A count (number of cuts, colours, drivers) and a plain ratio or exponent are
 bare numbers.
@@ -823,6 +830,68 @@ condition at any time. A gate no supply can reach, such as an input to the
 cell, may be anything, so its transistor conducts. A transistor gives one of
 the two, or neither (it always conducts). When on, a channel passes its full
 range: there is no threshold drop.
+
+## Matching
+
+```
+# Mismatch coefficients per device model (illustrative values; each shipped line cites its source)
+matching "nfet" pair avt 5mV·um abeta 1%·um svt 0.3uV/um
+matching "pfet" single avt 3.9mV·um abeta 0.5%·um
+matching "rpoly" pair ar 1.5%·um
+matching "pnp" pair ka 0.4%·um
+```
+
+A `matching` statement gives a device model's mismatch coefficients, those
+of Pelgrom's law (M. J. M. Pelgrom, A. C. J. Duinmaijer and A. P. G.
+Welbers, "Matching properties of MOS transistors", IEEE JSSC 24(5), 1989):
+two identical devices of area W·L, D apart, differ in threshold voltage by
+`σ²(ΔV_T) = avt²/(W·L) + svt²·D²`. W, L and the emitter area A_E are drawn.
+
+| Key | Device | Unit | Means |
+|---|---|---|---|
+| `avt` | `mos` | `mV·um` | σ(ΔV_T) = avt / √(W·L) |
+| `abeta` | `mos` | `%·um` | σ(Δβ/β) = abeta / √(W·L), β the current factor |
+| `svt` | `mos` | `uV/um` | σ(ΔV_T) = svt · D, the gradient term |
+| `ar` | `resistor` | `%·um` | σ(ΔR/R) = ar / √(W·L), of the body |
+| `ka` | `bjt` | `%·um` | σ(ΔI_S/I_S) = ka / √A_E, the collector currents' at one V_BE |
+
+The word after the model says what the area coefficients (every key but
+`svt`) are of. `pair`: the difference between two devices, as Pelgrom and a
+foundry's matching measurements state them. `single`: one device, as a SPICE
+model's mismatch parameter is drawn, once per instance, so a pair differs by
+√2 times as much. The word is required: a source states one or the other, and
+writing which keeps the deck's number the source's own, never one multiplied
+by hand.
+
+A statement gives at least one key, each once, each positive. The model is
+in quotes and declared by a `device` statement of each key's kind. A model
+has one `matching` statement: a second is an error at its line that names
+the first one's. A model with no statement, or a key its statement leaves
+out, has no coefficient: it is unknown, never 0.
+
+Values are kept in SI: `avt` in V·m (5 mV·µm is 5e-9 V·m), `abeta`, `ar`
+and `ka` in m, a fraction times a length (1.5 %·µm is 1.5e-8 m), `svt` in
+V/m (0.3 µV/µm is 0.3 V/m). In code, `check.deck.query.matching(cd, model)`
+gives a model's `Matching`, each coefficient in SI and for a pair (a
+`single` statement's area coefficients times √2), or null with no
+statement; `DeckBuilder.matching` adds a statement, or replaces the model's
+own.
+
+The shipped decks state what a public source gives, each line naming it:
+
+| Deck | Statements | Source |
+|---|---|---|
+| `ihp_sg13g2` | `rppd`, `rhigh`: `ar`, `pair` | the process specification's matching coefficients, fitted to resistor pairs |
+| `ihp_sg13g2` | `sg13_lv_nmos`, `sg13_lv_pmos`, `sg13_hv_nmos`, `sg13_hv_pmos`: `avt`, `abeta`, `single` | the ngspice mismatch models' `delvto_mm` and `factuo_mm` |
+| `sky130` | `sky130_fd_pr__res_high_po`, `sky130_fd_pr__res_xhigh_po`: `ar`, `single` | the resistor models' `body_pelgrom` |
+
+A kit with no public value carries no line. No shipped deck states `svt` or
+`ka`, sky130's transistors (its models vary several parameters per bin, so
+no one A_VT is stated), IHP's `rsil` (two coefficients, neither named the
+area term), or anything for `gf180mcu` (its documentation plots matching
+without stating a slope, and its model states the transistors' coefficient
+over an effective area) or `generic_finfet`. Each deck's comments beside
+its statements say what was read.
 
 ## LVS controls
 

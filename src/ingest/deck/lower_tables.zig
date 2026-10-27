@@ -1,9 +1,10 @@
 //! The lowering's second half: once layers, rules, connectivity and devices
 //! are resolved, the parasitic stack and its corners, the stages, waivers,
-//! boundary, `lvs` controls and the cold models → the finished `Deck`.
-//! Ported from crates/ingest/src/deck/source.rs (`build_stack`,
-//! `temperature_factor`, `build_corners`, `build_stages`, `check_pex_models`,
-//! `check_edits`, the tail of `lower`) and mod.rs (`build_lvs`).
+//! boundary, `lvs` controls, the cold models and the `matching` statements
+//! → the finished `Deck`. Ported from crates/ingest/src/deck/source.rs
+//! (`build_stack`, `temperature_factor`, `build_corners`, `build_stages`,
+//! `check_pex_models`, `check_edits`, the tail of `lower`) and mod.rs
+//! (`build_lvs`); `buildMatching` is new (UW-ASIC/GPurify#84).
 //!
 //! Contents:
 //! - `pub fn finish(c: Ctx, doc: *const DeckSource, layers: LayerTable, rules: tables.RuleTable, connectivity: tables.Connectivity, devices: tables.DeviceRecognition) Error!Deck`
@@ -52,11 +53,13 @@ pub fn finish(c: Ctx, doc: *const DeckSource, layers: LayerTable, rules: tables.
         if (!mos) return c.malformed("pex_device \"{s}\": no `device mos` statement has that model", .{device.model});
         for (doc.pex_models.device.items[0..at]) |d| if (std.mem.eql(u8, d.model, device.model)) return c.malformed("pex_device \"{s}\": stated twice", .{device.model});
     }
+    const matching = try buildMatching(c, doc);
     return .{
         .layers = layers,
         .rules = rules,
         .connectivity = connectivity,
         .devices = devices,
+        .matching = matching,
         .stack = stack,
         .temperature = if (doc.temperature) |t| .{ .raw = t.operating_k } else null,
         .temperature_law = temperature_law,
@@ -127,6 +130,29 @@ fn checkEdits(c: Ctx, edits: *const tables.Edits, layers: *const LayerTable) Err
 fn drawnLayer(c: Ctx, layers: *const LayerTable, name: []const u8, what: []const u8) Error!void {
     const id = try c.layerOf(layers, name, what);
     if (layers.isDerived(id)) return c.malformed("{s} {s}: a derived layer, which a layout cannot draw on", .{ what, name });
+}
+
+/// Each `matching` statement, its model interned: one per model, stating
+/// something, every value positive and finite, and the model declared by a
+/// `device` statement of each stated key's kind (a misspelt model would
+/// leave its coefficients unknown, silently).
+fn buildMatching(c: Ctx, doc: *const DeckSource) Error![]const tables.MatchingRow {
+    const out = try c.arena.alloc(tables.MatchingRow, doc.matching.items.len);
+    for (doc.matching.items, out, 0..) |row, *o, at| {
+        for (doc.matching.items[0..at]) |e| if (std.mem.eql(u8, e.model, row.model)) return c.malformed("matching \"{s}\": stated twice", .{row.model});
+        var stated: usize = 0;
+        inline for (tables.matching_keys) |k| if (@field(row.stated, k.name)) |v| {
+            stated += 1;
+            if (!(v > 0.0 and std.math.isFinite(v))) return c.malformed("matching \"{s}\": {s} must be positive", .{ row.model, k.name });
+            const declared = for (doc.devices.items) |d| {
+                if (d.kind == k.kind and std.mem.eql(u8, d.model, row.model)) break true;
+            } else false;
+            if (!declared) return c.malformed("matching \"{s}\": {s} needs a `device {s}` statement with that model", .{ row.model, k.name, @tagName(k.kind) });
+        };
+        if (stated == 0) return c.malformed("matching \"{s}\": states nothing", .{row.model});
+        o.* = .{ .model = try c.strings.intern(c.gpa, row.model), .basis = row.basis, .stated = row.stated };
+    }
+    return out;
 }
 
 /// The stages, each rule id resolved to its stage.

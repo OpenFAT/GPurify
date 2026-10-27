@@ -52,6 +52,14 @@ pub const Dim = union(enum) {
     capacitance,
     /// nH (an inductor's inductance, an LVS tolerance on one).
     inductance,
+    /// V·m (SI), written `mV·um`: a threshold-voltage mismatch area
+    /// coefficient (`matching` only).
+    voltage_length,
+    /// m (SI, a fraction times a length), written `%·um`: a mismatch area
+    /// coefficient of a ratio (`matching` only).
+    fraction_length,
+    /// V/m (SI), written `uV/um`: a threshold-voltage gradient (`matching` only).
+    voltage_per_length,
     /// 0..=1, written bare or as `%`.
     fraction,
     /// deg, a whole number.
@@ -202,6 +210,11 @@ pub const units: []const Unit = &.{
     .{ .name = "nH", .dim = .inductance, .shift = 0 },
     .{ .name = "uH", .dim = .inductance, .shift = 3 },
     .{ .name = "%", .dim = .fraction, .shift = -2 },
+    .{ .name = "mV·um", .dim = .voltage_length, .shift = -9 },
+    .{ .name = "mV.um", .dim = .voltage_length, .shift = -9 },
+    .{ .name = "%·um", .dim = .fraction_length, .shift = -8 },
+    .{ .name = "%.um", .dim = .fraction_length, .shift = -8 },
+    .{ .name = "uV/um", .dim = .voltage_per_length, .shift = 0 },
     .{ .name = "deg", .dim = .angle, .shift = 0 },
 };
 
@@ -719,6 +732,9 @@ pub fn dimName(dim: Dim) []const u8 {
         .per_kelvin2 => "a coefficient per kelvin squared",
         .capacitance => "a capacitance",
         .inductance => "an inductance",
+        .voltage_length => "a voltage times a length",
+        .fraction_length => "a fraction times a length",
+        .voltage_per_length => "a voltage per length",
         .fraction => "a fraction",
         .angle => "an angle",
         .scalar => "a number",

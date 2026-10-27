@@ -47,6 +47,7 @@ pub fn sourceOf(arena: Allocator, cd: *const CompiledDeck, strings: *const StrTa
     const temperature: ?f64 = if (d.temperature) |t| t.raw else null;
     var doc = try ingest_deck.fromTables(arena, &d.layers, d.connectivity, d.devices, d.stack, temperature, strings);
     doc.lvs = try ingest_deck.fromControls(arena, d.lvs, doc.devices.items, strings);
+    for (d.matching) |row| try doc.matching.append(arena, .{ .model = strings.resolve(row.model), .basis = row.basis, .stated = row.stated });
     for (d.corners) |corner| for (corner.stated) |line| {
         try doc.corners.append(arena, .{ .corner = strings.resolve(corner.name), .layer = layerName(cd, line.layer, strings), .values = line.values });
     };

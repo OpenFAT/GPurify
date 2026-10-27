@@ -2,8 +2,9 @@
 //! statement order). Translated mechanically from
 //! crates/check/tests/deck/twins/ihp_sg13g2.rs, itself translated from the deck
 //! text by a reader independent of the parser; its `for` loops unrolled
-//! and its `let` bindings substituted. tests/check/deck/twins.zig holds
-//! it to the parsed text.
+//! and its `let` bindings substituted; its `matching` statements, which
+//! the Rust twin has none of, read off the deck text by hand.
+//! tests/check/deck/twins.zig holds it to the parsed text.
 //!
 //! Contents:
 //! - `pub fn build(b: *DeckBuilder) Allocator.Error!void`
@@ -229,6 +230,13 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.doc.devices.append(a, .{ .kind = .capacitor, .marker = "mim", .model = "cap_cmim", .terminals = &.{ "topmetal1", "metal5" } });
     try b.doc.devices.append(a, .{ .kind = .bjt, .marker = "esd_vdd", .model = "diodevdd_2kv", .terminals = &.{ "ntap", "psd_c", "ptap" } });
     try b.doc.devices.append(a, .{ .kind = .bjt, .marker = "esd_vss", .model = "diodevss_2kv", .terminals = &.{ "ptap", "nsd_c", "ntap" } });
+    // `matching`, read off the deck text by hand: 1 %·um is 1e-8 m, 1 mV·um 1e-9 V·m.
+    try b.matching(.{ .model = "rppd", .basis = .pair, .stated = .{ .ar = 1.5e-8 } });
+    try b.matching(.{ .model = "rhigh", .basis = .pair, .stated = .{ .ar = 4.8e-8 } });
+    try b.matching(.{ .model = "sg13_lv_nmos", .basis = .single, .stated = .{ .avt = 3.9e-9, .abeta = 5e-9 } });
+    try b.matching(.{ .model = "sg13_lv_pmos", .basis = .single, .stated = .{ .avt = 2.2e-9, .abeta = 3.3e-9 } });
+    try b.matching(.{ .model = "sg13_hv_nmos", .basis = .single, .stated = .{ .avt = 7e-9, .abeta = 5e-9 } });
+    try b.matching(.{ .model = "sg13_hv_pmos", .basis = .single, .stated = .{ .avt = 4.5e-9, .abeta = 4e-9 } });
     try b.doc.pex.append(a, .{ .layer = "nsd_c", .row = .{ .thickness_nm = 400.0, .height_nm = 0.0, .sheet_res_ohm_sq = 1.0, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 3.95 } });
     try b.doc.pex.append(a, .{ .layer = "psd_c", .row = .{ .thickness_nm = 400.0, .height_nm = 0.0, .sheet_res_ohm_sq = 1.0, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 3.95 } });
     try b.doc.pex.append(a, .{ .layer = "ntap", .row = .{ .thickness_nm = 400.0, .height_nm = 0.0, .sheet_res_ohm_sq = 1.0, .area_cap_af_um2 = 0.0, .fringe_cap_af_um = 0.0, .dielectric_k = 3.95 } });

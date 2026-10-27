@@ -55,8 +55,9 @@ pub const Ctx = struct {
 /// derived layers follow in declaration order. `Malformed` for the first
 /// contradiction: a name declared twice or used before it is declared, an
 /// edge layer where polygons are wanted or the reverse, a text layer that is
-/// not drawn, a rule naming a model no device declares, net spacing on a
-/// non-conductor, a global layer also a conductor, a bad label row. The
+/// not drawn, a rule or a `matching` statement naming a model no device (of
+/// the coefficient's kind) declares, net spacing on a non-conductor, a
+/// global layer also a conductor, a bad label row. The
 /// parser refuses these with a location first; a source built in code meets
 /// them here.
 pub fn lower(arena: Allocator, gpa: Allocator, doc: *const DeckSource, strings: *StrTable, diag: *Diag) Error!Deck {

@@ -8,7 +8,7 @@
 //! Contents:
 //! - `pub const DeckSource`, `DrawnLayer`, `PexRow`, `Temperature`, `StageSource`, `WaiverSource`
 //! - `pub const CornerSource`, `DerivedSource`, `RuleSource`, `NamedSource`, `ParamSource`
-//! - `pub const ConnectivitySource`, `ViaSource`, `LabelSource`, `DeviceSource`, `StackSource`
+//! - `pub const ConnectivitySource`, `ViaSource`, `LabelSource`, `DeviceSource`, `MatchingSource`, `StackSource`
 //! - `pub const LvsSrc`, `ToleranceSrc`, `RangeSrc`, `CountSrc`, `LdeSrc`, `LdeWellSrc`, `ModelPin`, `NamePair`,
 //!   `LvsSrc.defaultTolerance(s: *LvsSrc, fraction: f64) ?[]const u8`,
 //!   `LvsSrc.addBlackbox(s: *LvsSrc, arena: Allocator, pattern: []const u8) Allocator.Error!?[]const u8`,
@@ -41,6 +41,8 @@ pub const DeckSource = struct {
     rules: std.ArrayList(RuleSource) = .empty,
     connectivity: ConnectivitySource = .{},
     devices: std.ArrayList(DeviceSource) = .empty,
+    /// The `matching` statements, one per model.
+    matching: std.ArrayList(MatchingSource) = .empty,
     /// The `pex` rows, each a layer name and its values.
     pex: std.ArrayList(PexRow) = .empty,
     /// `temperature T nominal T0`, kelvin, both positive.
@@ -124,6 +126,9 @@ pub const DeviceSource = struct {
     terminals: []const []const u8,
     value: tables.DeviceValue = .{},
 };
+
+/// One `matching` statement: `matching "<model>" pair|single <key> <value> ..`.
+pub const MatchingSource = struct { model: []const u8, basis: tables.MatchingBasis, stated: tables.Matching };
 
 /// One `pex` row in `ProcessStack`'s units; 0.0 is "not stated", the sheet
 /// resistance at the deck's nominal temperature.
