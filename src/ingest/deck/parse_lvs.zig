@@ -79,6 +79,7 @@ pub fn lvs(p: *Parser) PErr!void {
         return;
     }
     if (eql(c, "recognize_gates")) return flagOnce(p, control.span, &src.recognize_gates, "gates are already recognised");
+    if (eql(c, "split_gates")) return flagOnce(p, control.span, &src.split_gates, "split gates are already joined");
     if (eql(c, "ports_by_name")) return flagOnce(p, control.span, &src.ports_by_name, "ports are already compared by name");
     if (eql(c, "ignore_shorted")) return modelOnce(p, control.span, &src.ignore_shorted, "shorted \"{s}\" devices are already ignored");
     if (eql(c, "max_res") or eql(c, "min_caps")) {
@@ -102,7 +103,7 @@ pub fn lvs(p: *Parser) PErr!void {
         return src.same_nets.append(p.arena, .{ .a = layout, .b = reference });
     }
     if (eql(c, "asymmetric")) return modelOnce(p, control.span, &src.asymmetric, "\"{s}\" is already asymmetric");
-    return p.fail(control.span, "unknown lvs control `{s}`; expected tolerance, ignore_parameter, asymmetric, permute, ignore, ignore_shorted, ports_by_name, range, topology, connect_implicit, connect_explicit, max_res, min_caps, same_nets, count, lde, recognize_gates, blackbox, filter_unused or supply", .{c});
+    return p.fail(control.span, "unknown lvs control `{s}`; expected tolerance, ignore_parameter, asymmetric, permute, ignore, ignore_shorted, ports_by_name, range, topology, connect_implicit, connect_explicit, max_res, min_caps, same_nets, count, lde, recognize_gates, split_gates, blackbox, filter_unused or supply", .{c});
 }
 
 // ---- private ----
@@ -138,7 +139,7 @@ fn range(p: *Parser) PErr!void {
         if (eql(n, param)) break .length;
     } else for ([_][]const u8{ "area", "as", "ad", "ae" }) |n| {
         if (eql(n, param)) break .area;
-    } else if (eql(param, "nf")) .count else return p.fail(word.span, "`{s}` is not measured on a device; expected w, l, perim, ps, pd, pe, area, as, ad, ae or nf", .{param});
+    } else if (eql(param, "nf") or eql(param, "nfin")) .count else return p.fail(word.span, "`{s}` is not measured on a device; expected w, l, perim, ps, pd, pe, area, as, ad, ae, nf or nfin", .{param});
     for (p.out.lvs.range.items) |row| if (eql(row.model, model) and eql(row.param, param)) {
         return p.fail(word.span, "`{s}` of \"{s}\" already has a range", .{ param, model });
     };

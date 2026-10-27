@@ -17,7 +17,8 @@
 //! 7. `compareTraced` (compare.zig), itself a spine: `dropUnextractedBulk`,
 //!    `dropIgnoredDevices`, `sortStressPair`, `protectLabelled`,
 //!    `filterUnused`, `dropIgnoredDevices`, `keepDeclaredParams`,
-//!    `dropIgnoredParams`, `assignRoles`, `reduceWith` both sides,
+//!    `dropIgnoredParams`, `assignRoles`, `joinSplitGates` both sides
+//!    under `lvs split_gates`, `reduceWith` both sides,
 //!    `stateCount`, `portSeedsInto`, `refineInto`, `interpretInto`, models
 //!    aside, `reportRoles`;
 //! 8. on a mismatch, `unpairedInstancesInto` and `recordUnpairedInstances`,
@@ -27,6 +28,7 @@
 //! - graph.zig: `Graph`, `Param`, `no_net`, `transposeInto`, `roleCode`, `kindCode`, union-find
 //! - project.zig: `Design`, `fromLayoutInto`, `fromReferenceInto`, `spiceParamName`
 //! - verdict.zig: `Verdict`, `Inconclusive`, `Side`, `Discrepancy`
+//! - split.zig: `joinSplitGates`
 //! - reduce.zig: `reduceWith`, `ParamNames`, `MergeKind`, `Merges`; its passes `reduce_law`, `reduce_plan`, `reduce_emit`
 //! - refine.zig: `refineInto`, `Partition`; `refine_partition`, `refine_trial`; `interpret` (`interpretInto`)
 //! - compare.zig: `compareTraced`, `CompareOptions`, `Traced`
@@ -38,6 +40,7 @@ pub const verdict = @import("verdict.zig");
 pub const reduce_law = @import("reduce_law.zig");
 pub const reduce_plan = @import("reduce_plan.zig");
 pub const reduce_emit = @import("reduce_emit.zig");
+pub const split = @import("split.zig");
 pub const reduce = @import("reduce.zig");
 pub const gates = @import("gates.zig");
 pub const controls = @import("controls.zig");

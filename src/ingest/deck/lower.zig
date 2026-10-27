@@ -311,6 +311,7 @@ fn buildDevices(c: Ctx, declared: []const source.DeviceSource, layers: *const La
     var terminal: std.ArrayList(LayerId) = .empty;
     var model: std.ArrayList(StrId) = .empty;
     var value: std.ArrayList(tables.DeviceValue) = .empty;
+    var fins: std.ArrayList(?LayerId) = .empty;
     try terminal_start.append(c.arena, 0);
     for (declared) |device| {
         const user = try std.fmt.allocPrint(c.arena, "device {s}", .{device.model});
@@ -321,8 +322,9 @@ fn buildDevices(c: Ctx, declared: []const source.DeviceSource, layers: *const La
         try model.append(c.arena, try c.strings.intern(c.gpa, device.model));
         try terminal_start.append(c.arena, @intCast(terminal.items.len));
         try value.append(c.arena, device.value);
+        try fins.append(c.arena, if (device.fins) |name| try devicePolygons(c, layers, name, user) else null);
     }
-    return .{ .kind = kind.items, .marker = marker.items, .terminal_start = terminal_start.items, .terminal = terminal.items, .model = model.items, .value = value.items };
+    return .{ .kind = kind.items, .marker = marker.items, .terminal_start = terminal_start.items, .terminal = terminal.items, .model = model.items, .value = value.items, .fins = fins.items };
 }
 
 fn devicePolygons(c: Ctx, layers: *const LayerTable, name: []const u8, user: []const u8) Error!LayerId {

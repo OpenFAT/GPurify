@@ -91,7 +91,7 @@ pub fn runLvs(scratch: Allocator, run_arena: Allocator, loaded: *const Loaded, e
     };
 }
 
-/// The SPICE names of width, length, fingers, multiplier, the diffusions,
+/// The SPICE names of width, length, fingers, fins, multiplier, the diffusions,
 /// the passive values, inductance and stress, as both netlists intern
 /// them; null for a name no netlist interned.
 pub fn paramNames(strings: *const StrTable) ParamNames {
@@ -99,6 +99,7 @@ pub fn paramNames(strings: *const StrTable) ParamNames {
         .width = strings.get("w"),
         .length = strings.get("l"),
         .fingers = strings.get("nf"),
+        .fins = strings.get("nfin"),
         .multiplier = strings.get("m"),
         .diffusion = .{ strings.get("as"), strings.get("ad"), strings.get("ps"), strings.get("pd") },
         .values = .{ strings.get("r"), strings.get("c"), strings.get("area"), strings.get("perim"), strings.get("ae"), strings.get("pe") },

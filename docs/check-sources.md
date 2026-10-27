@@ -58,12 +58,12 @@ feature tag (`deck:`, `drc:`, `erc:`, `lvs:`, `pex:`, `ingest:`, `lib:`).
 | `MR` | Metamorphic relation (plan L5) |
 | `NV` | Naive reference implementation (dense nodal solve, BFS, brute-force colouring) |
 
-**Snapshot, 2026-10-10** (261 rows):
+**Snapshot, 2026-10-10** (263 rows):
 
 | Domain | implemented | expressible | partial | missing | verify | out of scope |
 |---|---:|---:|---:|---:|---:|---:|
 | DRC | 56 | 6 | 44 | 0 | 0 | 0 |
-| LVS | 31 | 1 | 15 | 1 | 0 | 0 |
+| LVS | 33 | 1 | 15 | 1 | 0 | 0 |
 | ERC | 64 | 4 | 13 | 0 | 0 | 0 |
 | PEX | 9 | 0 | 7 | 0 | 0 | 0 |
 | Flow | 2 | 0 | 8 | 0 | 0 | 0 |
@@ -340,6 +340,7 @@ single oracle is a named gap that ledger P1 closes.
 | LVS-066 | Device flavour (HVT/LVT) by implant marker | expressible | GF:App.A; IHP LVS decks | SY; MR |
 | LVS-071 | Spectre reader | implemented | - | SY; MR; fuzz |
 | LVS-074 | Layout-dependent-effect parameters (LOD SA/SB/SD, WPE SCA/SCB/SCC) | partial | BSIM4; SRC:datasheet; Silvaco SmartDRC/LVS app note Well Proximity and STI Stress Effect Parameters Extraction (2022) | CF; SE; SY |
+| LVS-076 | FinFET size by fin count (nfin) | implemented | A7:FIN; asap7sc7p5t_28 CDL:nfin; BSIM-CMG:NFIN | SY; SE:asap7sc7p5t_28 CDL |
 | ERC-A9 | Minimum protection-diode size | expressible | IHP:Ant.g | SE:IHP Ant.g; MR; SY |
 | ERC-A10 | Diode well legality | expressible | IHP:Ant.h,Ant.i | FR; SY |
 | ERC-A13 | Exemption for substrate-shorted nets | implemented | SKY:.ar.1 | SE:SKY .ar.1; MR; SY |

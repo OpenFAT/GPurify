@@ -2,13 +2,14 @@
 //! reached through build.zig's anonymous imports), each compiled on a
 //! layout's grid by name. Ported from src/pdks.rs.
 //!
-//! Every deck is authored on its own `grid` (5 nm, or 1 nm for
-//! generic_finfet) and compiles on any layout grid that grid divides.
+//! Every deck is authored on its own `grid` (5 nm, or 1 nm for asap7) and
+//! compiles on any layout grid that grid divides.
 //!
 //! Contents:
-//! - `pub const sky130`, `gf180mcu`, `ihp_sg13g2`, `generic_finfet: []const u8`
+//! - `pub const sky130`, `gf180mcu`, `ihp_sg13g2`, `asap7: []const u8`
 //! - `pub const all: [4]NamedText` (sorted by stem)
-//! - `pub const decks: [4]NamedDeck` (each text compiled on the layout grid)
+//! - `pub const decks: [5]NamedDeck` (each text compiled on the layout grid;
+//!   `generic_finfet` is asap7's old name)
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -22,26 +23,27 @@ pub const sky130: []const u8 = @embedFile("sky130.deck");
 pub const gf180mcu: []const u8 = @embedFile("gf180mcu.deck");
 /// IHP SG13G2 (130 nm SiGe BiCMOS, five thin and two thick metals).
 pub const ihp_sg13g2: []const u8 = @embedFile("ihp_sg13g2.deck");
-/// ASAP7, the predictive 7 nm FinFET PDK standing in for a generic FinFET
-/// process. No fab builds it.
-pub const generic_finfet: []const u8 = @embedFile("generic_finfet.deck");
+/// ASAP7, the predictive 7 nm FinFET PDK (release 1p7). No fab builds it.
+pub const asap7: []const u8 = @embedFile("asap7.deck");
 
 pub const NamedText = struct { name: []const u8, text: []const u8 };
 
 /// Every shipped deck with its file stem, sorted by stem.
 pub const all = [4]NamedText{
-    .{ .name = "generic_finfet", .text = generic_finfet },
+    .{ .name = "asap7", .text = asap7 },
     .{ .name = "gf180mcu", .text = gf180mcu },
     .{ .name = "ihp_sg13g2", .text = ihp_sg13g2 },
     .{ .name = "sky130", .text = sky130 },
 };
 
-/// `all`, each compiled on the layout grid when `Inputs.deck` names it.
-pub const decks = [4]NamedDeck{
-    .{ .name = "generic_finfet", .build = Build(generic_finfet).build },
+/// `all`, each compiled on the layout grid when `Inputs.deck` names it, in
+/// `all`'s order, then asap7 under its old name.
+pub const decks = [5]NamedDeck{
+    .{ .name = "asap7", .build = Build(asap7).build },
     .{ .name = "gf180mcu", .build = Build(gf180mcu).build },
     .{ .name = "ihp_sg13g2", .build = Build(ihp_sg13g2).build },
     .{ .name = "sky130", .build = Build(sky130).build },
+    .{ .name = "generic_finfet", .build = Build(asap7).build },
 };
 
 // ---- private ----

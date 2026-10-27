@@ -414,6 +414,43 @@ test "a marker drawn per channel recognises one device per finger" {
     }, r.devices.paramsOf(did(0)));
 }
 
+test "a finned channel is sized by the fins under it, touching pieces once, and has no width" {
+    // Oracle: construct-from-answer. The two fingers of `Fingers` with fins
+    // on layer 4 across both: three stripes inside the channels, one at
+    // y 170 drawn as two pieces touching at x 225 (inside the left channel,
+    // so one fin there), one at y 300 above the channels. Each finger: four
+    // fins, as the ASAP7 CDL counts `nfin` (asap7sc7p5t_28: 27 nm of `w` a
+    // fin); L 50 along the channel, no `w`.
+    var r: Run = .{};
+    defer r.deinit();
+    var lb = LayoutBuilder.init(5);
+    defer lb.deinit(gpa);
+    _ = try Fingers.draw(&lb);
+    for ([_]i64{ 20, 80, 140, 300 }) |y| _ = try lb.rect(gpa, 4, -50, y, 1050, y + 7);
+    _ = try lb.rect(gpa, 4, -50, 170, 225, 177);
+    _ = try lb.rect(gpa, 4, 225, 170, 1050, 177);
+    try lb.finish(gpa, &r.store, &r.ids);
+    try topology.extractNetsInto(gpa, &r.store, &Fingers.connectivity, &r.nets);
+    const model = [1]geom.StrId{try r.strings.intern(gpa, "nmos_rvt")};
+    const recognition: DeviceRecognition = .{
+        .kind = &.{.mos},
+        .marker = &.{lid(Fingers.channel)},
+        .terminal_start = &.{ 0, 3 },
+        .terminal = &Fingers.terminals,
+        .model = &model,
+        .fins = &.{lid(4)},
+    };
+    try topology.recogniseInto(gpa, &r.store, &r.nets, &recognition, &r.devices);
+    try testing.expectEqual(@as(u32, 2), r.devices.len());
+    for (0..2) |d| {
+        const p = r.devices.paramsOf(did(@intCast(d)));
+        try testing.expectEqualSlices(DeviceParam, &.{ .length, .fins, .fingers }, p.names[0..3]);
+        try testing.expect(std.meta.eql(DeviceMeasure{ .length = 50 }, p.measures[0]));
+        try testing.expect(std.meta.eql(DeviceMeasure{ .count = 4 }, p.measures[1]));
+        try testing.expect(std.mem.indexOfScalar(DeviceParam, p.names, .width) == null);
+    }
+}
+
 test "a bjt recogniser names its three terminals base emitter collector" {
     // Oracle: construct-from-answer. A bipolar's terminals follow the
     // recogniser's order and are named, not numbered.

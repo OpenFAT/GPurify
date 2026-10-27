@@ -133,6 +133,7 @@ fn deviceLines(p: *const Printer, out: *std.ArrayList(u8)) PrintError!void {
             .{ "on_gate_max", v.on_gate_max_mv, "mV" },
         };
         for (values) |row| if (row[1]) |x| try out.print(a, " {s} {s}{s}", .{ row[0], try p.number(x), row[2] });
+        if (d.fins) |f| try out.print(a, " fins {s}", .{f});
         try out.append(a, '\n');
     }
 }
@@ -158,6 +159,7 @@ fn lvs(p: *const Printer, out: *std.ArrayList(u8)) PrintError!void {
     for (s.ignore_shorted.items) |m| try out.print(a, "lvs ignore_shorted {s}\n", .{try p.quoted(m)});
     if (s.ports_by_name) try out.appendSlice(a, "lvs ports_by_name\n");
     if (s.recognize_gates) try out.appendSlice(a, "lvs recognize_gates\n");
+    if (s.split_gates) try out.appendSlice(a, "lvs split_gates\n");
     if (s.filter_unused.items.len > 0) {
         var names: std.ArrayList([]const u8) = .empty;
         for (s.filter_unused.items) |o| try names.append(a, o.name());

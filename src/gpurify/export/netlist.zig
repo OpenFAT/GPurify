@@ -125,6 +125,7 @@ pub fn writeSpice(w: *Writer, gpa: Allocator, net_count: u32, devices: *const De
                 .length => "l",
                 .area => "area",
                 .perimeter => "perim",
+                .fins => "nfin",
                 .fingers => "nf",
                 .source_area => "as",
                 .drain_area => "ad",

@@ -123,6 +123,8 @@ pub const DeviceSource = struct {
     /// In role order (`DeviceRecognition`).
     terminals: []const []const u8,
     value: tables.DeviceValue = .{},
+    /// `fins <layer>`: a `mos` sized by the fins under its channel.
+    fins: ?[]const u8 = null,
 };
 
 /// One `pex` row in `ProcessStack`'s units; 0.0 is "not stated", the sheet
@@ -163,6 +165,7 @@ pub const LvsSrc = struct {
     same_nets: std.ArrayList(NamePair) = .empty,
     count: std.ArrayList(CountSrc) = .empty,
     recognize_gates: bool = false,
+    split_gates: bool = false,
     blackbox: std.ArrayList([]const u8) = .empty,
     filter_unused: std.ArrayList(UnusedFilter) = .empty,
     supply: std.ArrayList([]const u8) = .empty,

@@ -1,6 +1,6 @@
 # ASAP7, the predictive 7 nm FinFET PDK (Arizona State University and ARM).
-# It is the only FinFET PDK with a public design rule manual, so it stands in
-# for "a generic FinFET process" here. It is predictive: no fab builds it.
+# It is predictive: no fab builds it. GPurify also ships this deck under its
+# old name, `generic_finfet`.
 #
 # Sources (every number below comes from one of these):
 #   [DRM] ASAP7 PDK Design Rule Manual, PDK release 1p7,
@@ -11,14 +11,40 @@
 #   [MAP] cdslib/asap7_TechLib_10/asap7_TechLib_08.layermap, same repo and
 #         commit: GDS layer and datatype of every drawn, label and pin layer.
 #         The DRM's "Mask ID" column (Table 2.x.1) is the GDS layer number.
+#   [CMG] models/hspice/7nm_TT_160803.pm, same repo at commit
+#         58d72c9d291e186a77468586ab0c43d8a21eda6a: the eight BSIM-CMG
+#         (level 72) cards nmos_lvt, nmos_rvt, nmos_slvt, nmos_sram,
+#         pmos_lvt, pmos_rvt, pmos_slvt, pmos_sram.
+#   [CDL] CDL/LVS/asap7sc7p5t_28_R.cdl in
+#         https://github.com/The-OpenROAD-Project/asap7sc7p5t_28 at commit
+#         e5bd25da72cd297b8c0ec6f77600e0cbaa1124d0: the standard cells'
+#         schematics, which size each transistor by `nfin` and state `w` as
+#         27 nm a fin (`MM0 Y A VSS VSS nmos_rvt w=81.0n l=20n nfin=3`).
 #   [MEJ] L.T. Clark et al., "ASAP7: A 7-nm finFET predictive process design
 #         kit", Microelectronics Journal 53 (2016) 105-115,
 #         doi:10.1016/j.mejo.2016.04.006 (Table 1 widths and patterning;
 #         section 4.4: metal and via aspect ratio 2:1).
 #   [RC]  OpenROAD-flow-scripts flow/platforms/asap7/setRC.tcl at commit
-#         09df6d28c6af8aa479bf4784930484a1b5fb4196: per-length wire resistance
+#         64939f3717ad7c694199ba04cb98924b98022868: per-length wire resistance
 #         and per-cut via resistance, in the ASAP7 liberty unit (kohm, per
 #         pulling_resistance_unit in asap7sc7p5t_SEQ_RVT_TT_nldm_220123.lib).
+#   [RCX] flow/platforms/asap7/rcx_patterns.rules, same repo and commit: the
+#         OpenRCX extraction rules, whose "Metal N OVER 0" table gives a
+#         wire's capacitance over the substrate by its spacing to the next.
+#   [ORX] OpenROAD src/rcx/src at commit
+#         f8fff0fe86ef145ad57eae328e15ed1f2c7c4cab: a rules row is
+#         "separation coupling fringe resistance" (extRCmodel.cpp,
+#         extDistRC::writeRC), the separation in um and the rest per nm of
+#         wire (readRC divides them by getDbFactor_v2, database units per
+#         nm, in extmain_v2.cpp), capacitance in fF (extSpef.cpp,
+#         computeScaleFactors scales it by 0.001 only for a pF SPEF).
+#
+# Known blocker: GATE_FET, LIG, LISD, SD, NTAP and PTAP conduct, and the
+# SDT, GATE_C, LIG_LISD and V0 cuts join them, but no public source gives
+# any of them a resistance (the ASAP7 Calibre PEX deck from asap.asu.edu
+# carries them, behind registration). They have no pex row, so PEX on a
+# layout that draws them is refused naming the layer, rather than reading
+# a perfect wire, and so is the IR-drop solve on any layout.
 #
 # Many DRM rules are directional (a horizontal and a vertical limit). The
 # deck language has no direction, so such a pair is written as one rule at
@@ -87,6 +113,21 @@ layer M6_LABEL = gds(60, 2)
 layer M7_LABEL = gds(70, 2)
 layer M8_LABEL = gds(80, 2)
 layer M9_LABEL = gds(90, 2)
+# Pins: the "pin" purpose, datatype 251 [MAP], where the standard cells put
+# their port texts. The cells also write VDD on the well pin (1, 251) and
+# VSS on the substrate pin (3, 251), which name a bulk this deck does not
+# extract (no cell draws a tap in its own well), so those are dropped.
+layer M1_PIN = gds(19, 251)
+layer M2_PIN = gds(20, 251)
+layer M3_PIN = gds(30, 251)
+layer M4_PIN = gds(40, 251)
+layer M5_PIN = gds(50, 251)
+layer M6_PIN = gds(60, 251)
+layer M7_PIN = gds(70, 251)
+layer M8_PIN = gds(80, 251)
+layer M9_PIN = gds(90, 251)
+ignore gds(1, 251)
+ignore gds(3, 251)
 
 # DRM terms: "GATE not cut by GCUT", a channel (GATE over ACTIVE), SRAM and
 # logic halves of a layer by whether it touches SRAMDRC.
@@ -121,6 +162,32 @@ layer NTAP = (ACTIVE and NSELECT and WELL).not_interacting(GATE)
 layer PTAP = ((ACTIVE and PSELECT) not WELL).not_interacting(GATE)
 layer PMOS_ACTIVE = (ACTIVE and PSELECT and WELL).interacting(GATE)
 layer NMOS_ACTIVE = ((ACTIVE and NSELECT) not WELL).interacting(GATE)
+# The middle of line as conductors [DRM Tables 2.1.1, 2.2.1, 3.10.3]: a
+# transistor's source and drain (SD, its ACTIVE beside the gate) reach LISD
+# through SDT, "a layer that connects the layer ACTIVE to LISD", as a tap's
+# ACTIVE does; LIG, the "GATE interconnect layer", contacts the gate where
+# it overlaps it (GATE_C) and LISD where they are "connected together"
+# (LIG.LISD.OV.1); V0 is the "via connecting LIG and LISD to M1".
+layer SD = ACTIVE.interacting(GATE) not GATE
+# A gate conducts where it crosses ACTIVE; a piece GCUT leaves over the
+# field alone is a dummy, drawn for the gate pitch, and joins nothing.
+layer GATE_FET = GATE_UNCUT.interacting(ACTIVE)
+layer GATE_C = LIG and GATE_FET
+# A channel's polarity by its implant, its threshold by the VT marker over
+# it: no marker is the regular threshold (rvt) [DRM Table 2.1.1, CMG].
+layer VT_MARKED = SLVT or LVT or SRAMVT
+layer NCHANNEL = CHANNEL and NSELECT
+layer PCHANNEL = CHANNEL and PSELECT
+layer NMOS_RVT = NCHANNEL not VT_MARKED
+layer NMOS_LVT = NCHANNEL and LVT
+layer NMOS_SLVT = NCHANNEL and SLVT
+layer NMOS_SRAM = NCHANNEL and SRAMVT
+layer PMOS_RVT = PCHANNEL not VT_MARKED
+layer PMOS_LVT = PCHANNEL and LVT
+layer PMOS_SLVT = PCHANNEL and SLVT
+layer PMOS_SRAM = PCHANNEL and SRAMVT
+# LIG.SDT.S.8 judges SDT by its net: the LISD over it (SDT.LISD.AUX.4).
+layer SDT_NET = SDT and LISD
 
 # 3.1 Geometry
 rule GEOMETRY.NONORTHOGONAL angle(; allowed: [0deg, 90deg])
@@ -313,12 +380,17 @@ for (v, below, above) in se_vias {
 # Electrical: the voltage-drop limits come from the intent file, not the DRM.
 rule ir_drop ir_drop()
 
-# Connectivity. Only M1-M9 and V1-V8 carry current here: they are the layers
-# [RC] gives a resistance for. GATE, LIG, LISD, SDT, V0 and PAD have no
-# published resistance, so they are not conductors, and transistors are not
-# extracted (see "needs" below).
-connect conductors [M1, M2, M3, M4, M5, M6, M7, M8, M9]
+# Connectivity. The metals and their vias [DRM Table 2.3.1], and the
+# middle of line down to the transistors (see SD above).
+connect conductors [SD, NTAP, PTAP, GATE_FET, LISD, LIG, M1, M2, M3, M4, M5, M6, M7, M8, M9]
 connect touch_within_layer
+connect via SDT [SD, LISD]
+connect via SDT [NTAP, LISD]
+connect via SDT [PTAP, LISD]
+connect via GATE_C [GATE_FET, LIG]
+connect via LIG_LISD [LIG, LISD]
+connect via V0 [LISD, M1]
+connect via V0 [LIG, M1]
 connect via V1 [M1, M2]
 connect via V2 [M2, M3]
 connect via V3 [M3, M4]
@@ -336,10 +408,53 @@ connect label M6_LABEL names M6
 connect label M7_LABEL names M7
 connect label M8_LABEL names M8
 connect label M9_LABEL names M9
+connect label M1_PIN names M1
+connect label M2_PIN names M2
+connect label M3_PIN names M3
+connect label M4_PIN names M4
+connect label M5_PIN names M5
+connect label M6_PIN names M6
+connect label M7_PIN names M7
+connect label M8_PIN names M8
+connect label M9_PIN names M9
+
+# Devices: the eight BSIM-CMG cards [CMG], one channel each, gate, source
+# and drain on the middle of line. A FinFET's size is its fin count: each
+# is sized by the FIN shapes under its channel (`nfin`), never a width.
+# No bulk: a cell draws no tap in its own well.
+device mos NMOS_RVT model "nmos_rvt" terminals [GATE_FET, SD, SD] fins FIN
+device mos NMOS_LVT model "nmos_lvt" terminals [GATE_FET, SD, SD] fins FIN
+device mos NMOS_SLVT model "nmos_slvt" terminals [GATE_FET, SD, SD] fins FIN
+device mos NMOS_SRAM model "nmos_sram" terminals [GATE_FET, SD, SD] fins FIN
+device mos PMOS_RVT model "pmos_rvt" terminals [GATE_FET, SD, SD] fins FIN
+device mos PMOS_LVT model "pmos_lvt" terminals [GATE_FET, SD, SD] fins FIN
+device mos PMOS_SLVT model "pmos_slvt" terminals [GATE_FET, SD, SD] fins FIN
+device mos PMOS_SRAM model "pmos_sram" terminals [GATE_FET, SD, SD] fins FIN
+
+# Electrical: an n-tap and a p-tap on one net short the supplies.
+rule supply_short supply_short(NTAP, PTAP)
+
+# Different-net spacing in the middle of line [DRM Table 3.10.1].
+rule LIG.LISD.S.6 space(LIG, LISD; nets: different) >= 14nm
+rule LIG.SDT.S.8 space(LIG, SDT_NET; nets: different) >= 14nm
 
 # Not a foundry number: the parameter tolerance GPurify compared every deck
 # at before decks stated one. A foundry LVS deck's own tolerances replace it.
 lvs tolerance default relative 2%
+# A schematic's `w` is its `nfin` times 27 nm [CDL], the fin pitch; the fins
+# are what is compared, exactly, as is `nf`.
+lvs ignore_parameter "nmos_rvt" w
+lvs ignore_parameter "nmos_lvt" w
+lvs ignore_parameter "nmos_slvt" w
+lvs ignore_parameter "nmos_sram" w
+lvs ignore_parameter "pmos_rvt" w
+lvs ignore_parameter "pmos_lvt" w
+lvs ignore_parameter "pmos_slvt" w
+lvs ignore_parameter "pmos_sram" w
+# A cell draws a wide transistor of a stack as fingers, each finger's stack
+# with its own inner nets, where the schematic has one stack (AOI21x1:
+# MM2-MM3, 6 fins, drawn as two 3-fin stacks). KLayout's `split_gates`.
+lvs split_gates
 
 # Parasitic stack.
 #   sheet: [RC] resistance per um (kohm/um) times the DRM minimum width, e.g.
@@ -349,27 +464,36 @@ lvs tolerance default relative 2%
 #   height: the metal and via thicknesses stacked from the bottom of M1. The
 #          height of M1 above the substrate and the capping layers between
 #          levels are not published, so heights are relative to M1.
-#   dielectric, area_cap, fringe_cap: not published in readable form (the
-#          QRC tech file in asap7sc7p5t_28 is compiled). The dielectric is
-#          left out and the capacitances written as 0 (not stated), so
-#          capacitance is not extracted from this deck; resistance is.
-pex M1 thickness 36nm height 0nm sheet 1.2675ohm area_cap 0aF/um2 fringe_cap 0aF/um
+#   fringe_cap: [RCX]'s "Metal N OVER 0" row at its widest separation (no
+#          coupling left), the capacitance of a minimum-width wire over the
+#          substrate per length [ORX], halved, since a wire's perimeter is
+#          twice its length: M1 4.99271e-05 fF/nm (rules line 88) = 49.9271
+#          aF/um, 24.96355 aF/um of perimeter; M2 line 399, M3 829, M4 1343,
+#          M5 1909, M6 2495, M7 3056, M8 3560, M9 3975. [RCX] gives one
+#          width a layer, so area and fringe cannot be told apart: area_cap
+#          is left at 0 (not stated) and the whole is fringe. Vias: 0.
+#   dielectric: not published, so left out; the closed forms give no
+#          lateral coupling and the field solve refuses (the coupling column
+#          of [RCX] has no row in this language).
+#   GATE_FET, LIG, LISD, SD, NTAP, PTAP and the SDT, GATE_C, LIG_LISD and
+#          V0 cuts: no row (the blocker in the header).
+pex M1 thickness 36nm height 0nm sheet 1.2675ohm area_cap 0aF/um2 fringe_cap 24.96355aF/um
 pex V1 thickness 36nm height 36nm sheet 17.2ohm area_cap 0aF/um2 fringe_cap 0aF/um
-pex M2 thickness 36nm height 72nm sheet 0.534829ohm area_cap 0aF/um2 fringe_cap 0aF/um
+pex M2 thickness 36nm height 72nm sheet 0.534829ohm area_cap 0aF/um2 fringe_cap 15.658aF/um
 pex V2 thickness 36nm height 108nm sheet 17.2ohm area_cap 0aF/um2 fringe_cap 0aF/um
-pex M3 thickness 36nm height 144nm sheet 0.563166ohm area_cap 0aF/um2 fringe_cap 0aF/um
+pex M3 thickness 36nm height 144nm sheet 0.563166ohm area_cap 0aF/um2 fringe_cap 16.0081aF/um
 pex V3 thickness 36nm height 180nm sheet 17.2ohm area_cap 0aF/um2 fringe_cap 0aF/um
-pex M4 thickness 48nm height 216nm sheet 0.432876ohm area_cap 0aF/um2 fringe_cap 0aF/um
+pex M4 thickness 48nm height 216nm sheet 0.432876ohm area_cap 0aF/um2 fringe_cap 16.72145aF/um
 pex V4 thickness 48nm height 264nm sheet 11.8ohm area_cap 0aF/um2 fringe_cap 0aF/um
-pex M5 thickness 48nm height 312nm sheet 0.455844ohm area_cap 0aF/um2 fringe_cap 0aF/um
+pex M5 thickness 48nm height 312nm sheet 0.455844ohm area_cap 0aF/um2 fringe_cap 16.6888aF/um
 pex V5 thickness 48nm height 360nm sheet 11.8ohm area_cap 0aF/um2 fringe_cap 0aF/um
-pex M6 thickness 64nm height 408nm sheet 0.380147ohm area_cap 0aF/um2 fringe_cap 0aF/um
+pex M6 thickness 64nm height 408nm sheet 0.380147ohm area_cap 0aF/um2 fringe_cap 23.77785aF/um
 pex V6 thickness 64nm height 472nm sheet 8.2ohm area_cap 0aF/um2 fringe_cap 0aF/um
-pex M7 thickness 64nm height 536nm sheet 0.400307ohm area_cap 0aF/um2 fringe_cap 0aF/um
+pex M7 thickness 64nm height 536nm sheet 0.400307ohm area_cap 0aF/um2 fringe_cap 20.8266aF/um
 pex V7 thickness 64nm height 600nm sheet 8.2ohm area_cap 0aF/um2 fringe_cap 0aF/um
-pex M8 thickness 80nm height 664nm sheet 0.337906ohm area_cap 0aF/um2 fringe_cap 0aF/um
+pex M8 thickness 80nm height 664nm sheet 0.337906ohm area_cap 0aF/um2 fringe_cap 15.5023aF/um
 pex V8 thickness 80nm height 744nm sheet 6.3ohm area_cap 0aF/um2 fringe_cap 0aF/um
-pex M9 thickness 80nm height 824nm sheet 0.355822ohm area_cap 0aF/um2 fringe_cap 0aF/um
+pex M9 thickness 80nm height 824nm sheet 0.355822ohm area_cap 0aF/um2 fringe_cap 13.08565aF/um
 # Not a foundry number: lateral coupling is looked for within ten times each
 # conductor's thickness, the reach GPurify used before decks stated one.
 extraction rcc coupling_halo 10
@@ -394,28 +518,16 @@ rule SDT.LISD.AUX.4 inside(SDT, LISD)
 # ACTIVE outside SRAMDRC that touches it.
 rule SRAM.ACTIVE.AUX.2 forbidden(ACTIVE.outside(SRAMDRC).interacting(SRAMDRC))
 #
-# needs: net spacing that is directional (S.2A), or on ACTIVE, LIG, LISD and
-# SDT, which are not conductors in this deck:
-#   rule ACTIVE.S.2A space(ACTIVE; different_net) >= 92nm   (horizontal only)
-#   rule LIG.LISD.S.6 space(LIG, LISD; different_net) >= 14nm
-#   rule LIG.LISD.S.7 corner_space(LIG, LISD; different_net) >= 15nm
-#   rule LIG.SDT.S.8 space(LIG, SDT; different_net) >= 14nm
+# needs: net spacing that is directional, or corner to corner:
+#   rule ACTIVE.S.2A horizontal space(SD; nets: different) >= 92nm
+#   rule LIG.LISD.S.7 corner_space(LIG, LISD; nets: different) >= 15nm
+#     (LIG.LISD.S.6 holds the same pairs at 14nm, corners included)
 #
 # needs: a via classed by its metal end-cap
 #   rule V0-V3.S.3 corner, both vias without 5nm end-cap >= 30nm; .S.4 one with, one without >= 27nm
 # needs: an extension on both opposite sides
 #   rule LIG.GATE.EX.1 extension(LIG_LOGIC, GATE_UNCUT) >= 1nm on both opposite sides
 #     (extension measures one box side; a flush side reads as no protrusion)
-#
-# needs: sourced MOL and gate resistance. GATE, LISD, LIG and V0 have no
-# published sheet or contact resistance, so they cannot be conductors, and a
-# MOS terminal must be one. With them, the recognisers would be (layers per
-# [DRM] 2.1, models per the PDK cells in cdslib/asap7_TechLib_10):
-#   layer SD = (ACTIVE not GATE) and SDT
-#   device mos (CHANNEL and NSELECT) not (SLVT or LVT or SRAMVT) model "nmos_rvt" terminals [GATE_UNCUT, SD, SD]
-#   device mos CHANNEL and NSELECT and LVT model "nmos_lvt" ...; and SLVT "nmos_slvt", SRAMVT "nmos_sram"
-#   device mos (CHANNEL and PSELECT) not (SLVT or LVT or SRAMVT) model "pmos_rvt" ...; and "pmos_lvt", "pmos_slvt", "pmos_sram"
-#   rule supply_short supply_short(NTAP, PTAP)
 #
 # Not written, with the reason:
 #   SRAM.ACTIVE.WELL.S.5, SRAM.ACTIVE.WELL.EN.2, SRAM.NSELECT.ACTIVE.EN.3/4:
@@ -469,7 +581,10 @@ rule SDT.ACTIVE.OV.1 width((SDT_LOGIC and ACTIVE).edges().horizontal()) >= 27nm
 rule SDT.LISD.OV.2 width((SDT_LOGIC and LISD).edges().horizontal()) >= 27nm
 rule SRAM.SDT.ACTIVE.OV.3 width((SDT_SRAM and ACTIVE).edges().horizontal()) >= 17nm
 rule SRAM.SDT.LISD.OV.4 width((SDT_SRAM and LISD).edges().horizontal()) >= 17nm
-rule SDT.ACTIVE.AUX.2 forbidden(SDT_LOGIC.edges().horizontal() not ACTIVE.edges().horizontal())
+# Read where SDT lies over ACTIVE: its horizontal edges there are ACTIVE's.
+# The standard cells draw SDT 4 nm wider than its ACTIVE, an overhang the
+# edges' lines still coincide along; a SDT taller than its ACTIVE is missed.
+rule SDT.ACTIVE.AUX.2 forbidden((SDT_LOGIC and ACTIVE).edges().horizontal() not ACTIVE.edges().horizontal())
 # Tip tables: an edge of at most 36 nm is a tip, < 24 nm and 24-36 nm are
 # its two classes, longer is a side; side to side is S.1 (18), tip to side
 # S.2 (25), tip to tip S.3 (27, both 24-36), S.4 (31, both < 24) and S.5

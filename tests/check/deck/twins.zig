@@ -14,7 +14,7 @@ const Part = fn (*DeckBuilder) std.mem.Allocator.Error!void;
 
 /// Each shipped deck's twin, its parts in statement order.
 const twins = .{
-    .{ "generic_finfet", .{@import("twins/generic_finfet_1.zig").build} },
+    .{ "asap7", .{@import("twins/asap7_1.zig").build} },
     .{ "gf180mcu", .{ @import("twins/gf180mcu_1.zig").build, @import("twins/gf180mcu_2.zig").build } },
     .{ "ihp_sg13g2", .{ @import("twins/ihp_sg13g2_1.zig").build, @import("twins/ihp_sg13g2_2.zig").build } },
     .{ "sky130", .{ @import("twins/sky130_1.zig").build, @import("twins/sky130_2.zig").build } },

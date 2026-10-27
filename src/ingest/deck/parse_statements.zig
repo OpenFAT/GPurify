@@ -139,8 +139,15 @@ pub fn device(p: *Parser) PErr!void {
     _ = try p.expect("terminals");
     const terminals = try p.layerList();
     var value: tables.DeviceValue = .{};
+    var fins: ?[]const u8 = null;
     while (!p.lineEnd()) {
         const key = try p.ident("a device value");
+        if (eql(key.name, "fins")) {
+            if (kind != .mos) return p.fail(key.span, "`fins` is a mos's value, not {s} {s}'s", .{ article(wordOf(kind)), wordOf(kind) });
+            if (fins != null) return p.fail(key.span, "`fins` is given twice", .{});
+            fins = try p.layerWord();
+            continue;
+        }
         // A transistor is an n- or a p-channel switch, never both.
         if ((eql(key.name, "on_gate_min") and value.on_gate_max_mv != null) or (eql(key.name, "on_gate_max") and value.on_gate_min_mv != null)) {
             return p.fail(key.span, "a transistor takes on_gate_min (n-channel) or on_gate_max (p-channel), not both", .{});
@@ -156,7 +163,7 @@ pub fn device(p: *Parser) PErr!void {
         };
         const slot = for (slots) |s| {
             if (eql(s[0], key.name)) break s;
-        } else return p.fail(key.span, "unknown device value `{s}`; expected sheet (a resistor), area_cap or fringe_cap (a capacitor), inductance (an inductor), on_gate_min or on_gate_max (a mos)", .{key.name});
+        } else return p.fail(key.span, "unknown device value `{s}`; expected sheet (a resistor), area_cap or fringe_cap (a capacitor), inductance (an inductor), on_gate_min, on_gate_max or fins (a mos)", .{key.name});
         if (slot[3] != kind) {
             const owner = wordOf(slot[3]);
             const own = wordOf(kind);
@@ -169,7 +176,7 @@ pub fn device(p: *Parser) PErr!void {
         if (slot[1].* != null) return p.fail(key.span, "`{s}` is given twice", .{key.name});
         slot[1].* = number;
     }
-    try p.out.devices.append(p.arena, .{ .kind = kind, .marker = marker, .model = model, .terminals = terminals, .value = value });
+    try p.out.devices.append(p.arena, .{ .kind = kind, .marker = marker, .model = model, .terminals = terminals, .value = value, .fins = fins });
 }
 
 /// `fill <layer> for <layer> size <l> space <l> keep <l> avoid [..]`, every

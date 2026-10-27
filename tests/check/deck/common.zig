@@ -34,7 +34,7 @@ pub const Compiled = struct {
     }
 };
 
-pub const shipped = [_][]const u8{ "generic_finfet", "gf180mcu", "ihp_sg13g2", "sky130" };
+pub const shipped = [_][]const u8{ "asap7", "gf180mcu", "ihp_sg13g2", "sky130" };
 
 /// A drawn layer row (the ingest module does not export the type).
 const DrawnLayer = @typeInfo(@FieldType(@FieldType(ingest.deck.DeckSource, "layers"), "items")).pointer.child;

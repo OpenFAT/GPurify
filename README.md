@@ -49,7 +49,7 @@ verifier is expected to handle, by how far GPurify covers them. What a
 | Domain | Implemented | Expressible | Partial | Missing |
 |---|---:|---:|---:|---:|
 | DRC | 56 | 6 | 44 | 0 |
-| LVS | 31 | 1 | 15 | 1 |
+| LVS | 33 | 1 | 15 | 1 |
 | ERC | 64 | 4 | 13 | 0 |
 | PEX | 9 | 0 | 7 | 0 |
 | Flow | 2 | 0 | 8 | 0 |
@@ -82,7 +82,14 @@ Four decks ship in `pdks/`:
 | `ihp_sg13g2` | 75 | 465 | 12 |
 | `gf180mcu` | 56 | 328 | 27 |
 | `sky130` | 74 | 302 | 30 |
-| `generic_finfet` (ASAP7) | 45 | 239 | 0 |
+| `asap7` (also `generic_finfet`) | 54 | 242 | 8 |
+
+`asap7` recognises the eight BSIM-CMG transistors by fin count (`nfin`)
+and LVS-matches the OpenROAD-flow-scripts ASAP7 standard cells against
+their CDL. Its middle of line (gate, LIG, LISD, the diffusion and their
+SDT, V0 and overlap contacts) has no public resistance, so PEX on a layout
+that draws it is refused naming the layer, as is its IR-drop solve; its
+metal capacitance is OpenROAD's `rcx_patterns.rules`.
 
 ## Development
 

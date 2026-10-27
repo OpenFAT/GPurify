@@ -16,6 +16,7 @@ test {
     _ = @import("gpurify/def.zig");
     _ = @import("gpurify/system_checks.zig");
     _ = @import("gpurify/pdk_decks.zig");
+    _ = @import("gpurify/asap7.zig");
     _ = @import("gpurify/sky130_rules.zig");
     _ = @import("gpurify/flow.zig");
     _ = @import("gpurify/metamorphic.zig");

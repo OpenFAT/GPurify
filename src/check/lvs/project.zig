@@ -46,6 +46,7 @@ pub fn spiceParamName(param: DeviceParam) []const u8 {
         .length => "l",
         .area => "area",
         .perimeter => "perim",
+        .fins => "nfin",
         .fingers => "nf",
         .source_area => "as",
         .drain_area => "ad",
@@ -104,7 +105,7 @@ pub fn fromLayoutInto(gpa: Allocator, nets: *const NetTable, devices: *const Dev
                 .length => l = value,
                 .area => area = value,
                 .perimeter => perim = value,
-                .fingers, .source_area, .drain_area, .source_perimeter, .drain_perimeter, .emitter_area, .emitter_perimeter => {},
+                .fins, .fingers, .source_area, .drain_area, .source_perimeter, .drain_perimeter, .emitter_area, .emitter_perimeter => {},
             }
             if (strings.get(spiceParamName(name))) |id| try out.param.append(gpa, .{ .name = id, .value = value });
         }
