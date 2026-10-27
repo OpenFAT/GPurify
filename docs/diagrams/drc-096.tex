@@ -1,0 +1,15 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % Not to scale: the 2 um strip is widened to be seen. dfpad 80 um square.
+  \draw[layer a] (-0.3,-0.3) rectangle (3.6,4.3);
+  \node[caption,above] at (1.6,4.3) {topmetal2};
+  \draw[layer c] (0,0) rectangle (4,4);
+  \node[fill=white,inner sep=1pt] at (1.8,2) {dfpad};
+  \draw[violation] (3.6,0) rectangle (4,4);
+  \node[violation label,right] at (4.15,2) {not on topmetal2};
+  \draw[dim] (0,-0.7) -- (4,-0.7) node[midway,below,dim label] {\SI{80}{\micro\metre}};
+  \draw[dim] (3.6,4.6) -- (4,4.6) node[right=2pt,dim label] {\SI{2}{\micro\metre}};
+\end{circuitikz}
+\end{document}

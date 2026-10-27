@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % 1 um = 2 cm. u1 (1,0)-(2,2), u2 (2.2,0)-(3.2,2).
+  \draw[layer a] (2,0) rectangle (4,4);
+  \node at (3,2.4) {u1};
+  \node[caption] at (3,1.8) {INV};
+  \draw[layer a] (4.4,0) rectangle (6.4,4);
+  \node at (5.4,2.4) {u2};
+  \node[caption] at (5.4,1.8) {INV};
+  \draw[line width=2pt] (4,0) -- (4,4);
+  \draw[line width=2pt] (4.4,0) -- (4.4,4);
+  \draw[line width=2pt] (2,0) -- (2,4);
+  \draw[line width=2pt] (6.4,0) -- (6.4,4);
+  \node[caption,above] at (3.6,4) {GAP};
+  \node[caption,above] at (4.8,4) {GAP};
+  \draw[violation] (4,1) -- (4.4,1);
+  \draw[dim] (4,0.5) -- (4.4,0.5);
+  \node[violation label,below] at (4.2,0) {\SI{0.2}{\micro\metre} $<$ \SI{0.4}{\micro\metre}};
+  \node[caption,left] at (2,0.3) {typed edge};
+\end{circuitikz}
+\end{document}

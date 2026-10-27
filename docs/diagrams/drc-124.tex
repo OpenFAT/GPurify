@@ -1,0 +1,11 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % The cell hierarchy of missing.gds.
+  \node[draw,minimum width=2.4cm,minimum height=0.9cm] (top) at (0,0) {cell TOP};
+  \node[violation,minimum width=2.4cm,minimum height=0.9cm] (nope) at (4.5,0) {cell NOPE};
+  \draw[-{Latex[length=2mm]}] (top) -- node[above,caption] {places} (nope);
+  \node[violation label,below] at (4.5,-0.6) {not defined: layout refused};
+\end{circuitikz}
+\end{document}
