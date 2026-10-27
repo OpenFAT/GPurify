@@ -17,5 +17,14 @@
   \draw[violation] (1.5,0.75) -- (8.5,0.75);
   \node[violation label, above] at (5,0.75) {only path: through nwell};
   \node[caption] at (5,2.3) {no met1 between the pieces};
+  % Beside it: one strap tied to the global substrate through its p-tap.
+  \draw[layer a] (12,0) rectangle (17,1.4);
+  \node[caption] at (14.5,0.4) {psub (global)};
+  \draw[layer b] (14,1.0) rectangle (15,1.4);
+  \draw[layer d] (14.35,1.4) rectangle (14.65,2.1);
+  \draw[layer c] (14.2,2.1) rectangle (14.8,2.5);
+  \node[caption, left] at (14,1.2) {ptap};
+  \node[caption, above] at (14.5,2.5) {VSS};
+  \node[caption, align=center] at (14.5,-0.6) {one piece without ptap and psub:\\ passes};
 \end{circuitikz}
 \end{document}

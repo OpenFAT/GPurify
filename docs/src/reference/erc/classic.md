@@ -281,11 +281,16 @@ well's resistance drops voltage and couples noise. A tap on one side does not ho
 side's well at the supply.
 
 **How GPurify measures it.** GPurify takes every net with a shape on a listed layer. It joins the
-net's shapes again with the listed layers left out, together with every `connect via` line that
-touches them. When the rest falls into two or more pieces, the listed layers were holding the net
-together, and the net is flagged. The violation names one shape in each of two pieces.
+net's shapes again without the listed layers, without every global layer (`connect global`, the
+substrate), and without every `connect via` line that touches either. The substrate is resistive
+too, so it counts as a listed layer whether you list it or not. When the rest falls into two or
+more pieces, those layers were holding the net together, and the net is flagged. The violation
+names one shape in each of two pieces.
 
-![Cross-section of two met1 pieces on n-taps, joined only through the n-well under them](../../diagrams/erc-g5.svg)
+A supply strap tied to the substrate through its own tap is one piece and passes. Two straps of
+one net that meet only through their taps and the substrate are two pieces and are flagged.
+
+![Left, two met1 pieces on n-taps joined only through the n-well, flagged; right, one met1 strap on a p-tap over the global substrate, which passes](../../diagrams/erc-g5.svg)
 
 **In the deck.**
 
@@ -328,8 +333,59 @@ violations: 1
 Net VDD falls into 2 pieces against 1 without the n-well; shape 2 is the left met1 piece and
 shape 3 the right one. `examined` counts the nets with a shape on a listed layer.
 
+With a substrate, the deck lists the p-tap and declares the substrate global, as the sky130 deck
+does:
+
+```text
+grid 5nm
+layer nwell = gds(1, 0)
+layer cont = gds(4, 0)
+layer met1 = gds(5, 0)
+layer text = gds(5, 1)
+layer tap = gds(6, 0)
+layer pimp = gds(8, 0)
+layer ptap = tap and pimp
+layer psub = tap not nwell
+connect conductors [ptap, met1]
+connect global psub
+connect touch_within_layer
+connect via cont [ptap, met1]
+connect via ptap [ptap, psub]
+connect label text names met1
+rule soft soft_connection(ptap)
+```
+
+```sh
+gpurify erc sub_one.gds --deck g5s.deck
+gpurify erc sub_two.gds --deck g5s.deck
+```
+
+One VSS strap on one p-tap (`sub_one.gds`) passes:
+
+```text
+rules:
+  soft: ran, examined 1 shapes, found 0 violations
+violations: 0
+...
+```
+
+Two VSS straps 6.4 µm apart, each on its own p-tap and joined by no metal (`sub_two.gds`), are
+flagged:
+
+```text
+rules:
+  soft: ran, examined 1 shapes, found 1 violations
+violations: 1
+  soft error layer met1 at (1200 nm, 1000 nm) measured 2 against limit 1 on shape 2 and shape 3
+...
+```
+
+The two straps of VSS are 2 pieces against 1 once the p-taps and the substrate are left out.
+
 **Status and limits.** Implemented. The listed layers must be conductors in the deck's `connect`
-lines: GPurify refuses a deck that lists a layer carrying no net. A net joined through the listed layers and also through metal is not flagged.
+lines: GPurify refuses a deck that lists a layer carrying no net. A net joined through the listed
+layers and also through metal is not flagged. A net with no shape on a listed layer is not
+examined, even when only the substrate joins it: list the tap layer, as above.
 
 **Sources.** [KLayout `soft_connect`](https://www.klayout.de/doc-qt5/about/lvs_ref_netter.html);
 Siemens Calibre `SOFTCHK` statement (its name only is public).

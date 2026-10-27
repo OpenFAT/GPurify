@@ -14,7 +14,7 @@ These checks find devices and wires that see more voltage than they are built fo
 - Voltage passes from one net to another through a conducting device: a transistor from source to drain, and every pin of a resistor, inductor, diode or bipolar transistor. A net's range covers every supply that reaches it this way.
 - Gates, bulk terminals and capacitors pass nothing.
 - A transistor whose `device` row states `on_gate_min` conducts only while its gate can reach that voltage or more (an n-channel switch). One that states `on_gate_max` conducts only while its gate can fall to that voltage or less (a p-channel switch). A transistor that states neither always conducts.
-- A gate that no supply reaches, even with every switch on, is driven from outside the layout, so it may be anything and its switch conducts. A gate left floating by switches that are off also lets its switch conduct.
+- A gate that no supply reaches, even with every switch on, is driven from outside the layout, so it takes any voltage and its switch conducts. A gate left floating by switches that are off also lets its switch conduct.
 - A conducting channel passes its full range. There is no threshold drop and no body effect.
 
 A check examines a device or a pair of nets only when some supply reaches each net it compares. Everything else is left out, and the rule's `examined` count says how many items were judged.
@@ -23,7 +23,7 @@ A check examines a device or a pair of nets only when some supply reaches each n
 
 In the example, EN is a cell input that no supply reaches, so the switch conducts and X reaches 3.3 V. The inverter's gate oxide then sees 3.3 V. With EN tied to VSS, the switch is off, X is reached by no supply, and the inverter is not examined. The switch itself is examined instead: its gate sits at 0 V and its source at 3.3 V.
 
-When GPurify can't decide, it says so rather than reporting a clean result:
+When GPurify cannot decide, it says so rather than reporting a clean result:
 
 - Without `--intent`, every rule that reads voltages reports `skipped, no design intent was supplied`, and the run fails.
 - Every supply the intent declares must name a labelled net of the layout. A declared supply that labels no net is an error in the intent, and the rules that read voltages report `refused`.
@@ -31,7 +31,7 @@ When GPurify can't decide, it says so rather than reporting a clean result:
 
 **In the deck.**
 
-Nothing to write for the propagation itself; it runs whenever a rule reads voltages. A transistor row may state when it conducts:
+Nothing to write for the propagation itself; it runs whenever a rule reads voltages. A transistor row optionally states when it conducts:
 
 ```text
 device mos <marker> model "<model>" terminals [<gate>, <source>, <drain>] on_gate_min <voltage>
@@ -111,7 +111,7 @@ In the first run, both inverter transistors see 3.3 V against a 1.95 V limit. In
 
 A row states one of the two, or neither.
 
-**Status and limits.** Implemented. The model has no threshold drop and no body effect, and a diode passes voltage both ways. Ranges are worst case: two nets that never sit at their extremes together still count as reaching them, which can over-report. No shipped deck states a gate condition, so with a shipped deck every transistor conducts.
+**Status and limits.** Implemented. The model has no threshold drop and no body effect, and a diode passes voltage both ways. Ranges are worst case: two nets that never sit at their extremes together still count as reaching them, so the check errs toward a false violation. No shipped deck states a gate condition, so with a shipped deck every transistor conducts.
 
 **Sources.** Siemens white paper 81822 (Calibre PERC), figure 1, conditional voltage propagation; [SkyWater SKY130](https://skywater-pdk.readthedocs.io/en/main/rules/periphery.html) rule hv.X.1; US patent 10,796,045 B2 (property-based path tracing); US patent 9,262,574 B2 (voltage-related analysis of layout data).
 
@@ -188,7 +188,7 @@ Both transistors of the second inverter, at x = 7400 nm, see 3.3 V across a 1.95
 | `models` | list of models | The transistor models the limit applies to, each declared by a `device` row. |
 | `max` | voltage | The largest gate-to-source, gate-to-drain or gate-to-bulk voltage allowed. |
 
-**Status and limits.** Implemented. Ranges are worst case, so a gate and source that always move together still count their full spread, which can over-report against a signoff tool. The bulk counts only when the `device` row names a fourth terminal. The shipped `sky130`, `gf180mcu` and `ihp_sg13g2` decks carry this check.
+**Status and limits.** Implemented. Ranges are worst case, so a gate and source that always move together still count their full spread, which errs toward a false violation. The bulk counts only when the `device` row names a fourth terminal. The shipped `sky130`, `gf180mcu` and `ihp_sg13g2` decks carry this check.
 
 **Sources.** [GlobalFoundries GF180MCU design manual](https://gf180mcu-pdk.readthedocs.io/en/latest/physical_verification/design_man.html) §14.1.4.2; [SkyWater SKY130](https://skywater-pdk.readthedocs.io/en/main/rules/periphery.html) high-voltage rules; ESDA TR22.0 (foundry ESD parameters) §4.1; Siemens Calibre PERC public material.
 
@@ -436,7 +436,7 @@ Each of the five VDD nodes, on met1 and on the p-channel source, lasts 2209 hour
 
 ### ERC-F6: Missing level shifter
 
-**What it catches.** A transistor whose gate is driven from a power domain that powers neither end of its channel, with no level shifter between them. A low-swing signal into a higher-voltage gate leaves the receiving p-channel transistor partly on, which leaks static current and can fail to switch.
+**What it catches.** A transistor whose gate is driven from a power domain that powers neither end of its channel, with no level shifter between them. A low-swing signal into a higher-voltage gate leaves the receiving p-channel transistor partly on, which leaks static current and slows or blocks the switch.
 
 **How GPurify measures it.** For each transistor not of a `shifters` model, GPurify compares the power domains that reach its gate with the power domains that reach its source or drain. The finding counts the domains at the gate that reach neither channel end, against a limit of 0. A transistor whose gate or channel no power supply reaches is not examined. Give every separately powered supply its own domain in the intent.
 
@@ -637,7 +637,7 @@ Net X, reported at its lowest met1 shape at (8300 nm, -5700 nm), floats in one s
 
 ### ERC-F9: DC sneak path between domains
 
-**What it catches.** A device whose channel joins nets of two power domains, such as a transistor or resistor between a 1.8 V and a 3.3 V supply. Whenever it conducts it carries DC current from one domain into the other. That wastes power, and it can back-power a domain that is meant to be off.
+**What it catches.** A device whose channel joins nets of two power domains, such as a transistor or resistor between a 1.8 V and a 3.3 V supply. Whenever it conducts it carries DC current from one domain into the other. That wastes power, and it back-powers a domain that is meant to be off.
 
 **How GPurify measures it.** For each device, GPurify collects the power domains that reach any of its conducting terminals: a transistor's source and drain, or every pin of a resistor, inductor, diode or bipolar transistor. The finding counts the domains against a limit of 1. A device whose channel no power supply reaches is not examined.
 
@@ -830,7 +830,7 @@ VDDH and VSS are 3.3 V apart, which reaches the 2 V step, so their 300 nm gap br
 
 ### ERC-F12: Well and body bias
 
-**What it catches.** A p-channel transistor whose source or drain can rise above its n-well, or an n-channel transistor whose source or drain can fall below its p-well or substrate. That forward-biases the junction between them. It injects current into the well, which wastes power and can trigger latch-up.
+**What it catches.** A p-channel transistor whose source or drain can rise above its n-well, or an n-channel transistor whose source or drain can fall below its p-well or substrate. That forward-biases the junction between them. It injects current into the well, which wastes power and risks latch-up.
 
 **How GPurify measures it.** For a `pmos` model, GPurify takes the highest voltage the source or drain can reach, minus the lowest the bulk can. For an `nmos` model, the highest the bulk can reach, minus the lowest of the source or drain. Anything above 0 V is flagged. A transistor whose bulk, or both of whose channel ends, no supply reaches is not examined. The bulk is the fourth terminal of the `device` row, so the wells must be nets.
 

@@ -16,10 +16,14 @@ transistor and start latch-up.
 
 **How GPurify measures it.** For every polygon of the region layer, GPurify finds the point of the
 polygon furthest from the nearest edge of any tap, every point and not only the corners. The
-distance is Euclidean. A region drawn with a hole is measured as if the hole were filled, which can
-only report more.
+distance is Euclidean. A region drawn with a hole is measured as if the hole were filled, which only
+adds violations.
 
-![Cross-section of an n-well: an n-tap at the left, a pdiff whose far end is 52 µm from the tap against a 20 µm limit, and the parasitic PNP and well resistance under it](../../diagrams/erc-d1.svg)
+The well between that point and the tap is the base resistance of the parasitic PNP under the
+diffusion. With an N+ diffusion in the substrate beside the well, that PNP and a parasitic NPN form
+the thyristor: current through either resistance turns on one transistor, which feeds the other.
+
+![Cross-section: a pdiff in an n-well whose far end is 52 µm from the n-tap against 20 µm, over the parasitic PNP and NPN of the thyristor](../../diagrams/erc-d1.svg)
 
 **In the deck.**
 
@@ -136,7 +140,7 @@ and the pdiff would pass.
 | `max_distance` | list of lengths, one more than `spacing` | The tap distance in each band, the last for no near neighbour. |
 
 **Status and limits.** Implemented. The neighbour's space is measured to any `well` polygon, not
-only the well the region lies in. That can only pick a tighter band, never a looser one. The
+only the well the region lies in. That only ever picks a tighter band, never a looser one. The
 distance is rounded up and an absent tap reads as 0 taps against 1, as for ERC-D1.
 
 **Sources.** [GlobalFoundries GF180MCU design manual](https://gf180mcu-pdk.readthedocs.io/en/latest/physical_verification/design_man.html)
@@ -743,7 +747,7 @@ holds one ndiff, so it measures 1 figure between ring and device against 0.
 **Options.** As for `guard_ring` ([ERC-D2](#erc-d2-guard-ring-round-a-pad-diffusion)).
 
 **Status and limits.** Implemented. The hole is read as its bounding box less the ring. When the
-same ring has another hole inside that box, its contents count too, which can only report more.
+same ring has another hole inside that box, its contents count too, which only adds violations.
 
 **Sources.** [GlobalFoundries GF180MCU design manual](https://gf180mcu-pdk.readthedocs.io/en/latest/physical_verification/design_man.html)
 rule LU.5. The shipped `gf180mcu` deck carries it.
@@ -818,7 +822,7 @@ against 0 mV, and no `latchup_mk` polygon covers it.
 | `models` | models | The diode models to check. |
 
 **Status and limits.** Implemented. Voltages reach each terminal through transistor channels,
-resistors and diodes without any drop, so a diode can read as forward-biased when the circuit never
+resistors and diodes without any drop, so a diode reads as forward-biased even when the circuit never
 drives it that way. That errs toward a false violation. A diode with a terminal no supply reaches
 cannot be decided and is not examined. The rule reports `skipped` without `--intent`.
 
