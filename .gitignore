@@ -33,3 +33,7 @@ vgcore.*
 # Nix
 result
 result-*
+
+# Docs: the built book and the SVGs docs/diagrams/render.sh writes
+docs/book/
+docs/src/diagrams/

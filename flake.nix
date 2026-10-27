@@ -41,6 +41,28 @@
       in
       {
         devShells.default = default;
+        # The user docs: mdBook, and the TeX set that renders their CircuiTikZ
+        # diagrams to SVG (docs/diagrams/render.sh), apart from the default
+        # shell so the test jobs don't fetch TeX: `nix develop .#docs`.
+        devShells.docs = pkgs.mkShell {
+          packages = [
+            pkgs.mdbook
+            (pkgs.texliveBasic.withPackages (
+              ps: with ps; [
+                circuitikz
+                dvisvgm
+                etoolbox
+                lm
+                pgf
+                siunitx
+                standalone
+                xcolor
+                xkeyval
+                xstring
+              ]
+            ))
+          ];
+        };
         # The independent tools the comparison tests run against, pinned by
         # flake.lock so a tool's version changes only in a reviewed commit:
         # `nix develop .#comparison -c zig build test -Dcomparison-tests=true`.
