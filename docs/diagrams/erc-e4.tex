@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.2cm, y=0.0025cm]
+  % allowed current of a 1 um met1 wire rated 2.09 mA/um at 85 C,
+  % Ea 0.7 eV, n 2, against temperature (x: degrees C from 80, y: uA)
+  \draw[->] (0,0) -- (52,0) node[right, caption] {$T$ (\si{\celsius})};
+  \draw[->] (0,0) -- (0,2500) node[above right, caption] {allowed current (\si{\micro\ampere})};
+  \foreach \t in {85,105,125} \draw (\t-80,0) -- (\t-80,-60) node[below, caption] {\t};
+  \foreach \i in {500,1000,1500,2000} \draw (0,\i) -- (-1,\i) node[left, caption] {\i};
+  \draw[line width=1pt, domain=2:50, samples=40, smooth]
+    plot (\x, {2090*exp(11.34044*(5-\x)/(\x+353.15))});
+  % the segment's current
+  \draw[dashed] (0,1000) -- (50,1000) node[right, caption] {segment: \SI{1000}{\micro\ampere}};
+  \fill (5,2090) circle (2pt) node[right, caption, xshift=2pt] {\SI{2090}{\micro\ampere} at \SI{85}{\celsius}, passes};
+  \fill (45,668.9) circle (2pt);
+  \draw[violation] (45,668.9) circle (3.2pt);
+  \node[violation label, anchor=north] at (40,560) {\SI{1000}{\micro\ampere} $>$ \SI{669}{\micro\ampere} at \SI{125}{\celsius}};
+\end{circuitikz}
+\end{document}

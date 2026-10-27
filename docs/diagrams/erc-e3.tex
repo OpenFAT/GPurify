@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % met1 rail 20 um x 0.3 um seen from above (width drawn wider than scale)
+  \draw[layer a] (0,0) rectangle (10,0.6);
+  \node[caption, anchor=west] at (0.15,0.3) {met1 \texttt{VDD}};
+  % feed at the centre, load at 18 um
+  \fill (5,0.3) circle (1.5pt);
+  \node[caption, anchor=south] at (4.6,1.0) {feed};
+  \draw (4.6,1.0) -- (5,0.35);
+  \draw[marker] (8.85,-0.15) rectangle (9.15,0.15);
+  \node[caption, anchor=south] at (9.6,1.0) {load, \SI{400}{\micro\ampere}};
+  \draw (9.6,1.0) -- (9.05,0.2);
+  \draw[->, line width=0.6pt] (5.2,0.3) -- (8.7,0.3);
+  % width
+  \draw[dim] (10.4,0) -- (10.4,0.6);
+  \node[dim label, anchor=west] at (10.5,0.3) {\SI{300}{\nano\metre}};
+  % the segment fails
+  \draw[violation] (5.1,-0.3) rectangle (8.95,0.9);
+  \node[violation label] at (7.05,-0.7) {\SI{400}{\micro\ampere} $>$ \SI{360}{\micro\ampere}};
+  \node[caption, align=left, anchor=north west] at (0,-1.2) {%
+    \SI{300}{\nano\metre} $\le$ \SI{360}{\nano\metre}: the narrow band's \SI{0.36}{\milli\ampere} applies,\\
+    not \SI[per-mode=symbol]{1}{\milli\ampere\per\micro\metre} $\times$ \SI{0.3}{\micro\metre} = \SI{0.3}{\milli\ampere}};
+\end{circuitikz}
+\end{document}

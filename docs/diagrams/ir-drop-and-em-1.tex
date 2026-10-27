@@ -1,0 +1,28 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.12cm]
+  % a met1 rail from above, and the chain of resistors GPurify makes of it
+  \draw[layer a] (0,0) rectangle (100,0.6);
+  \node[caption, anchor=west] at (1,0.3) {met1 \texttt{VDD}, \SI{100}{\micro\metre} $\times$ \SI{1}{\micro\metre}};
+  \draw[marker] (39,-0.12) rectangle (41,0.12);
+  \draw[marker] (89,-0.12) rectangle (91,0.12);
+  \node[caption, anchor=south east] at (41,0.6) {load};
+  \node[caption, above] at (90,0.6) {load};
+  \node[caption, anchor=south west] at (49,0.6) {centre: the feed};
+  % taps projected onto the chain
+  \foreach \x in {40,50,90} \draw[densely dotted] (\x,0.3) -- (\x,-1.6);
+  \coordinate (A) at (40,-1.6);
+  \coordinate (F) at (50,-1.6);
+  \coordinate (B) at (90,-1.6);
+  \draw (F) to[R, l_=\SI{1.25}{\ohm}] (A);
+  \draw (F) to[R, l=\SI{5}{\ohm}] (B);
+  \draw (A) to[american current source, l_=share] ++(0,-2.2) node[ground]{};
+  \draw (B) to[american current source, l=share] ++(0,-2.2) node[ground]{};
+  \draw (F) -- ++(0,-0.9) node[vcc, rotate=180]{} node[below=12pt, caption, align=center] {held at the\\ supply voltage};
+  \foreach \p in {A,F,B} \fill (\p) circle (1.5pt);
+  \node[caption, align=left, anchor=north west] at (0,-5.2) {%
+    one node per tap (a device, a cut, a touching shape, the shape's centre);
+    each segment $R = R_\mathrm{s} \times$ length / width};
+\end{circuitikz}
+\end{document}

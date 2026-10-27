@@ -1,0 +1,20 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % the met1 rail's three grid nodes, each with its voltage and predicted life
+  \coordinate (A) at (0,0);
+  \coordinate (F) at (4,0);
+  \coordinate (B) at (11,0);
+  \draw (F) to[R, l_=\SI{1.25}{\ohm}, i^>=\SI{1000}{\micro\ampere}] (A);
+  \draw (F) to[R, l=\SI{5}{\ohm}, i_>=\SI{1000}{\micro\ampere}] (B);
+  \draw (F) -- ++(0,0.6) node[vcc]{feed, \SI{1.98}{\volt}};
+  \draw (A) to[american current source, l_=\SI{1}{\milli\ampere}] ++(0,-2.2) node[ground]{};
+  \draw (B) to[american current source, l=\SI{1}{\milli\ampere}] ++(0,-2.2) node[ground]{};
+  \foreach \p in {A,F,B} {\fill (\p) circle (1.5pt); \draw[violation] (\p) circle (5pt);}
+  \node[violation label, align=center, anchor=south] at (0,0.3) {\SI{1978.75}{\milli\volt}\\ \SI{68474}{\hour}};
+  \node[violation label, align=center, anchor=north] at (4.9,-0.3) {\SI{1980}{\milli\volt}\\ \SI{68301}{\hour}};
+  \node[violation label, align=center, anchor=south] at (11,0.3) {\SI{1975}{\milli\volt}\\ \SI{68996}{\hour}};
+  \node[caption, anchor=north] at (5.5,-3.0) {every node: predicted life below the required \SI{87600}{\hour} (10 years) at \SI{125}{\celsius}};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,22 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}
+  % the met1 rail loaded with the net's RMS current, 14 mA shared by two loads
+  \coordinate (A) at (0,0);
+  \coordinate (F) at (4.5,0);
+  \coordinate (B) at (11,0);
+  \draw (F) to[R, l_=\SI{1.25}{\ohm}, i^>=\SI{7000}{\micro\ampere}] (A);
+  \draw (F) to[R, l=\SI{5}{\ohm}, i_>=\SI{7000}{\micro\ampere}] (B);
+  \draw (F) -- ++(0,0.6) node[vcc]{feed};
+  \draw (A) to[american current source, l_=\SI{7}{\milli\ampere} RMS] ++(0,-2.6) node[ground]{};
+  \draw (B) to[american current source, l=\SI{7}{\milli\ampere} RMS] ++(0,-2.6) node[ground]{};
+  \foreach \p in {A,F,B} \fill (\p) circle (1.5pt);
+  \draw[violation] (0.5,-0.8) rectangle (3.9,1.0);
+  \draw[violation] (5.2,-0.8) rectangle (10.5,1.0);
+  \node[violation label] at (2.2,-1.25) {\SI{7000}{\micro\ampere} $>$ \SI{6100}{\micro\ampere}};
+  \node[violation label] at (7.85,-1.25) {\SI{7000}{\micro\ampere} $>$ \SI{6100}{\micro\ampere}};
+  \node[caption, align=center, anchor=north] at (5.5,-3.4) {RMS: \SI[per-mode=symbol]{6.1}{\milli\ampere\per\micro\metre} $\times$ \SI{1}{\micro\metre} = \SI{6100}{\micro\ampere}, fails\\
+    peak: \SI{15000}{\micro\ampere} against \SI[per-mode=symbol]{20}{\milli\ampere\per\micro\metre} $\times$ \SI{1}{\micro\metre} = \SI{20000}{\micro\ampere}, passes};
+\end{circuitikz}
+\end{document}
