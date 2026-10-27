@@ -283,11 +283,11 @@ in no ring at all measures 0 rings against 1.
 | `near`, `within` | layer and length, or `none` | Only targets within `within` of a `near` polygon are checked ([ERC-D7](#erc-d7-native-device-guard-ring)). |
 | `clear` | layer or `none` | The ring's hole must hold no area of this layer outside the target ([ERC-D7](#erc-d7-native-device-guard-ring)). |
 
-**Status and limits.** Implemented. The space is measured box to box, which is exact for
-rectangular targets and holes and reports more for other shapes. A `pad` layer must be a conductor, named
-in `connect conductors`, so that its polygons are on nets. The shipped `gf180mcu` deck writes IO.1 to IO.4 but does not yet connect its
-`pad` layer, so those rows check no target until it does. The `esd_latchup` check of the
-[ESD checks](esd.md) combines a pad's clamp path with a ring's width.
+**Status and limits.** Implemented. The space is measured box to box, which is exact for rectangular
+targets and holes and reports more for other shapes. A `pad` layer must be a conductor, named in
+`connect conductors`, so that its polygons are on nets. The shipped `gf180mcu` deck writes IO.1 to
+IO.4 but does not yet connect its `pad` layer, so those rows check no target until it does. The
+`esd_latchup` check of the [ESD checks](esd.md) combines a pad's clamp path with a ring's width.
 
 **Sources.** [GlobalFoundries GF180MCU design manual](https://gf180mcu-pdk.readthedocs.io/en/latest/physical_verification/design_man.html)
 rules IO.1 to IO.4; [IHP SG13G2 layout rules](https://github.com/IHP-GmbH/IHP-Open-PDK/tree/main/ihp-sg13g2/libs.doc/doc)
