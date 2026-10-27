@@ -22,6 +22,8 @@ physical verification. They do not assume you know GPurify.
 
 Beside the checks, GPurify adds metal fill, redundant vias and widened power straps to a layout,
 compares two layouts, checks a multi-die assembly, and characterises a cell into Liberty files.
+It also writes a deck's layers, rules and limits as JSON, for layout generators that need the
+process rules without parsing the deck.
 
 Four decks ship with it, for SkyWater SKY130, GlobalFoundries GF180MCU, IHP SG13G2 and ASAP7.
 [Shipped decks](reference/shipped-decks.md) says what each covers and what it does not.
