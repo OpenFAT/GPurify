@@ -43,6 +43,9 @@ const Dim = @import("kinds.zig").Dim;
 /// `lower` from a `DeckSource`. Only meaningful with a layout on the grid it
 /// was parsed against.
 pub const Deck = struct {
+    /// The `grid` statement, nm: what every deck length is a multiple of;
+    /// set by `parseDeck` only, null for a deck lowered from a source.
+    grid_nm: ?f64 = null,
     /// Drawn and derived layers, and the stream pairs the deck ignores.
     layers: LayerTable = .{},
     /// Every `rule` statement, in deck order.

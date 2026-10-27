@@ -229,7 +229,7 @@ pub fn build(b: *DeckBuilder) Allocator.Error!void {
     try b.rule("lvtn.4b", row(.min_enclosure, .{ .inner = l("lvtn_gate"), .outer = l("lvtn") }, .{ .limit = 180 }));
     try b.rule("lvtn.9", row(.min_spacing_diff, .{ .a = l("lvtn"), .b = l("hvtp") }, .{ .limit = 380 }));
     try b.derived("nwell_novar", l("nwell").outside(l("var_channel")));
-    try b.rule("lvtn.10", row(.noncoincident_enclosure, .{ .inner = l("lvtn"), .outer = l("nwell_novar") }, .{ .limit = 380 }));
+    try b.rule("lvtn.10", row(.noncoincident_enclosure, .{ .inner = l("lvtn").interacting(l("nwell_novar")), .outer = l("nwell_novar") }, .{ .limit = 380 }));
     try b.rule("lvtn.12", row(.min_spacing_diff, .{ .a = l("lvtn"), .b = l("nwell_ce") }, .{ .limit = 380 }));
     try b.rule("lvtn.13", row(.min_area, .{ .layer = l("lvtn") }, .{ .limit = 265000 }));
     try b.rule("lvtn.14", row(.min_enclosed_area, .{ .layer = l("lvtn") }, .{ .limit = 265000 }));
