@@ -16,8 +16,8 @@ has the wrong polarity, plate parasitic or gain.
 **How GPurify measures it.** Each device kind has pins that trade places by default and pins that
 don't, as in Netgen. A transistor's source and drain are interchangeable, and so are the two ends of
 a resistor or an inductor. A diode's anode and cathode, a capacitor's top and bottom plates and a
-bipolar's base, emitter and collector are not: each pairs only with the same pin of its partner. `lvs
-permute` makes two more pins of one model interchangeable. Permutations chain with the defaults and
+bipolar's base, emitter and collector are not: each pairs only with the same pin of its partner.
+`lvs permute` makes two more pins of one model interchangeable. Permutations chain with the defaults and
 with each other: permuting a transistor's `gate` with its `source` makes gate, source and drain all
 interchangeable.
 
@@ -67,8 +67,8 @@ and drain pass. With `lvs permute "cmim" top bottom`, the run above also reports
 **Status and limits.** Implemented. Devices whose interchangeable pins are other than a transistor's
 source and drain merge in parallel either way round, and never in series. The reference is compared
 flat, so the pins of a subcircuit, which KLayout's `equivalent_pins` declares interchangeable, don't
-exist here; a black box's pins pair by name (see [LVS-033](#lvs-033-black-boxes)). A pin can't be
-permuted with itself, nor an asymmetric transistor's source with its drain.
+exist here; a black box's pins pair by name (see [LVS-033](#lvs-033-black-boxes)). The deck is
+refused when it permutes a pin with itself, or an asymmetric transistor's source with its drain.
 
 **Sources.** Netgen `permute` (<http://opencircuitdesign.com/netgen/reference.html>); KLayout LVS
 `equivalent_pins` (<https://www.klayout.de/doc/about/lvs_ref_netter.html>).
@@ -127,9 +127,9 @@ The `nfet`'s source is on `VSS` in the layout and on `Y` in the reference, so no
 
 **Status and limits.** Implemented. Asymmetric transistors never merge in series, so a stack of them
 does not match one card of the summed length: a false mismatch, never a false match. In the example
-deck, source and drain are both drawn on `nsd`, so nothing in the layout tells them apart. GPurify
-then takes the diffusion it reads first as the source. Give an asymmetric model a drain layer of its
-own, such as its drift region, so the layout says which end is which.
+deck, source and drain are both drawn on `nsd`, so nothing in the layout tells them apart, and
+GPurify takes the diffusion it reads first as the source. Give an asymmetric model a drain layer of
+its own, such as its drift region, so the layout says which end is which.
 
 **Sources.** KLayout LVS `dmos3` and `dmos4` device classes
 (<https://www.klayout.de/doc/about/lvs_device_extractors.html>); Netgen, a model given no `permute`
@@ -283,9 +283,9 @@ of the circuit.
 
 **How GPurify measures it.** `lvs ignore "<model>"` drops every device of the model on both sides
 before reduction, as Netgen's `ignore class` does. A net only those devices reached is dropped with
-them, unless it is a reference port or carries a layout label; such a net must still pair. `lvs
-max_res` drops each resistor above the resistance, and `lvs min_caps` each capacitor below the
-capacitance, on both sides, as opens. The layout's value is the one the device line's `sheet`,
+them. A reference port or a labelled layout net stays, and must still pair. `lvs max_res` drops
+each resistor above the resistance, and `lvs min_caps` each capacitor below the capacitance, on
+both sides, as opens. The layout's value is the one the device line's `sheet`,
 `area_cap` or `fringe_cap` gives; a device with no value to read stays.
 
 ![Reference inverter beside the layout inverter with an extra 50 fF cmim decap from VDD to VSS, boxed as an extra device](../../diagrams/lvs-034.svg)
@@ -398,8 +398,8 @@ violations: 0
 lvs: Match
 ```
 
-The dummy is a third transistor the reference lacks, so the comparison fails; `lvs ignore_shorted
-"nfet"` leaves it out and the inverter matches.
+The dummy is a third transistor the reference lacks, so the comparison fails;
+`lvs ignore_shorted "nfet"` leaves it out and the inverter matches.
 
 **Status and limits.** Implemented. No known limits.
 
@@ -424,10 +424,6 @@ layout label, or is a port of the reference, is never joined.
 ![Before: two fingers of an A-over-B nfet stack, each 1 µm with its own inner net. After split_gates: one stack of 2 µm transistors, matching the reference](../../diagrams/lvs-077.svg)
 
 **In the deck.**
-
-```text
-lvs split_gates
-```
 
 ```text
 lvs split_gates

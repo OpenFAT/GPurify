@@ -20,7 +20,9 @@
   \draw (2.2,-2.65) to[R, l={\SI{3}{\kilo\ohm}}] (2.2,-4.85);
   \draw (0.0,-2.65) -- node[above] {A} (2.2,-2.65);
   \draw (0.0,-4.85) -- node[below] {B} (2.2,-4.85);
-  \draw[violation] (-0.7,-5.35) rectangle (3.6,-2.1);
-  \node[violation label,align=center,anchor=center] at (7.199999999999999,-3.75) {strict: no value combined,\\two devices against one};
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (3.6,-3.75) -- node[above,caption,align=center] {parallel merge\\(count)} (5.0,-3.75);
+  \draw (6.6,-2.65) node[above] {A} to[R, l={\shortstack[l]{r \SI{3}{\kilo\ohm}\\m 2}}] (6.6,-4.85) node[below] {B};
+  \draw[violation] (5.8999999999999995,-5.35) rectangle (8.5,-2.1);
+  \node[violation label,align=center,anchor=north] at (7.199999999999999,-5.45) {r and m differ from the card:\\\SI{3}{\kilo\ohm}, m 2 against \SI{1.5}{\kilo\ohm}, m 1};
 \end{circuitikz}
 \end{document}

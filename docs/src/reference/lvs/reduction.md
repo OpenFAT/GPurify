@@ -1,21 +1,12 @@
 # Netlist reduction
 
-Before it compares, LVS reduces both sides: devices drawn as several fingers, a stack or a parallel group become the one device a schematic writes. Each entry gives one reduction rule and the conditions under which devices merge. The report lists every merge under `lvs merges:`.
-
-A merge line names the side, the law, the model and the device rows it joined, counted from 0 in recognition order on the layout and in card order in the reference:
-
-```text
-lvs merges:
-  layout parallel: 2 devices of nfet (0, 1) are one
-```
-
-Reduction repeats until nothing more merges, parallel before series, on each side alone. Two devices merge only when every condition holds; where one fails they stay apart, and a reference that writes one device then has no single partner for them.
+Before it compares, LVS reduces both sides, so that fingers, stacks and parallel groups become the one device a schematic writes. Each entry gives one reduction rule and its conditions, and the report lists every merge under `lvs merges:` (see [How a mismatch is reported](README.md#how-a-mismatch-is-reported)).
 
 ## Transistors
 
 ### LVS-040: Parallel MOS
 
-**What it catches.** A transistor drawn as several devices side by side, where the schematic writes one wide device. Without reduction, two 1 µm transistors never pair with one 2 µm card, and LVS reports a correct layout as a mismatch. The merge also keeps fingers of different lengths apart: they are a different circuit.
+**What it catches.** A transistor drawn as several devices side by side, where the schematic writes one wide device. Without reduction, two 1 µm transistors never pair with one 2 µm card, and LVS reports a correct layout as a mismatch. Fingers of different lengths stay apart: they are a different circuit.
 
 **How GPurify measures it.** Transistors of one model merge in parallel when their gates, bulks and source/drain pairs land on the same nets. Source and drain are interchangeable, so a finger drawn the other way round still merges. The merged device's `w`, `nf` and `nfin` are the sums of its members'. `as`, `ad`, `ps` and `pd` are summed end by end. Every other parameter, `l` included, must be identical; the comparison's tolerance plays no part. A transistor with no `w` merges only by counting `m`.
 
@@ -64,7 +55,7 @@ The lengths differ, so nothing merges and no `lvs merges:` line is printed. Two 
 
 **What it catches.** A long transistor drawn as a stack of short ones through an uncontacted node, where the schematic writes one device of the summed length. Analog designers stack transistors for long channels; without reduction the stack never pairs with the card.
 
-**How GPurify measures it.** Two transistors of one model merge in series when they meet at a net that holds only their two channel ends. That net must be no port, and carry no layout label: a label makes it a port, on both sides. Their gates and bulks must be on the same nets, and both must state `l`. The merged device's `l` is the sum; every other parameter must be identical. Series merging is on by default. A transistor that states `as`, `ad`, `ps` or `pd`, or `sa` or `sb`, never merges in series.
+**How GPurify measures it.** Two transistors of one model merge in series when they meet at a net that holds only their two channel ends. That net must be no port, and carry no layout label: a label makes it a port, on both sides. Their gates and bulks must be on the same nets, and both must state `l`. The merged device's `l` is the sum; every other parameter must be identical. Series merging is on by default. Parallel and series merges repeat, parallel first, until nothing more merges. A transistor that states `as`, `ad`, `ps` or `pd`, or `sa` or `sb`, never merges in series.
 
 ![Two nfets of 0.15 µm in series through an unlabelled node reduce to one of 0.3 µm; with the inner node labelled M they stay two](../../diagrams/lvs-041.svg)
 
@@ -171,7 +162,7 @@ lvs: Mismatch([UnpairedDevice { side: Layout, device: 0, model: "rpoly" }, Unpai
 
 Strict, the segments stay two resistors with an unnamed net between them, against one card.
 
-**Status and limits.** Implemented. A resistor whose card states no `r` keeps its count under relaxed too. Parallel resistors are merged with a count only when a netlist writes `m` somewhere; otherwise they stay apart and pair one to one.
+**Status and limits.** Implemented. A resistor whose card states no `r` keeps its count under relaxed too.
 
 **Sources.** KLayout LVS resistor combination (<https://www.klayout.de/doc/about/lvs_ref_netter.html>); Netgen `property` series and parallel, as the SkyWater SKY130 Netgen setup states them (<http://opencircuitdesign.com/netgen/reference.html>).
 
@@ -229,7 +220,7 @@ lvs: Mismatch([UnpairedDevice { side: Layout, device: 0, model: "cmim" }, Unpair
 
 The plates are not on the same nets pin for pin, so the two capacitors stay apart against one card.
 
-**Status and limits.** Implemented. Plates wired either way merge once `lvs permute "cmim" top bottom` makes them interchangeable. Diodes wired in opposite directions never merge, and diodes and bipolars never merge in series; neither KLayout nor Netgen merges them so. When neither netlist writes `m`, strict parallel devices stay apart and pair one to one.
+**Status and limits.** Implemented. Plates wired either way merge once `lvs permute "cmim" top bottom` makes them interchangeable. Diodes wired in opposite directions never merge, and diodes and bipolars never merge in series; neither KLayout nor Netgen merges them so.
 
 **Sources.** KLayout LVS capacitor combination (<https://www.klayout.de/doc/about/lvs_ref_netter.html>); Netgen `property` parallel combination (<http://opencircuitdesign.com/netgen/reference.html>); Magic `ext2spice merge`; Siemens Calibre `LVS REDUCE SERIES CAPACITORS`.
 
@@ -296,7 +287,7 @@ The bulks differ, so the two transistors stay apart against one card. A referenc
 
 **What it catches.** A transistor drawn as fingers on one diffusion, against a card that states its size with `nf` or `m`. The schematic's `W=0.5u m=4` and the layout's two 1 µm fingers are the same 2 µm of channel; LVS must see them as one device and still catch a wrong finger count.
 
-**How GPurify measures it.** On each side, a transistor card stating `w` has its `m` folded in first: `w`, `nfin`, `as`, `ad`, `ps` and `pd` are multiplied by `m`, and `m` is dropped. Every other device, and a transistor with no `w`, keeps `m` as its count, and a parallel merge adds the counts. A card without `m` counts 1. The layout measures `nf` 1 on each transistor, and a parallel merge adds it. The counts `m`, `nf` and `nfin` are compared exactly, never within the tolerance.
+**How GPurify measures it.** On each side, a transistor stating `w` or `nfin` has its `m` folded in first: `w`, `nfin`, `as`, `ad`, `ps` and `pd` are multiplied by `m`, and `m` is dropped. Every other device, and a transistor with neither, keeps `m` as its count, and a parallel merge adds the counts; under `lvs topology relaxed`, a passive stating its value folds `m` into it instead. A card without `m` counts 1. The layout measures `nf` 1 on each transistor, and a parallel merge adds it. The counts `m`, `nf` and `nfin` are compared exactly, never within the tolerance.
 
 ![Two 1 µm fingers sharing S reduce to one nfet of W 2 µm, nf 2, matching a W 0.5 µm m=4 card; against nf=3 the count differs](../../diagrams/lvs-046.svg)
 
@@ -413,7 +404,7 @@ Each side's two n-channel transistors become one stack with interchangeable gate
 
 **What it catches.** Transistors drawn in the layout that do nothing: dummies at the end of a row, tie-offs with a floating drain, devices with every pin on one net. The schematic leaves them out, so without filtering every such transistor is an extra device.
 
-**How GPurify measures it.** With `lvs filter_unused`, each layout transistor an option matches leaves the comparison before reduction, with the nets only it reached. A pin floats when its net holds no other device terminal and carries no label. Each transistor is judged once, as drawn, and the reference is never filtered. The `c` option reads the supply nets that `lvs supply` names by layout label.
+**How GPurify measures it.** With `lvs filter_unused`, each layout transistor an option matches leaves the comparison before reduction, with the nets only it reached. A pin floats when its net holds no other terminal and carries no label. Each transistor is judged once, as drawn, and the reference is never filtered. The `c` option reads the supply nets that `lvs supply` names by layout label.
 
 ![An inverter and a tie-off nfet, gate and source on VSS, drain floating; filter_unused c leaves it out and the inverter matches the reference](../../diagrams/lvs-048.svg)
 
@@ -485,9 +476,9 @@ The gate is on a supply and the drain floats, so the tie-off leaves the comparis
 
 **What it catches.** The choice between matching passives by structure and matching them by value. A schematic that writes one 1.5 kΩ resistor where the layout draws two 3 kΩ resistors in parallel is the same circuit electrically, but not structurally. A matching-critical resistor array must keep its count; a filter's resistor needs only its value.
 
-**How GPurify measures it.** `lvs topology strict`, the default, never combines values: parallel passives keep their value and count `m`, and no passive merges in series. `lvs topology relaxed` combines a resistor, capacitor, diode or bipolar whose card states its value (`r`, `c`, `area`, `ae`). In parallel, resistances combine harmonically and the rest add. In series, resistors and capacitors combine by the opposite law. A card's `m` folds into its value first, and a device whose card states no value keeps its count.
+**How GPurify measures it.** `lvs topology strict`, the default, never combines values: parallel passives keep their value and count `m`, and no passive merges in series. `lvs topology relaxed` combines a resistor, capacitor, diode or bipolar whose card states its value (`r`, `c`, `area`, `ae`). In parallel, resistances and inductances combine harmonically and the rest add. In series, resistors, capacitors and inductors combine by the opposite law, through a net only the two touch and that is no port. A card's `m` folds into its value first, and a device whose card states no value keeps its count.
 
-![Two 3 kΩ rpoly resistors in parallel reduce under relaxed to one 1.5 kΩ resistor matching the reference; under strict they stay two](../../diagrams/lvs-049.svg)
+![Two 3 kΩ rpoly resistors in parallel reduce under relaxed to one of 1.5 kΩ, matching the reference; under strict to one of 3 kΩ with m 2](../../diagrams/lvs-049.svg)
 
 **In the deck.**
 
@@ -515,12 +506,14 @@ gpurify lvs res_pair.gds --deck strict.deck --reference res_1k5.spice
 ```
 
 ```text
-violations: 7
+violations: 2
 ...
-lvs: Mismatch([UnpairedDevice { side: Layout, device: 0, model: "rpoly" }, UnpairedDevice { side: Layout, device: 1, model: "rpoly" }, UnpairedNet { side: Layout, net: 0, name: Some("A") }, UnpairedNet { side: Layout, net: 1, name: Some("B") }, UnpairedDevice { side: Reference, device: 0, model: "rpoly" }, UnpairedNet { side: Reference, net: 0, name: Some("A") }, UnpairedNet { side: Reference, net: 1, name: Some("B") }])
+lvs merges:
+  layout parallel: 2 devices of rpoly (0, 1) are one
+lvs: Mismatch([ParameterMismatch { layout_device: 0, ref_device: 0, param: "m", layout_value: 2.0, ref_value: 1.0 }, ParameterMismatch { layout_device: 0, ref_device: 0, param: "r", layout_value: 2999.9999999999995, ref_value: 1500.0 }])
 ```
 
-Strict, two resistors face one card. With `lvs topology relaxed`:
+Strict, the two resistors merge into one of 3 kΩ counted `m=2`, which differs from the card's 1.5 kΩ, counted 1. With `lvs topology relaxed`:
 
 ```sh
 gpurify lvs res_pair.gds --deck relaxed.deck --reference res_1k5.spice
@@ -533,7 +526,7 @@ lvs merges:
 lvs: Match
 ```
 
-The two 3 kΩ resistors combine into 1.5 kΩ. Strict, the same layout matches a card `R1 A B rpoly r=3k m=2` instead, merged with a count.
+The two 3 kΩ resistors combine into 1.5 kΩ. Strict, the same layout matches a card `R1 A B rpoly r=3k m=2` instead.
 
 **Status and limits.** Implemented. No known limits.
 
