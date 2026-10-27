@@ -30,8 +30,9 @@ places each terminal on the layout through LVS, so `--currents` needs the refere
 gpurify erc top.gds --deck top.deck --intent intent.json --reference top.spice --currents top.emir.json
 ```
 
-`erc` takes `--reference` only together with `--currents`. To compare the layout with the reference,
-run `lvs`.
+`erc` takes `--reference` only together with `--currents`. The layout must match the reference: if LVS
+finds any mismatch, the run is refused, since a current placed on a wrongly paired device would
+mislead. To compare the layout with the reference and find the mismatch, run `lvs`.
 
 | Input | Given by | Read by |
 |---|---|---|

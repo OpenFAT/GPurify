@@ -73,6 +73,10 @@ terminal, and each rule reads one:
 `dynamic_ir_drop` and `reliability` keep reading the budget. A net the file does not reach keeps its
 budget too.
 
+The pairing is only as good as the match. If LVS finds any mismatch, GPurify refuses the run rather
+than place a terminal's current on a device it might have paired wrongly. Fix the layout until `lvs`
+reports a match, then add `--currents`.
+
 ![Simulated loads of 0.5, 0.5 and 2 mA on the rail: one segment carries 2500 µA where an even 1 mA share would give 2000 µA](../diagrams/erc-e14.svg)
 
 The same 3 mA total, shared evenly, passes a 2200 µA limit and a 10 mV drop. Placed where the simulation
