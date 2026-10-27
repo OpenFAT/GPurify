@@ -899,7 +899,7 @@ A kit with no public value carries no line. No shipped deck states `svt` or
 no one A_VT is stated), IHP's `rsil` (two coefficients, neither named the
 area term), or anything for `gf180mcu` (its documentation plots matching
 without stating a slope, and its model states the transistors' coefficient
-over an effective area) or `generic_finfet`. Each deck's comments beside
+over an effective area) or `asap7`. Each deck's comments beside
 its statements say what was read.
 
 ## LVS controls

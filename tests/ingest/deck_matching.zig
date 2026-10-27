@@ -19,7 +19,7 @@ const devices =
     \\
 ;
 
-const shipped = [_][]const u8{ "generic_finfet", "gf180mcu", "ihp_sg13g2", "sky130" };
+const shipped = [_][]const u8{ "asap7", "gf180mcu", "ihp_sg13g2", "sky130" };
 
 // ---- private ----
 
