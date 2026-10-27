@@ -97,6 +97,11 @@ transistor measures no `w`.
 device mos NMOS_RVT model "nmos_rvt" terminals [GATE_FET, SD, SD] fins FIN
 ```
 
+![A FinFET: a 150 nm poly gate crosses a diffusion with three horizontal fins; the dashed gate marker covers all three, so nfin is 3](../../diagrams/deck-devices-2.svg)
+
+Here three fins pass under the gate marker, so the transistor's `nfin` is 3, and a reference card
+with `nfin=4` is a parameter mismatch.
+
 ## What LVS measures
 
 LVS measures every device from what is drawn, and compares each value a reference card states,

@@ -83,7 +83,7 @@ layer huge_met1   = met1.sized(-1.5um).sized(1.5um)
 layer tap_gate    = poly.interacting(tap).not_interacting(licon)
 ```
 
-![Four panels: met1 and met2 as drawn; met1 and met2 keeps their overlap; met1 not met2 keeps met1 outside met2; met1.sized(d) grows met1 by d on every side](../../diagrams/deck-layers-1.svg)
+![Five panels: met1 and met2 as drawn; their overlap for and; their union for or; met1 outside met2 for not; met1 grown by d on every side for sized](../../diagrams/deck-layers-1.svg)
 
 Wherever a rule or another statement takes a layer, it can take an expression instead:
 `forbidden(licon and poly)` is the same as declaring `layer x = licon and poly` and naming `x`.
@@ -96,6 +96,13 @@ shape. Shapes that meet only at a corner point are one shape too, joined there b
 Every operation, every check and net extraction read shapes this way.
 
 ### Operations on polygon layers
+
+The selection operations keep or drop whole shapes and never cut one. In the layout below, met1
+shape A lies inside a `sel` shape, B crosses its edge, C touches it from outside, D is apart, and
+E holds the whole of a second, small `sel` shape.
+
+![Eight panels on one layout of met1 shapes A to E and two sel shapes: interacting keeps A, B, C and E; not_interacting D; inside A; outside C and D; overlapping A, B and E; covering E; not_covering A, B, C and D](../../diagrams/deck-layers-2.svg)
+
 
 | Operation | Result |
 |---|---|
@@ -126,6 +133,12 @@ Every operation, every check and net extraction read shapes this way.
 | `.in_cells("pattern", ...)` | The shapes of a drawn layer placed under a cell whose name matches one of the patterns: the cell the shape is drawn in, or any cell above it, the top cell included. Shapes are taken as drawn, before they merge. |
 | `.not_in_cells("pattern", ...)` | The other shapes of the drawn layer. With `.in_cells` of the same patterns, it splits the layer in two. |
 | `.edges()` | The boundary of each shape, as an edge layer (below). |
+
+The shape operations make new shapes. On a 3 µm by 2 µm ring with a 1 µm by 0.8 µm hole, and an
+L-shaped wire, `.holes()` gives the hole alone, `.extents()` gives the two bounding boxes, and
+`.edges()` with `.extended` gives one box per selected edge:
+
+![Four panels: a met1 ring and an L shape as drawn; holes gives the ring's hole; extents gives each shape's bounding box; edges, horizontal, with_length at least 3 µm and extended 200 nm out gives a box outside each long horizontal edge](../../diagrams/deck-layers-3.svg)
 
 **Bounds** are one or two comparisons, separated by a comma: `>=`, `>`, `<=`, `<`, or a single
 `==`. For example `with_area(>= 1um2)`, `with_width(> 1um, <= 3um)`. At most one bound is on each

@@ -1,0 +1,31 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=0.7cm,y=0.7cm]
+  % 1 unit = 1 um. A ring (0,0)-(3,2) with a hole (1,0.6)-(2,1.4), and an
+  % L shape (4,0)-(7,0.8) plus (4,0.8)-(5,2).
+  \def\ring{(0,0) rectangle (3,2) (1,0.6) rectangle (2,1.4)}
+  \def\ell{(4,0) -- (7,0) -- (7,0.8) -- (5,0.8) -- (5,2) -- (4,2) -- cycle}
+  \begin{scope}
+    \fill[layer a,even odd rule] \ring; \fill[layer a] \ell;
+    \node[caption,anchor=north] at (3.5,-0.5) {drawn: met1};
+  \end{scope}
+  \begin{scope}[xshift=6.3cm]
+    \draw[marker] \ring; \draw[marker] \ell;
+    \fill[layer b] (1,0.6) rectangle (2,1.4);
+    \node[caption,anchor=north] at (3.5,-0.5) {\texttt{met1.holes()}};
+  \end{scope}
+  \begin{scope}[xshift=12.6cm]
+    \fill[layer b] (0,0) rectangle (3,2); \fill[layer b] (4,0) rectangle (7,2);
+    \draw[marker] (1,0.6) rectangle (2,1.4); \draw[marker] (5,0.8) -- (7,0.8);
+    \node[caption,anchor=north] at (3.5,-0.5) {\texttt{met1.extents()}};
+  \end{scope}
+  \begin{scope}[xshift=18.9cm]
+    \draw[marker] \ring; \draw[marker] \ell;
+    \fill[layer b] (0,-0.2) rectangle (3,0); \fill[layer b] (0,2) rectangle (3,2.2);
+    \fill[layer b] (4,-0.2) rectangle (7,0);
+    \draw[line width=1.4pt] (0,0) -- (3,0) (0,2) -- (3,2) (4,0) -- (7,0);
+    \node[caption,anchor=north,align=center] at (3.5,-0.5) {\texttt{met1.edges().horizontal()}\\\texttt{.with\_length(>= 3um)}\\\texttt{.extended(\dots, out: 200nm, in: 0nm)}};
+  \end{scope}
+\end{circuitikz}
+\end{document}

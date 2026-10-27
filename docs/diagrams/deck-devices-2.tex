@@ -1,0 +1,19 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[x=2.4cm,y=2.4cm]
+  % A FinFET as the deck sees it, 1 unit = 1 um: diff (0,0)-(1,0.6), poly
+  % (0.45,-0.2)-(0.6,0.8), three fins 30 nm tall at y 0.1, 0.28, 0.46.
+  \fill[layer a] (0,0) rectangle (1,0.6);
+  \foreach \y in {0.1,0.28,0.46} \fill[layer b] (-0.1,\y) rectangle (1.1,\y+0.03);
+  \fill[layer c] (0.45,-0.2) rectangle (0.6,0.8);
+  \draw[marker,line width=1.2pt] (0.45,0) rectangle (0.6,0.6);
+  \foreach \y/\n in {0.1/1,0.28/2,0.46/3} \node[caption,anchor=west] at (1.12,\y+0.015) {fin \n};
+  \node[caption,anchor=south] at (0.525,0.8) {poly: gate};
+  \node[caption,anchor=north] at (0.2,-0.02) {source}; \node[caption,anchor=north] at (0.82,-0.02) {drain};
+  \draw[-{Latex[length=2mm]}] (-0.3,0.75) node[caption,anchor=east] {marker \texttt{gate}} -- (0.44,0.58);
+  \draw[dim] (0.45,-0.32) -- (0.6,-0.32);
+  \node[dim label,anchor=north] at (0.525,-0.35) {$L = \SI{150}{\nano\metre}$};
+  \node[caption,anchor=west,align=left] at (1.5,0.3) {$n_\text{fin} = 3$: the fin shapes\\under the marker};
+\end{circuitikz}
+\end{document}
