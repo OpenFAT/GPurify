@@ -1,0 +1,34 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2, whose output Y runs into a black
+% box `macro` with pin #3 on the left and pin #4 on the right (net Z).
+\newcommand{\invbox}[4]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {pfet};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt] at (#2n.east) {nfet};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+  \coordinate (#2y) at ($(#2p.D)+(0,-0.35)$);
+  \draw (#2y) -- ++(1.8,0) coordinate (#2l);
+  \node[above,font=\footnotesize] at ($(#2y)+(1.2,0)$) {Y};
+  \draw[line width=0.8pt] ($(#2l)+(0,-0.6)$) rectangle ++(1.8,1.2);
+  \node[font=\footnotesize] at ($(#2l)+(0.9,0.0)$) {macro};
+  \node[anchor=west,font=\footnotesize] at ($(#2l)+(0.05,-0.38)$) {#3};
+  \node[anchor=east,font=\footnotesize] at ($(#2l)+(1.75,-0.38)$) {#4};
+  \draw ($(#2l)+(1.8,0)$) -- ++(0.6,0) node[right] {Z};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (2.6,5.1) {Reference netlist};
+  \node[font=\bfseries] at (10.6,5.1) {Layout, extracted};
+  \invbox{1.0}{r}{N}{P}
+  \invbox{9.0}{l}{P}{N}
+  \node[caption,align=center] at (12.2,0.4) {contents left out:\\pins only};
+  \draw[violation] (2.5,0.8) rectangle (5.0,2.6);
+  \node[violation label,align=center] at (3.75,0.2) {Y on pin N, not P};
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,23 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference card. Right: the inductor marker between two met1
+  % pads; its value is the deck's, 2 nH for every device of the row.
+  \node[font=\bfseries] at (1.0,3.0) {Reference netlist};
+  \draw (0,2.0) node[left] {A} to[L] (2,2.0) node[right] {B};
+  \node[right] at (0,1.2) {L1 ind};
+  \node[right,violation] at (0,0.7) {\SI{3}{\nano\henry}};
+
+  \node[font=\bfseries] at (6.6,3.0) {Layout, extracted};
+  \draw[layer a] (4.5,1.6) rectangle (5.1,2.2);
+  \draw[layer a] (8.1,1.6) rectangle (8.7,2.2);
+  \draw[marker] (5.1,1.6) rectangle (8.1,2.2);
+  \node[font=\footnotesize] at (6.6,1.9) {\texttt{indm}};
+  \node[left] at (4.5,1.9) {A};
+  \node[right] at (8.7,1.9) {B};
+  \node[font=\footnotesize,align=center] at (6.6,1.0) {\texttt{inductance 2nH} in the deck};
+  \node[violation label] at (6.6,0.3) {ind \SI{2}{\nano\henry} against \SI{3}{\nano\henry}};
+  \node[caption] at (4.4,-0.4) {grey: met1 pads; dashed: the inductor marker};
+\end{circuitikz}
+\end{document}

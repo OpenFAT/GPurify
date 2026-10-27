@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference card, a regular nfet. Right: the drawn transistor
+  % with the hvtp implant over its gate: ngate and hvtp, so nfet_hvt.
+  \node[font=\bfseries] at (1.2,3.6) {Reference netlist};
+  \node[nmos] (n) at (1.0,1.6) {};
+  \draw (n.G) -- ++(-0.3,0) node[left] {G};
+  \draw (n.D) -- ++(0,0.3) node[above] {D};
+  \draw (n.S) -- ++(0,-0.3) node[below] {S};
+  \node[right,violation] at (1.5,1.9) {M1 nfet};
+  \node[right] at (1.5,1.3) {W \SI{1}{\micro\metre}, L \SI{0.15}{\micro\metre}};
+
+  \node[font=\bfseries] at (7.0,3.6) {Layout, extracted};
+  \draw[layer a] (5.4,0.6) rectangle (8.6,2.6);
+  \draw[layer d] (6.5,0.1) rectangle (7.5,3.1);
+  \draw[layer c] (6.75,0.2) rectangle (7.25,3.0);
+  \draw[marker] (6.75,0.6) rectangle (7.25,2.6);
+  \node[font=\footnotesize] at (6.0,1.6) {S};
+  \node[font=\footnotesize] at (8.0,1.6) {D};
+  \node[font=\footnotesize,right] at (7.5,2.9) {hvtp};
+  \node[violation label,align=center] at (7.0,-0.45) {\texttt{ngate and hvtp}: model nfet\_hvt\\ against nfet};
+  \node[caption] at (4.6,-1.4) {grey: diffusion; hatched: poly; dotted: the hvtp implant; dashed: the gate marker};
+\end{circuitikz}
+\end{document}

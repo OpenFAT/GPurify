@@ -1,0 +1,27 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference card, nfin=4. Right: INVx2's n-channel side from
+  % above: two gates over three fins each, merged in parallel to nfin 6.
+  \node[font=\bfseries] at (1.2,3.8) {Reference netlist};
+  \node[nmos] (n) at (1.0,1.8) {};
+  \draw (n.G) -- ++(-0.3,0) node[left] {A};
+  \draw (n.D) -- ++(0,0.3) node[above] {Y};
+  \draw (n.S) -- ++(0,-0.3) node[below] {VSS};
+  \node[right] at (1.5,2.1) {MM0 nmos\_rvt};
+  \node[right,violation] at (1.5,1.5) {nfin 4};
+
+  \node[font=\bfseries] at (7.0,3.8) {Layout, extracted};
+  \foreach \y in {0.9,1.7,2.5} \draw[layer b] (4.9,\y) rectangle (9.1,\y+0.2);
+  \draw[layer c] (6.0,0.4) rectangle (6.4,3.2);
+  \draw[layer c] (7.6,0.4) rectangle (8.0,3.2);
+  \draw[marker] (5.9,0.75) rectangle (6.5,2.85);
+  \draw[marker] (7.5,0.75) rectangle (8.1,2.85);
+  \node[font=\footnotesize,below] at (6.2,0.4) {3 fins};
+  \node[font=\footnotesize,below] at (7.8,0.4) {3 fins};
+  \node[font=\footnotesize,right] at (9.1,1.8) {FIN};
+  \node[violation label,align=center] at (7.0,-0.55) {in parallel: nfin 3 + 3 = 6\\ against 4};
+  \node[caption] at (4.6,-1.5) {dark grey: fins; hatched: gates; dashed: the channel markers};
+\end{circuitikz}
+\end{document}

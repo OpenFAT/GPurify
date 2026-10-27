@@ -1,0 +1,26 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  % Left: the reference card. Right: the drawn poly resistor from above,
+  % w and l from the rbody marker, r = 300 ohm x 5 / 0.5 = 3 kohm.
+  \node[font=\bfseries] at (1.0,3.0) {Reference netlist};
+  \draw (0,2.0) node[left] {A} to[R] (2,2.0) node[right] {B};
+  \node[right] at (0,1.2) {R1 rpoly};
+  \node[right,violation] at (0,0.7) {r \SI{2.5}{\kilo\ohm}};
+  \node[right] at (0,0.2) {w \SI{0.5}{\micro\metre}, l \SI{5}{\micro\metre}};
+
+  \node[font=\bfseries] at (6.9,3.0) {Layout, extracted};
+  \draw[layer c] (4.5,1.6) rectangle (9.3,2.1);
+  \draw[layer a] (4.6,1.65) rectangle (4.95,2.05);
+  \draw[layer a] (8.85,1.65) rectangle (9.2,2.05);
+  \draw[marker] (5.1,1.4) rectangle (8.7,2.3);
+  \node[above] at (4.78,2.1) {A};
+  \node[above] at (9.02,2.1) {B};
+  \node[font=\footnotesize,above] at (6.9,2.3) {\texttt{rpm} over the body};
+  \draw[dim] (5.1,1.05) -- node[dim label,below] {l \SI{5}{\micro\metre}} (8.7,1.05);
+  \draw[dim] (9.7,1.6) -- node[dim label,right] {w \SI{0.5}{\micro\metre}} (9.7,2.1);
+  \node[violation label,align=center] at (6.9,0.0) {r = \SI{300}{\ohm} $\times$ 5 / 0.5 = \SI{3}{\kilo\ohm}\\ against \SI{2.5}{\kilo\ohm}};
+  \node[caption] at (5.0,-1.0) {hatched: poly; grey: contacts; dashed: the resistor marker};
+\end{circuitikz}
+\end{document}

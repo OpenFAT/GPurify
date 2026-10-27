@@ -1,0 +1,33 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (2.4,4.4) {Reference netlist};
+  \node[font=\bfseries] at (10.4,4.4) {Layout, extracted};
+
+  \node[nmos] (a) at (0.8,2.0) {};
+  \node[nmos] (b) at (4.0,2.0) {};
+  \node[right=2pt] at (a.east) {M1};
+  \node[right=2pt] at (b.east) {M2};
+  \draw (a.S) |- (2.4,1.1) coordinate (t) -| (b.S);
+  \draw (t) -- ++(0,-0.3) node[below] {T};
+  \draw (a.D) -- ++(0,0.3) node[above] {X};
+  \draw (b.D) -- ++(0,0.3) node[above] {Z};
+  \draw (a.G) -- ++(-0.2,0) node[left] {P};
+  \draw (b.G) -- ++(-0.2,0) node[left] {N};
+
+  \node[nmos] (la) at (8.8,2.0) {};
+  \node[nmos] (lb) at (12.0,2.0) {};
+  \draw (la.S) |- (10.4,1.1) coordinate (lt) -| (lb.S);
+  \draw (lt) -- ++(0,-0.3) node[below] {T};
+  \draw (la.D) -- ++(0,0.3) node[above] {OUTN};
+  \draw (lb.D) -- ++(0,0.3) node[above] {OUTP};
+  \draw (la.G) -- ++(-0.2,0) node[left] {INP};
+  \draw (lb.G) -- ++(-0.2,0) node[left] {INN};
+
+  \draw[violation] (-1.05,1.3) rectangle (2.0,3.6);
+  \draw[violation] (6.55,1.3) rectangle (9.8,3.6);
+  \node[caption,align=center] at (6.2,-0.4) {lvs same\_nets "INP" "P" \quad lvs same\_nets "OUTP" "X"};
+  \node[violation label,align=center] at (6.2,-1.0) {INP drives OUTN, but P drives X, the net OUTP is held to};
+\end{circuitikz}
+\end{document}

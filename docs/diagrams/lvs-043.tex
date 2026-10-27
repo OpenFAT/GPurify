@@ -1,0 +1,21 @@
+% LVS-043 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.2,2.5) {Layout, drawn};
+  \node[font=\bfseries] at (7.199999999999999,2.5) {Layout, reduced};
+  \node[font=\bfseries] at (12.0,2.5) {Reference netlist};
+  \draw (1.0,1.9000000000000001) node[above] {A} to[R, l={\SI{3}{\kilo\ohm}}] (1.0,0.3) to[R, l={\SI{3}{\kilo\ohm}}] (1.0,-1.3) node[below] {B};
+  \draw (1.0,0.3) to[short,*-] ++(-0.6,0) node[left] {M};
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (3.6,0.3) -- node[above,caption,align=center] {series merge\\(relaxed)} (5.0,0.3);
+  \draw (6.6,1.4000000000000001) node[above] {A} to[R, l={\shortstack[l]{r \SI{6}{\kilo\ohm}\\w \SI{0.5}{\micro\metre}}}] (6.6,-0.8) node[below] {B};
+  \draw (11.2,1.4000000000000001) node[above] {A} to[R] (11.2,-0.8) node[below] {B};
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (12.0,-1.5) {R1 A B rpoly\\r=6k w=0.5u};
+  \node[caption,anchor=west,font=\small\itshape] at (-0.8,-2.15) {The same layout under the default strict topology};
+  \draw (1.0,-3.1999999999999997) node[above] {A} to[R, l={\SI{3}{\kilo\ohm}}] (1.0,-4.8) to[R, l={\SI{3}{\kilo\ohm}}] (1.0,-6.4) node[below] {B};
+  \draw (1.0,-4.8) to[short,*-] ++(-0.6,0) node[left] {M};
+  \draw[violation] (-0.6,-7.0) rectangle (2.8,-2.6);
+  \node[violation label,align=center,anchor=center] at (7.199999999999999,-4.8) {strict: no series merge,\\two devices against one};
+\end{circuitikz}
+\end{document}

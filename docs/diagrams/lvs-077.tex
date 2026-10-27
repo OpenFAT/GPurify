@@ -1,0 +1,52 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% A two-high nfet stack at x = #1, node prefix #2, gates A over B, each
+% transistor labelled #3; (#2i) is its inner net.
+\newcommand{\stack}[3]{%
+  \node[nmos] (#2t) at (#1,2.7) {};
+  \node[nmos] (#2b) at (#1,0.7) {};
+  \node[right=1pt,font=\footnotesize] at (#2t.east) {#3};
+  \node[right=1pt,font=\footnotesize] at (#2b.east) {#3};
+  \draw (#2t.S) -- (#2b.D);
+  \coordinate (#2i) at ($(#2t.S)!0.5!(#2b.D)$);
+  \draw (#2t.D) -- ++(0,0.3) coordinate (#2y);
+  \draw (#2b.S) -- ++(0,-0.3) coordinate (#2s);
+  \draw (#2t.G) -- ++(-0.25,0) node[left] {A};
+  \draw (#2b.G) -- ++(-0.25,0) node[left] {B};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries,align=center] at (2.5,4.9) {Layout as drawn};
+  \stack{1.0}{f}{\SI{1}{\micro\metre}}
+  \stack{4.0}{g}{\SI{1}{\micro\metre}}
+  \draw (fy) -- (gy) coordinate[midway] (jy);
+  \draw (jy) -- ++(0,0.3) node[above] {Y};
+  \draw (fs) -- (gs) coordinate[midway] (js);
+  \draw (js) node[ground] {};
+  \fill (fi) circle (1.5pt);
+  \fill (gi) circle (1.5pt);
+  \node[anchor=west,font=\footnotesize] at ($(fi)+(0.1,0)$) {inner 1};
+  \node[anchor=west,font=\footnotesize] at ($(gi)+(0.1,0)$) {inner 2};
+  \draw[violation] (0.2,1.35) rectangle (5.5,2.05);
+  \node[violation label,align=center] at (2.6,-1.5) {without lvs split\_gates:\\4 transistors against 2};
+
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (6.0,1.7) -- node[above,caption] {split\_gates} (7.7,1.7);
+
+  \node[font=\bfseries,align=center] at (9.2,4.9) {Joined and merged};
+  \stack{9.2}{m}{\SI{2}{\micro\metre}}
+  \draw (mt.D) ++(0,0.3) node[above] {Y};
+  \draw (ms) node[ground] {};
+  \fill (mi) circle (1.5pt);
+  \node[anchor=west,font=\footnotesize] at ($(mi)+(0.1,0)$) {inner 1};
+
+  \node[font=\bfseries,align=center] at (13.2,4.9) {Reference netlist};
+  \stack{13.2}{r}{\SI{2}{\micro\metre}}
+  \draw (rt.D) ++(0,0.3) node[above] {Y};
+  \draw (rs) node[ground] {};
+  \fill (ri) circle (1.5pt);
+  \node[anchor=west,font=\footnotesize] at ($(ri)+(0.1,0)$) {n1};
+  \node[anchor=west,font=\footnotesize] at ($(rt.east)+(0.1,0.35)$) {M1};
+  \node[anchor=west,font=\footnotesize] at ($(rb.east)+(0.1,0.35)$) {M2};
+  \node[caption,align=center] at (11.2,-1.5) {paired: Match};
+\end{circuitikz}
+\end{document}

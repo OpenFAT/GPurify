@@ -1,0 +1,32 @@
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+% An inverter at x = #1, node prefix #2.
+\newcommand{\inv}[2]{%
+  \node[pmos] (#2p) at (#1,2.8) {};
+  \node[right=2pt] at (#2p.east) {pfet};
+  \draw (#2p.S) -- ++(0,0.3) node[vcc] {VDD};
+  \node[nmos] (#2n) at (#1,0.6) {};
+  \node[right=2pt] at (#2n.east) {nfet};
+  \draw (#2p.D) -- (#2n.D);
+  \draw (#2p.D) ++(0,-0.35) -- ++(1.6,0) node[right] {Y};
+  \draw (#2n.S) node[ground] {};
+  \draw (#2p.G) -- ++(-0.6,0) coordinate (#2a) -- (#2a |- #2n.G) -- (#2n.G);
+  \draw (#2a |- #2p.G) node[left] {A};
+}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.8,5.1) {Reference netlist};
+  \node[font=\bfseries] at (9.6,5.1) {Layout, extracted};
+  \inv{1.2}{r}
+  \inv{8.2}{l}
+  \node[nmos] (d) at (12.4,1.4) {};
+  \node[right=2pt] at (d.east) {nfet};
+  \draw (d.G) -- ++(-0.3,0) coordinate (g);
+  \draw (d.D) -- ++(0,0.3) -| (g) |- ($(d.S)+(0,-0.4)$) -- (d.S);
+  \draw (d.S) ++(0,-0.4) node[ground] {};
+  \node[caption,align=center] at (12.2,3.0) {gate, source\\and drain on VSS};
+  \draw[violation] (10.75,-0.5) rectangle (13.7,2.45);
+  \node[violation label,align=center] at (12.2,-1.0) {dummy};
+  \node[caption,align=center] at (9.6,-1.7) {left out by lvs ignore\_shorted "nfet"};
+\end{circuitikz}
+\end{document}

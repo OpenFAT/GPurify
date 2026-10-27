@@ -1,0 +1,36 @@
+% LVS-047 (reduction.md): written by work/lvs/gen_reduction_tex.py.
+\documentclass[border=0pt]{standalone}
+\input{preamble}
+\begin{document}
+\begin{circuitikz}[font=\small]
+  \node[font=\bfseries] at (1.2,3.6) {Layout, drawn};
+  \node[font=\bfseries] at (7.199999999999999,3.6) {Both reduced};
+  \node[font=\bfseries] at (12.0,3.6) {Reference netlist};
+  \node[nmos] (d19) at (0.6,1.35) {};
+  \draw (d19.G) -- ++(-0.3,0) node[left] {A};
+  \draw (d19.D) -- ++(0,0.25) node[above] {Y};
+  \node[nmos] (d20) at (0.6,-0.15000000000000002) {};
+  \draw (d20.G) -- ++(-0.3,0) node[left] {B};
+  \draw (d20.S) -- ++(0,-0.25) node[below] {VSS};
+  \draw (d19.S) -- (d20.D);
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (1.9,0.6) -- node[above,caption,align=center] {series merge\\(recognize\_gates)} (4.6,0.6);
+  \node[nmos] (d21) at (6.8,0.6) {};
+  \node[right=2pt,align=left,font=\footnotesize] at (d21.east) {gates A, B\\interchangeable};
+  \draw (d21.G) -- ++(-0.3,0) node[left] {A, B};
+  \draw (d21.D) -- ++(0,0.25) node[above] {Y};
+  \draw (d21.S) -- ++(0,-0.25) node[below] {VSS};
+  \node[nmos] (d22) at (12.6,1.35) {};
+  \draw (d22.G) -- ++(-0.3,0) node[left] {B};
+  \draw (d22.D) -- ++(0,0.25) node[above] {Y};
+  \node[nmos] (d23) at (12.6,-0.15000000000000002) {};
+  \draw (d23.G) -- ++(-0.3,0) node[left] {A};
+  \draw (d23.S) -- ++(0,-0.25) node[below] {VSS};
+  \draw (d22.S) -- (d23.D);
+  \draw[-{Latex[length=2.5mm]},line width=0.8pt] (11.2,0.6) -- (9.899999999999999,0.6);
+  \node[anchor=north,font=\ttfamily\footnotesize,align=left] at (12.799999999999999,-2.1) {M1 Y B n1 VSS nfet\\M2 n1 A VSS VSS nfet};
+  \node[caption,align=center,anchor=north] at (7.199999999999999,-2.6) {The two pfets in parallel on A and B\\reduce the same way.};
+  \draw[violation] (-0.9,-1.75) rectangle (1.5,3.0);
+  \node[violation label,align=center,anchor=north] at (7.199999999999999,-3.7) {without the line: A and B\\in another order, a mismatch};
+  \draw[violation] (11.299999999999999,-1.75) rectangle (14.0,3.0);
+\end{circuitikz}
+\end{document}
