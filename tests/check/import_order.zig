@@ -1,6 +1,7 @@
-//! The one-direction rule inside `check` (ARCHITECTURE.md, "Inside check:
-//! one direction"): a file imports only files at or above its own level in
-//! report → rects → proximity → topology/ → drc/ → erc/ → lvs/ → deck/, and
+//! The one-direction rule inside `check`. Rust's check crate has cycles
+//! (deck↔drc↔erc, topology↔drc, lvs→erc); Zig allows them inside one module,
+//! and this forbids them: a file imports only files at or above its own level
+//! in report → rects → proximity → topology/ → drc/ → erc/ → lvs/ → deck/, and
 //! no leaf imports root.zig. Greps every file under src/check.
 
 const std = @import("std");
@@ -49,8 +50,8 @@ fn backEdge(rel: []const u8, text: []const u8, buf: []u8) ?[]const u8 {
 }
 
 test "no file under src/check imports against the documented order" {
-    // Oracle: law, the order ARCHITECTURE.md states; every relative import
-    // under src/check resolved and placed on it.
+    // Oracle: law, the order the header states; every relative import under
+    // src/check resolved and placed on it.
     const root = try std.fmt.allocPrint(gpa, "{s}/src/check", .{paths.root});
     defer gpa.free(root);
     var dir = try std.Io.Dir.cwd().openDir(testing.io, root, .{ .iterate = true });

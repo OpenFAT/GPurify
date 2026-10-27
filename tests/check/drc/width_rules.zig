@@ -221,7 +221,8 @@ test "a convex shape has no notch to report" {
 
 test "ihp slt.c a plate with a thin tab is as wide as the plate" {
     // Oracle: foundry example, IHP Slt.c (metal wider than 30 um must be
-    // slotted), and `docs/deck.md`'s maximum width: one violation of 40 um.
+    // slotted), and docs/src/reference/drc/dimension.md (DRC-012): one
+    // violation of 40 um.
     var lb = LayoutBuilder.init(1);
     const plate = try lb.push(gpa, 0, &.{ 0, 40_000, 40_000, 20_200, 20_200, 20_000, 20_000, 0 }, &.{ 0, 0, 40_000, 40_000, 41_000, 41_000, 40_000, 40_000 });
     var l = try finish(&lb);
@@ -280,9 +281,10 @@ test "sky130 licon.1 a slot is not a licon" {
 }
 
 test "sky130 licon.1 a square passes and two abutting squares do not" {
-    // Oracle: foundry example, sky130 licon.1, and `docs/deck.md` (touching
-    // cuts count as one shape): the lone square passes, the pair is one 340
-    // slot, blamed on its first drawn row.
+    // Oracle: foundry example, sky130 licon.1, and
+    // docs/src/explanation/measuring.md (Shapes merge before they are measured:
+    // touching cuts are one shape): the lone square passes, the pair is one
+    // 340 slot, blamed on its first drawn row.
     var lb = LayoutBuilder.init(1);
     _ = try lb.rect(gpa, 0, 5_000, 0, 5_170, 170);
     const first = try lb.rect(gpa, 0, 0, 0, 170, 170);
@@ -299,8 +301,9 @@ test "sky130 licon.1 a square passes and two abutting squares do not" {
 }
 
 test "a cut size accepts either orientation and refuses a non-rectangle" {
-    // Oracle: `docs/deck.md`'s `size(L) == len x len` (either way round), by
-    // hand: both rectangles pass, the L reports its area 510 * 100 + 100 * 70.
+    // Oracle: docs/src/reference/drc/dimension.md (DRC-013)'s
+    // `size(L) == len x len` (either way round), by hand: both rectangles pass,
+    // the L reports its area 510 * 100 + 100 * 70.
     var lb = LayoutBuilder.init(1);
     _ = try lb.rect(gpa, 0, 0, 0, 170, 510);
     _ = try lb.rect(gpa, 0, 1_000, 0, 1_510, 170);

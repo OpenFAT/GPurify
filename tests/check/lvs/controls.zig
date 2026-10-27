@@ -635,11 +635,12 @@ test "only an asymmetric transistor's ends are fixed and reported as drawn" {
 }
 
 test "permutations chain with the default classes" {
-    // Oracle: the definition (deck.md: "permutations chain"; controls.rs
-    // in-file test). Permuting a transistor's gate with its source joins the
-    // default source-drain class: gate, source, drain one class under pin 8,
-    // bulk alone; asymmetric, only gate and source join and the drain stays
-    // fixed. A capacitor's permuted plates are pin 8 and report as pin 0.
+    // Oracle: the definition (docs/src/reference/deck/lvs-controls.md,
+    // Interchangeable pins: "permutations chain"; controls.rs in-file test).
+    // Permuting a transistor's gate with its source joins the default
+    // source-drain class: gate, source, drain one class under pin 8, bulk
+    // alone; asymmetric, only gate and source join and the drain stays fixed. A
+    // capacitor's permuted plates are pin 8 and report as pin 0.
     const dmos = id(1);
     const Classes = lvs.controls.Classes;
     const gate_source: LvsControls = .{ .permute = &.{.{ .model = dmos, .a = 0, .b = 1 }} };

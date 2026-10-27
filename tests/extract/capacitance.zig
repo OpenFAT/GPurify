@@ -237,8 +237,9 @@ test "a junction only net couples by exactly zero" {
 }
 
 test "an unmeshable net is refused by its layer" {
-    // Oracle: docs/deck.md, Parasitic stack: a row with no dielectric gives
-    // a layer above the substrate the field solve refuses, naming that layer.
+    // Oracle: docs/src/reference/deck/extraction.md (The stack): a row with no
+    // dielectric gives a layer above the substrate the field solve refuses,
+    // naming that layer.
     var rows = fixture.coarse;
     rows.k[0] = 0.0;
     var c = try Case.init(&.{.{ .layer = 0, .net = 0, .r = .{ 0, 0, 4_000, 1_000 } }}, &.{}, 3);
@@ -251,9 +252,10 @@ test "an unmeshable net is refused by its layer" {
 }
 
 test "a global layer carries nothing of the field" {
-    // Oracle: differential (F79): docs/deck.md says a global layer carries no
-    // parasitics and needs no `pex` row, so a net with a shape on one (layer
-    // 3, past the stack) solves to the bits of the same net without it.
+    // Oracle: differential (F79): docs/src/reference/deck/connectivity.md
+    // (Global nets) and extraction.md (The stack) say a global layer carries no
+    // parasitics and needs no `pex` row, so a net with a shape on one (layer 3,
+    // past the stack) solves to the bits of the same net without it.
     const metal = [_]Box{.{ .layer = 0, .net = 0, .r = .{ 0, 0, 3_000, 1_000 } }};
     const tied = metal ++ [_]Box{.{ .layer = 3, .net = 0, .r = .{ -500, -500, 3_500, 1_500 } }};
     var plain = try Case.init(&metal, &.{}, 4);

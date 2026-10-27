@@ -1,13 +1,13 @@
-//! LVS's independent oracle under the deck's `lvs` controls: two small
-//! circuits match iff, after the documented reductions (docs/usage.md,
-//! "LVS reduction"), a bijection of devices and nets preserves kind, model
-//! and terminal incidence up to the interchangeable roles, every parameter
-//! within its tolerance and every count equal (F99). Net names never take
-//! part, and neither does card order. A brute force over every net
-//! bijection, decided from the documented semantics alone, never from the
-//! tool. Ported from tests/exhaustive/lvs.rs (`Reduced`, `Declared`,
-//! `reduce`, `same_pins`, `crossed`, `pairs`, `assign`, `equivalent`,
-//! `equivalent_under`, `gate_reassignments`, `matches`).
+//! LVS's independent oracle under the deck's `lvs` controls: two small circuits
+//! match iff, after the documented reductions
+//! (docs/src/reference/lvs/reduction.md), a bijection of devices and nets
+//! preserves kind, model and terminal incidence up to the interchangeable
+//! roles, every parameter within its tolerance and every count equal (F99). Net
+//! names never take part, and neither does card order. A brute force over every
+//! net bijection, decided from the documented semantics alone, never from the
+//! tool. Ported from tests/exhaustive/lvs.rs (`Reduced`, `Declared`, `reduce`,
+//! `same_pins`, `crossed`, `pairs`, `assign`, `equivalent`, `equivalent_under`,
+//! `gate_reassignments`, `matches`).
 //!
 //! Contents:
 //! - `pub fn equivalent(arena: Allocator, layout: *const Circuit, reference: *const Circuit) !bool`
@@ -104,10 +104,10 @@ pub fn equivalent(arena: Allocator, layout: *const Circuit, reference: *const Ci
 /// `equivalent` under the deck's `lvs` statements.
 pub fn equivalentUnder(arena: Allocator, layout: *const Circuit, reference: *const Circuit, controls: *const Controls) !bool {
     if (controls.gates) {
-        // deck.md's `lvs recognize_gates`: the inputs of a stack or a
-        // parallel group swap freely, so the circuits match when some
-        // reassignment of each group's gates among its members matches
-        // without the control. A brute force over every reassignment.
+        // `lvs recognize_gates` (docs/src/reference/deck/lvs-controls.md): the
+        // inputs of a stack or a parallel group swap freely, so the circuits
+        // match when some reassignment of each group's gates among its members
+        // matches without the control. A brute force over every reassignment.
         var plain = controls.*;
         plain.gates = false;
         var variants: std.ArrayList(Circuit) = .empty;
@@ -122,12 +122,13 @@ pub fn equivalentUnder(arena: Allocator, layout: *const Circuit, reference: *con
     return matches(arena, &try reduce(arena, &kept_layout, &declared, true, controls), &try reduce(arena, &kept_reference, &declared, false, controls), controls);
 }
 
-/// `c` with the gates of each group deck.md's `lvs recognize_gates` names
-/// reassigned among its members, every way: groups of MOS of one model and
-/// one size and count, each on a gate of its own, either on one source and
-/// drain pair (parallel) or chained through nets that are no port and that
-/// only the two neighbours' channel ends touch (series). The first is `c`
-/// itself. Small circuits only: every reassignment of every group.
+/// `c` with the gates of each group `lvs recognize_gates` names
+/// (docs/src/reference/deck/lvs-controls.md, Logic gates and split stacks)
+/// reassigned among its members, every way: groups of MOS of one model and one
+/// size and count, each on a gate of its own, either on one source and drain
+/// pair (parallel) or chained through nets that are no port and that only the
+/// two neighbours' channel ends touch (series). The first is `c` itself. Small
+/// circuits only: every reassignment of every group.
 pub fn gateReassignmentsInto(arena: Allocator, c: *const Circuit, out: *std.ArrayList(Circuit)) !void {
     const n = c.devs.len;
     // Union of devices joined in parallel or in series.
@@ -381,12 +382,13 @@ fn reduce(arena: Allocator, c: *const Circuit, declared: *const Declared, drawn:
         for (0..devs.items.len) |i| for (0..devs.items.len) |j| {
             const a = devs.items[i];
             const b = devs.items[j];
-            // Relaxed, deck.md's: two resistors or capacitors stating their
-            // value chain through a net only they touch, no port, their far
-            // ends two other nets; `r` adds and `c` combines harmonically.
-            // Ordered plates chain plate to plate. The fixtures state no
-            // other parameter on such a passive, so this oracle refuses one
-            // that does.
+            // Relaxed, as docs/src/reference/deck/lvs-controls.md (Merging by
+            // value) says: two resistors or capacitors stating their value
+            // chain through a net only they touch, no port, their far ends two
+            // other nets; `r` adds and `c` combines harmonically. Ordered
+            // plates chain plate to plate. The fixtures state no other
+            // parameter on such a passive, so this oracle refuses one that
+            // does.
             const passive_model = switch (a.model) {
                 .r, .c, .l => true,
                 .n, .p, .h, .b, .d, .q => false,
@@ -502,12 +504,13 @@ fn assign(a: []const Reduced, b: []const Reduced, map: []const usize, controls: 
 /// device.
 fn matches(arena: Allocator, a: *const Reduction, b: *const Reduction, controls: *const Controls) !bool {
     if (a.live.len != b.live.len or !std.mem.eql(Model, a.models, b.models)) return false;
-    // Under `lvs ports_by_name`, deck.md's: each reference port pairs with
-    // the layout net its name labels, which must exist.
+    // Under `lvs ports_by_name` (docs/src/reference/deck/lvs-controls.md): each
+    // reference port pairs with the layout net its name labels, which must
+    // exist.
     if (controls.ports_by_name) for (0..b.nets) |r| if (b.ports[r] and labelled(a, b.names[r]) == null) return false;
-    // Under `lvs same_nets`, deck.md's: the layout net labelled with the
-    // row's first name pairs with the reference net of its second, and a
-    // row only one side has a net for is unpaired.
+    // Under `lvs same_nets` (docs/src/reference/deck/lvs-controls.md): the
+    // layout net labelled with the row's first name pairs with the reference
+    // net of its second, and a row only one side has a net for is unpaired.
     const rows = try arena.alloc([2]?usize, controls.same_nets.len);
     for (controls.same_nets, rows) |row, *out| {
         const layout_net: ?usize = for (a.live) |k| (if (a.ports[k] and std.mem.eql(u8, a.names[k], row.layout)) break k) else null;
@@ -546,10 +549,11 @@ fn labelled(a: *const Reduction, name: []const u8) ?usize {
 }
 
 test "the oracle agrees with hand derivations" {
-    // Oracle: hand-derived from docs/usage.md's reductions: a circuit
-    // matches itself; two parallel nmos match one of double width; a stack
-    // through an internal net matches one of double length; a stack through
-    // a port does not; source and drain swap; a pmos is not an nmos.
+    // Oracle: hand-derived from the reductions of
+    // docs/src/reference/lvs/reduction.md (LVS-040, LVS-041): a circuit matches
+    // itself; two parallel nmos match one of double width; a stack through an
+    // internal net matches one of double length; a stack through a port does
+    // not; source and drain swap; a pmos is not an nmos.
     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();

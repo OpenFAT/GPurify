@@ -65,16 +65,18 @@ fn replaced(row: []const u8, key_value: []const u8) ![]u8 {
 }
 
 test "a missing parameter is an error" {
-    // Oracle: the documented forms in docs/deck.md: `eol_space(L; eol_width:
-    // len)`, and `antenna(..; max_ratio, sidewall, diode)` under "Every
-    // parameter below is required".
+    // Oracle: the documented forms: `eol_space(L; eol_width: len)`
+    // (docs/src/reference/drc/spacing.md, DRC-029), and
+    // `antenna(..; max_ratio, sidewall, diode)` under "Every parameter of both
+    // kinds is required" (docs/src/reference/erc/antenna.md).
     try oneError("rule e eol_space(met1) >= 100nm\n", "missing parameter `eol_width`");
     try oneError("rule a antenna(poly, met1; max_ratio: 400)\n", "missing parameter `sidewall`");
 }
 
 test "an unknown parameter is an error" {
-    // Oracle: the documented parameter lists of docs/deck.md: `eol_space` has
-    // no `colour` and the CMP model no `thickness`.
+    // Oracle: the documented parameter lists: `eol_space`
+    // (docs/src/reference/drc/spacing.md, DRC-029) has no `colour` and the CMP
+    // model (docs/src/reference/erc/planarity.md, ERC-B1) no `thickness`.
     try oneError("rule e eol_space(met1; eol_width: 100nm, colour: 3) >= 100nm\n", "unknown parameter `colour`");
     try oneError(
         \\rule d density_cmp(met1; window: 1um x 1um, step: 1um x 1um, min: none, max: 0.7,
@@ -85,29 +87,31 @@ test "an unknown parameter is an error" {
 }
 
 test "a bare number where a unit belongs is an error" {
-    // Oracle: docs/deck.md, Basics: numbers carry units, and only a count,
-    // ratio or exponent is bare; the message is the spec's Errors example.
+    // Oracle: docs/src/reference/deck/README.md (Units): numbers carry units,
+    // and only a count, ratio or exponent is bare; the message is the form of
+    // its Errors example.
     try oneError("rule m1.5 enclosure(mcon, met1, opposite) >= 60\n", "m1.5: enclosure needs a length, got 60 (no unit)");
 }
 
 test "a unit of the wrong dimension is an error" {
-    // Oracle: the units table of docs/deck.md: `um2` is an area, `uA` a
-    // current, neither a length nor a voltage.
+    // Oracle: the units table of docs/src/reference/deck/README.md (Units):
+    // `um2` is an area, `uA` a current, neither a length nor a voltage.
     try oneError("rule w width(met1) >= 0.083um2\n", "needs a length, got 0.083um2 (an area)");
     try oneError("rule hv hv_domain(; max_delta: 5uA, isolation: none)\n", "needs a voltage");
 }
 
 test "an off-grid length is an error" {
-    // Oracle: docs/deck.md, Basics: "`142nm` on a 5 nm grid is an error, not
-    // a rounding"; 30 nm2 is likewise not a multiple of 25 nm2.
+    // Oracle: docs/src/reference/deck/README.md (The grid): "`142nm` on a 5 nm
+    // grid is an error, not 140 nm"; 30 nm2 is likewise not a multiple of
+    // 25 nm2.
     try oneError("rule w width(met1) >= 142nm\n", "142nm is not a multiple of the grid");
     try oneError("rule a area(met1) >= 30nm2\n", "not a multiple of the grid squared");
 }
 
 test "the wrong comparator is an error, not a flip" {
-    // Oracle: docs/deck.md, Rules: "Writing `<=` on a minimum rule is an
-    // error, not a flipped rule"; `tap_distance` is documented with `<=`,
-    // `width` with a comparison, `off_grid` with none.
+    // Oracle: docs/src/reference/deck/rules.md (The comparison): "A comparison
+    // a check does not take is an error, never a flipped rule"; `tap_distance`
+    // is documented with `<=`, `width` with a comparison, `off_grid` with none.
     try oneError("rule t tap_distance(diff, li) >= 10um\n", "`>=` is not legal on `tap_distance`; it takes `<=`");
     try oneError("rule w width(met1)\n", "`width` needs a comparison");
     // `size` also has a form without one, `size(L; allowed: [..])`.
@@ -116,36 +120,36 @@ test "the wrong comparator is an error, not a flip" {
 }
 
 test "an unknown layer is an error" {
-    // Oracle: docs/deck.md: a layer must be declared, and `met9` is not in
-    // the header.
+    // Oracle: docs/src/reference/deck/README.md (File structure): a layer must
+    // be declared, and `met9` is not in the header.
     try oneError("rule w width(met9) >= 100nm\n", "unknown layer `met9`");
 }
 
 test "a forward reference is an error" {
-    // Oracle: docs/deck.md, Layers: "A layer must be declared before
-    // anything uses it", and a `let` name likewise.
+    // Oracle: docs/src/reference/deck/README.md (File structure): "A name is
+    // declared before anything uses it", and a `let` name likewise.
     try oneError("rule w width(met4) >= 100nm\nlayer met4 = gds(71, 20)\n", "`met4` is used before its declaration on line");
     try oneError("rule w width(met1) >= w\nlet w = 100nm\n", "`w` is used before its declaration");
 }
 
 test "rebinding a name is an error" {
-    // Oracle: docs/deck.md, Reuse: "A name can be bound once", whether by
-    // `let` or `layer`.
+    // Oracle: docs/src/reference/deck/reuse.md (let): "A name is bound once",
+    // whether by `let` or `layer`.
     try oneError("let w = 1nm\nlet w = 2nm\n", "`w` is already bound");
     try oneError("layer met1 = gds(1, 1)\n", "`met1` is already bound");
     try oneError("let met1 = 5nm\n", "`met1` is already bound");
 }
 
 test "a duplicate rule id is an error" {
-    // Oracle: docs/deck.md, Rules: the id is how violations are reported, so
-    // it is unique.
+    // Oracle: docs/src/reference/deck/rules.md (The id): the id is how
+    // violations are reported, so it is unique.
     try oneError("rule w width(met1) >= 100nm\nrule w width(met1) >= 200nm\n", "duplicate rule id `w`");
 }
 
 test "errors are collected and capped at fifty" {
-    // Oracle: docs/deck.md, Errors: problems are "reported together (up to
-    // 50)". Eighty off-grid rules give fifty; three different faults give
-    // three.
+    // Oracle: docs/src/reference/deck/README.md (Errors): problems are reported
+    // "up to 50 errors together". Eighty off-grid rules give fifty; three
+    // different faults give three.
     var body: std.ArrayList(u8) = .empty;
     defer body.deinit(gpa);
     for (0..80) |i| try body.print(gpa, "rule r{d} width(met1) >= 142nm\n", .{i});
@@ -158,9 +162,10 @@ test "errors are collected and capped at fifty" {
 }
 
 test "a pex row with a value no process has is refused at the value" {
-    // Oracle: docs/deck.md, Parasitic stack: "the thickness positive, a
-    // stated dielectric positive, the rest zero or more", and the error marks
-    // the value, so each case's caret is placed by hand under its value.
+    // Oracle: docs/src/reference/deck/extraction.md (The stack): "`thickness`
+    // positive, a stated `dielectric` positive, ... the rest zero or more", and
+    // the error marks the value, so each case's caret is placed by hand under
+    // its value.
     const base = "pex met1 thickness 360nm height 1376nm sheet 0.125ohm dielectric 3.9 area_cap 25.8aF/um2 fringe_cap 40.5aF/um";
     const cases = [_][2][]const u8{
         .{ "thickness 0nm", "thickness must be positive" },
@@ -222,9 +227,10 @@ test "a pex value past the range of a float is refused at the value" {
 }
 
 test "a pex row may leave its dielectric out and nothing else" {
-    // Oracle: docs/deck.md, Parasitic stack: "Every value is required but
-    // the dielectric", and a zero is "not stated"; the sheet is read back as
-    // written, 1.2675 ohm.
+    // Oracle: docs/src/reference/deck/extraction.md (The stack): "Every key but
+    // `dielectric`, `tc1` and `tc2` is required", and a zero means the deck
+    // "does not state that value"; the sheet is read back as written,
+    // 1.2675 ohm.
     var o = try ok("pex met1 thickness 36nm height 0nm sheet 1.2675ohm area_cap 0aF/um2 fringe_cap 0aF/um\n");
     defer o.deinit();
     const met1 = o.at("met1");
@@ -234,9 +240,9 @@ test "a pex row may leave its dielectric out and nothing else" {
 }
 
 test "an error renders file, line, column and a caret" {
-    // Oracle: hand-derived. The format is docs/deck.md's Errors example; the
-    // `60` is on line 3 (after `grid` and `layer`) at column 26, two
-    // characters wide.
+    // Oracle: hand-derived. The format is the Errors example of
+    // docs/src/reference/deck/README.md; the `60` is on line 3 (after `grid`
+    // and `layer`) at column 26, two characters wide.
     const err = try rendered("grid 5nm\nlayer met1 = gds(68, 20)\nrule m1.1 width(met1) >= 60\n", "pdks/x.deck");
     defer gpa.free(err);
     try testing.expectEqualStrings("pdks/x.deck:3:26: m1.1: width needs a length, got 60 (no unit)\nrule m1.1 width(met1) >= 60\n                         ^^", err);
@@ -279,11 +285,11 @@ test "at its nominal temperature a deck reads its sheets as written" {
 }
 
 test "a temperature and its coefficients come together" {
-    // Oracle: docs/deck.md, Parasitic stack: with a `temperature` every row
-    // gives `tc1` and `tc2`, without one none does, both or neither on a
-    // row, coefficients in `/K` and `/K2`, the resistance positive at
-    // temperature (`1 − 0.02 × 55 = −0.1` here), one statement, above
-    // absolute zero.
+    // Oracle: docs/src/reference/deck/extraction.md (Temperature): with a
+    // `temperature` every row gives `tc1` and `tc2`, without one none does,
+    // both or neither on a row, coefficients in `/K` and `/K2`, the resistance
+    // positive at temperature (`1 − 0.02 × 55 = −0.1` here), one statement,
+    // above absolute zero.
     try fx.malformed(sky130_metals, "pex met1: tc1 and tc2 need a `temperature` statement");
     const row = "pex met1 thickness 360nm height 1376nm sheet 0.125ohm area_cap 0aF/um2 fringe_cap 0aF/um";
     const t = "temperature 85C nominal 30C\n";
@@ -320,9 +326,10 @@ test "a piecewise linear table lowers point by point and must rise" {
 }
 
 test "an extraction line names a type and an optional threshold" {
-    // Oracle: hand-derived from the statement's definition (deck.md): each
-    // spelling's type, each unit's attofarads (0.1 fF is 100 aF, 0.002 pF
-    // 2000), each misuse's message (PEX-008).
+    // Oracle: hand-derived from the statement's definition
+    // (docs/src/reference/deck/extraction.md, Extraction type): each spelling's
+    // type, each unit's attofarads (0.1 fF is 100 aF, 0.002 pF 2000), each
+    // misuse's message (PEX-008).
     var none = try ok("");
     defer none.deinit();
     try testing.expectEqual(deck.Extraction{}, none.d().extraction);

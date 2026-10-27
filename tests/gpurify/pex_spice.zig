@@ -185,9 +185,9 @@ test "a layout with one swapped net is refused" {
 }
 
 test "without a reference the netlist is the layout's own" {
-    // Oracle: docs/usage.md (PEX-017): the cell is the layout's file stem,
-    // the pins its labelled nets in ascending net order, each device its
-    // family's letter and layout index.
+    // Oracle: docs/src/reference/pex/output.md (PEX-017): the cell is the
+    // layout's file stem, the pins its labelled nets in ascending net order,
+    // each device its family's letter and layout index.
     var n: Netlist = undefined;
     try netlistOf(&n, "LVS_CLEAN_MATCH", null);
     defer n.deinit();

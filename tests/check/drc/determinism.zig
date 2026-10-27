@@ -100,11 +100,12 @@ test "translating the whole design translates the report and changes nothing els
 }
 
 test "a warning rule demotes its own findings and no other rule's" {
-    // Oracle: the `RuleSet::warnings` contract (deck.md, "Rules"; catalog
-    // DRC-110). A rule the deck writes `warning` reports exactly what it
-    // reports unmarked, every finding demoted to a warning, and the rule
-    // beside it keeps its errors: marking one rule changes the severity
-    // column of its own rows and nothing else.
+    // Oracle: the `RuleSet::warnings` contract
+    // (docs/src/reference/deck/rules.md, Severity; catalog DRC-110). A rule the
+    // deck writes `warning` reports exactly what it reports unmarked, every
+    // finding demoted to a warning, and the rule beside it keeps its errors:
+    // marking one rule changes the severity column of its own rows and nothing
+    // else.
     var built = try busyLayout(0);
     defer built.deinit();
     var plain: RuleSet = .{};

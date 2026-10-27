@@ -173,10 +173,11 @@ test "simulated currents placed through LVS load each segment with the currents 
 }
 
 test "a layout that does not match its reference refuses the currents" {
-    // Oracle: the refusal contract (catalog ERC-E14, docs/usage.md): the
-    // layout draws no load at 18 µm, so VDD carries two loads against the
-    // reference's three and LVS reports a mismatch; any mismatch refuses,
-    // before a current is placed on the loads LVS could still pair.
+    // Oracle: the refusal contract (catalog ERC-E14,
+    // docs/src/how-to/use-simulated-currents.md): the layout draws no load at
+    // 18 µm, so VDD carries two loads against the reference's three and LVS
+    // reports a mismatch; any mismatch refuses, before a current is placed on
+    // the loads LVS could still pair.
     var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();

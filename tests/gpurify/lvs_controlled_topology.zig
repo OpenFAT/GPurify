@@ -1,10 +1,10 @@
-//! The deck's `lvs` statements (deck.md, "LVS controls") on topology and
-//! values: relaxed parallel and series merges, inductors, logic-gate
-//! recognition, a diode's area, `max_res` and `min_caps`, `same_nets`, and
-//! absolute tolerances on a passive's value, each verdict the oracle's
-//! under the statements the fixture's deck adds. Ported from
-//! tests/exhaustive/lvs.rs (`controlled`, its second half; the
-//! `lde_fixtures` it extends with are ported beside `lde_fixtures`).
+//! The deck's `lvs` statements (docs/src/reference/deck/lvs-controls.md) on
+//! topology and values: relaxed parallel and series merges, inductors,
+//! logic-gate recognition, a diode's area, `max_res` and `min_caps`,
+//! `same_nets`, and absolute tolerances on a passive's value, each verdict the
+//! oracle's under the statements the fixture's deck adds. Ported from
+//! tests/exhaustive/lvs.rs (`controlled`, its second half; the `lde_fixtures`
+//! it extends with are ported beside `lde_fixtures`).
 //!
 //! Contents:
 //! - `pub fn fixturesInto(arena: Allocator, depth: Depth, out: *std.ArrayList(Fixture)) !void`
@@ -244,9 +244,9 @@ fn passiveToleranceInto(arena: Allocator, out: *std.ArrayList(Fixture)) !void {
 }
 
 test "every LVS control fixture on topology and values holds" {
-    // Oracle: the brute-force oracle (lvs_oracle.zig) under the controls
-    // each fixture's deck states, read from deck.md ("LVS controls"), and
-    // the diode areas derived by hand from the drawer's pads.
+    // Oracle: the brute-force oracle (lvs_oracle.zig) under the controls each
+    // fixture's deck states, read from docs/src/reference/deck/lvs-controls.md,
+    // and the diode areas derived by hand from the drawer's pads.
     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
     defer arena.deinit();
     var fixtures: std.ArrayList(Fixture) = .empty;

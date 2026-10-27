@@ -623,8 +623,8 @@ test "extension rows are at most three and rise" {
 }
 
 test "the deck spells extension rows" {
-    // Oracle: the deck spelling in `docs/deck.md`, one list element per
-    // row, `none` for a row without `ENDTOEND`.
+    // Oracle: the deck spelling in docs/src/reference/drc/spacing.md (DRC-030),
+    // one list element per row, `none` for a row without `ENDTOEND`.
     const text = "grid 1nm\nlayer met1 = gds(68, 20)\n" ++
         "rule t eol_extension_space(met1; eol_width: [110nm, 150nm], extension: [140nm, 120nm], " ++
         "end_to_end: [none, 130nm], side_length: (length: 300nm, two_sides: true)) >= 100nm\n";
@@ -831,7 +831,8 @@ test "a missing fin is a double pitch and a bent one refuses" {
 // ---------------------------------------------------------------- the deck
 
 test "the deck spells each kind's parameters" {
-    // Oracle: construct-from-answer, the deck language (`docs/deck.md`).
+    // Oracle: construct-from-answer, the deck language
+    // (docs/src/reference/drc/spacing.md, DRC-029, DRC-030, DRC-033, DRC-036).
     // Each new kind's deck row builds exactly the rule its parameters spell,
     // with optional parameters given and left out.
     const text = "grid 1nm\nlayer met1 = gds(68, 20)\n" ++

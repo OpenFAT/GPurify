@@ -1,6 +1,6 @@
-//! The `matching` statement (docs/deck.md, Matching): each mismatch unit
-//! read into SI, the refusals with their lines, and the shipped decks'
-//! citations. New in the rewrite (UW-ASIC/GPurify#84); no Rust original.
+//! The `matching` statement (docs/src/reference/deck/matching.md): each
+//! mismatch unit read into SI, the refusals with their lines, and the shipped
+//! decks' citations. New in the rewrite (UW-ASIC/GPurify#84); no Rust original.
 
 const std = @import("std");
 const testing = std.testing;
@@ -78,8 +78,9 @@ test "each mismatch unit reads into SI, 5 mV·um as 5e-9 V·m" {
 }
 
 test "a second statement for one device is refused, naming both lines" {
-    // Oracle: docs/deck.md, Matching: one statement per model. The lines are
-    // counted by hand: the first statement is line 6, the second line 7.
+    // Oracle: docs/src/reference/deck/matching.md (Rules): one statement per
+    // model. The lines are counted by hand: the first statement is line 6, the
+    // second line 7.
     const text =
         \\grid 5nm
         \\layer poly = gds(66, 20)
@@ -105,8 +106,9 @@ test "a second statement for one device is refused, naming both lines" {
 }
 
 test "an unknown unit or a unit of another kind is refused" {
-    // Oracle: docs/deck.md, Basics: avt takes mV·um, abeta, ar and ka %·um,
-    // svt uV/um; any other unit, or none, is an error at the value.
+    // Oracle: docs/src/reference/deck/matching.md (Keys): avt takes mV·um,
+    // abeta, ar and ka %·um, svt uV/um; any other unit, or none, is an error at
+    // the value.
     try refused("matching \"nfet\" pair avt 5mV·nm\n", "unknown unit `mV·nm`");
     try refused("matching \"nfet\" pair avt 5%·um\n", "avt needs a voltage times a length, got 5%·um (a fraction times a length)");
     try refused("matching \"rpoly\" pair ar 2uV/um\n", "ar needs a fraction times a length, got 2uV/um (a voltage per length)");
@@ -115,8 +117,9 @@ test "an unknown unit or a unit of another kind is refused" {
 }
 
 test "a value no process has, an unknown key or basis, or no value is refused" {
-    // Oracle: docs/deck.md, Matching: each key at most once, every value
-    // positive, `pair` or `single`, the model in quotes, at least one key.
+    // Oracle: docs/src/reference/deck/matching.md (Rules, Pair or single): each
+    // key at most once, every value positive, `pair` or `single`, the model in
+    // quotes, at least one key.
     try refused("matching \"nfet\" pair avt 0mV·um\n", "avt must be positive");
     try refused("matching \"nfet\" pair avt -5mV·um\n", "avt must be positive");
     try refused("matching \"nfet\" pair avt2 5mV·um\n", "unknown matching key `avt2`; expected avt, abeta, ar, svt or ka");
@@ -127,16 +130,18 @@ test "a value no process has, an unknown key or basis, or no value is refused" {
 }
 
 test "a model no device of the coefficient's kind declares is refused" {
-    // Oracle: docs/deck.md, Matching: avt, abeta and svt are a mos model's,
-    // ar a resistor's, ka a bipolar's, and the model is a `device`'s.
+    // Oracle: docs/src/reference/deck/matching.md (Keys, Rules): avt, abeta and
+    // svt are a mos model's, ar a resistor's, ka a bipolar's, and the model is
+    // a `device`'s.
     try malformed("matching \"pfet\" pair avt 5mV·um\n", "matching \"pfet\": avt needs a `device mos` statement with that model");
     try malformed("matching \"nfet\" pair ar 1%·um\n", "matching \"nfet\": ar needs a `device resistor` statement with that model");
     try malformed("matching \"rpoly\" pair ka 1%·um\n", "matching \"rpoly\": ka needs a `device bjt` statement with that model");
 }
 
 test "every shipped matching line cites a source its deck names" {
-    // Oracle: docs/deck.md, Matching: a shipped value states its source on
-    // its own line, as a tag the deck's header defines ([PS], [S12]).
+    // Oracle: docs/src/reference/deck/matching.md (Shipped decks): a shipped
+    // value states its source in its line's comment, as a tag the deck's header
+    // defines ([PS], [S12]).
     var arena: std.heap.ArenaAllocator = .init(gpa);
     defer arena.deinit();
     const a = arena.allocator();

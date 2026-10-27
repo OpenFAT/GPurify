@@ -34,10 +34,10 @@ fn okWith(devices: []const u8, body: []const u8) !fx.Outcome {
 }
 
 test "lvs tolerances lower to SI on a declared model" {
-    // Oracle: the language spec (deck.md, "LVS controls"), values converted
-    // by hand: 1 % is 0.01, 5 nm is 5e-9 m, 0.2 um² is 2e-13 m², 2 kohm is
-    // 2000 ohm, 3 fF is 3e-15 F, a part left out is zero; the parameter is
-    // lowercased. Each error class is refused.
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md),
+    // values converted by hand: 1 % is 0.01, 5 nm is 5e-9 m, 0.2 um² is
+    // 2e-13 m², 2 kohm is 2000 ohm, 3 fF is 3e-15 F, a part left out is zero;
+    // the parameter is lowercased. Each error class is refused.
     const devices = nfet ++ "device resistor met1 model \"rpoly\" terminals [met1, met1]\ndevice capacitor met2 model \"cmim\" terminals [met2, met1]\n";
     var o = try okWith(devices,
         \\lvs tolerance "nfet" W relative 1%
@@ -82,8 +82,8 @@ test "lvs tolerances lower to SI on a declared model" {
 }
 
 test "lvs ignored parameters lower and exclude a tolerance" {
-    // Oracle: the language spec (deck.md, "LVS controls"): `lvs
-    // ignore_parameter` lowers to `(model, parameter)`, the parameter
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md):
+    // `lvs ignore_parameter` lowers to `(model, parameter)`, the parameter
     // lowercased; `m` is refused, and so are a repeat, a tolerance on an
     // ignored parameter, and a model no device declares.
     var o = try okWith(nfet, "lvs ignore_parameter \"nfet\" AS\nlvs ignore_parameter \"nfet\" pd\n");
@@ -99,9 +99,9 @@ test "lvs ignored parameters lower and exclude a tolerance" {
 }
 
 test "lvs asymmetric names a declared transistor" {
-    // Oracle: the language spec (deck.md, "LVS controls"): `lvs asymmetric`
-    // lowers to the model; a model given twice, one that is no `mos` device,
-    // and one no device declares are refused.
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md):
+    // `lvs asymmetric` lowers to the model; a model given twice, one that is no
+    // `mos` device, and one no device declares are refused.
     const devices = "device mos poly model \"ldmos\" terminals [poly, diff, diff]\ndevice resistor met1 model \"rpoly\" terminals [met1, met1]\n";
     var o = try okWith(devices, "lvs asymmetric \"ldmos\"\n");
     defer o.deinit();
@@ -112,10 +112,10 @@ test "lvs asymmetric names a declared transistor" {
 }
 
 test "lvs permute names pins by kind" {
-    // Oracle: the language spec (deck.md, "LVS controls", Netgen's pin
-    // names): a capacitor's `top` and `bottom` are 0 and 1, a bipolar's
-    // `emitter` and `collector` 1 and 2, a transistor's `gate` and `bulk` 0
-    // and 3. A pin the kind lacks, a pin with itself, an asymmetric
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md,
+    // Netgen's pin names): a capacitor's `top` and `bottom` are 0 and 1, a
+    // bipolar's `emitter` and `collector` 1 and 2, a transistor's `gate` and
+    // `bulk` 0 and 3. A pin the kind lacks, a pin with itself, an asymmetric
     // transistor's source and drain, and an undeclared model are refused.
     const devices = nfet ++ "device mos met2 model \"ldmos\" terminals [poly, diff, diff]\ndevice bjt met3 model \"npn\" terminals [met1, met2, met3]\ndevice capacitor met2 model \"cmim\" terminals [met2, met1]\n";
     var o = try okWith(devices, "lvs permute \"cmim\" bottom top\nlvs permute \"npn\" emitter collector\nlvs permute \"nfet\" gate bulk\n");
@@ -138,9 +138,9 @@ test "lvs permute names pins by kind" {
 }
 
 test "lvs ignore names any model once" {
-    // Oracle: the language spec (deck.md, "LVS controls"): `lvs ignore` and
-    // `lvs ignore_shorted` lower to the model, which no device statement need
-    // declare; a model given twice is refused.
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md):
+    // `lvs ignore` and `lvs ignore_shorted` lower to the model, which no device
+    // statement need declare; a model given twice is refused.
     var o = try okWith(nfet, "lvs ignore \"nfet\"\nlvs ignore \"decap\"\n");
     defer o.deinit();
     try testing.expectEqualSlices(@import("geom").StrId, &.{ o.id("nfet"), o.id("decap") }, o.d().lvs.ignore);
@@ -152,12 +152,12 @@ test "lvs ignore names any model once" {
 }
 
 test "lvs blackbox and filter_unused lower as stated" {
-    // Oracle: the language spec (deck.md, "LVS controls"): `lvs blackbox`
-    // keeps its globs in deck order, each once, refusing an empty one,
-    // KLayout's class and escape characters, and one matching a device
-    // model; `lvs filter_unused` keeps its options in deck order, refusing an
-    // unknown letter, a repeat, none, a second statement, and `c` with no
-    // `lvs supply`; `lvs supply` keeps its names across statements.
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md):
+    // `lvs blackbox` keeps its globs in deck order, each once, refusing an
+    // empty one, KLayout's class and escape characters, and one matching a
+    // device model; `lvs filter_unused` keeps its options in deck order,
+    // refusing an unknown letter, a repeat, none, a second statement, and `c`
+    // with no `lvs supply`; `lvs supply` keeps its names across statements.
     var o = try okWith(nfet, "lvs blackbox \"SRAM_*\"\nlvs blackbox \"pad\"\nlvs filter_unused ag c u\nlvs supply \"VDD\" \"VSS\"\nlvs supply \"GND\"\n");
     defer o.deinit();
     try fx.expectStrings(&.{ "SRAM_*", "pad" }, o.d().lvs.blackbox);
@@ -182,12 +182,12 @@ test "lvs blackbox and filter_unused lower as stated" {
 }
 
 test "lvs thresholds and same_nets lower as stated" {
-    // Oracle: the language spec (deck.md, "LVS controls"): `lvs max_res` in
-    // ohms (2 kohm is 2000) and `lvs min_caps` in aF (1.5 fF is 1500), each
-    // once and positive, each interning the value name LVS computes it under;
-    // `lvs same_nets` keeps its names in order; `lvs count` its whole-number
-    // bounds; `lvs recognize_gates` a flag once; `lvs lde` its layers and
-    // lengths (10 um is 10 000 dbu), needing `od` and `max`.
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md):
+    // `lvs max_res` in ohms (2 kohm is 2000) and `lvs min_caps` in aF (1.5 fF
+    // is 1500), each once and positive, each interning the value name LVS
+    // computes it under; `lvs same_nets` keeps its names in order; `lvs count`
+    // its whole-number bounds; `lvs recognize_gates` a flag once; `lvs lde` its
+    // layers and lengths (10 um is 10 000 dbu), needing `od` and `max`.
     var o = try okWith(nfet, "lvs max_res 2kohm\nlvs min_caps 1.5fF\nlvs same_nets \"A\" \"a\"\nlvs same_nets \"B\" \"b\"\n");
     defer o.deinit();
     try testing.expectEqual(2000.0, o.d().lvs.max_res.?);
@@ -227,11 +227,11 @@ test "lvs thresholds and same_nets lower as stated" {
 }
 
 test "lvs ports_by_name is a flag" {
-    // Oracle: the language spec (deck.md, "LVS controls"): `lvs
-    // ports_by_name` sets the flag, off without it, refused twice; `lvs
-    // topology` is strict unless it says relaxed, takes one of the two words,
-    // once; `lvs connect_implicit` keeps its pattern and `lvs
-    // connect_explicit` its labels, two or more.
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md):
+    // `lvs ports_by_name` sets the flag, off without it, refused twice;
+    // `lvs topology` is strict unless it says relaxed, takes one of the two
+    // words, once; `lvs connect_implicit` keeps its pattern and
+    // `lvs connect_explicit` its labels, two or more.
     inline for (.{ .{ "", false, false }, .{ "lvs ports_by_name\n", true, false }, .{ "lvs topology relaxed\n", false, true }, .{ "lvs topology strict\n", false, false } }) |c| {
         var o = try ok(c[0]);
         defer o.deinit();
@@ -251,10 +251,10 @@ test "lvs ports_by_name is a flag" {
 }
 
 test "lvs ranges lower to layout units" {
-    // Oracle: the language spec (deck.md, "LVS controls"), converted by hand
-    // on the 5 nm deck grid and 1 nm layout grid: 420 nm and 100 um as
-    // lengths, 0.2 um² as 200 000 square units, an `nf` as a count. Each
-    // misuse is refused.
+    // Oracle: the language spec (docs/src/reference/deck/lvs-controls.md),
+    // converted by hand on the 5 nm deck grid and 1 nm layout grid: 420 nm and
+    // 100 um as lengths, 0.2 um² as 200 000 square units, an `nf` as a count.
+    // Each misuse is refused.
     var o = try okWith(nfet, "lvs range \"nfet\" W >= 420nm <= 100um\nlvs range \"nfet\" as >= 0.2um2\nlvs range \"nfet\" nf <= 4\n");
     defer o.deinit();
     try testing.expectEqualSlices(deck.LvsRange, &.{

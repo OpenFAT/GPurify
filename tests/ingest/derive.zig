@@ -134,10 +134,11 @@ fn square(comptime half: i32) fixture.Boundary {
 
 test "every derived operation reads through the deck into the store" {
     // Oracle: hand-derived. `met1` is an L: a 4 um arm [0,4]x[0,10] and a 2 um
-    // arm [0,10]x[0,2] (um); `met2` holds s1 inside the L, s2 touching its
-    // 4 um arm from outside, s3 far away, and s4 straddling the 2 um arm's
-    // end. Each derived layer's areas and lengths are worked out from those
-    // coordinates under the operation's definition in `docs/deck.md`, Layers.
+    // arm [0,10]x[0,2] (um); `met2` holds s1 inside the L, s2 touching its 4 um
+    // arm from outside, s3 far away, and s4 straddling the 2 um arm's end. Each
+    // derived layer's areas and lengths are worked out from those coordinates
+    // under the operation's definition in docs/src/reference/deck/layers.md
+    // (Operations on polygon layers).
     var d: Deck = try .init(
         \\grid 1nm
         \\layer met1 = gds(68, 20)
@@ -209,11 +210,12 @@ test "every derived operation reads through the deck into the store" {
 }
 
 test "with_text keeps the shapes holding a matching text" {
-    // Oracle: construct-from-answer, under `with_text` as `docs/deck.md`
-    // defines it (`*` any run, `?` one character, a text on the edge counts,
-    // `T` a drawn layer): the squares at 0 and 200 hold a match, the others do
-    // not; an L's notch is inside its box but off the shape, and a matching
-    // string on another text layer is not read.
+    // Oracle: construct-from-answer, under `with_text` as
+    // docs/src/reference/deck/layers.md (Operations on polygon layers) defines
+    // it (`*` any run, `?` one character, a text on the edge counts, `T` a
+    // drawn layer): the squares at 0 and 200 hold a match, the others do not;
+    // an L's notch is inside its box but off the shape, and a matching string
+    // on another text layer is not read.
     var d: Deck = try .init(
         \\grid 5nm
         \\layer activ = gds(1, 0)

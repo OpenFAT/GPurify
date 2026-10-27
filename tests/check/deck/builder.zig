@@ -231,7 +231,8 @@ test "every builder refusal has the parser's words" {
 test "the builder adds a matching statement or overrides the deck's own" {
     // Oracle: construct-from-answer: what the builder was given is what the
     // query reads back, the deck's own statement replaced in place; and the
-    // refusal docs/deck.md states for text, a model no `device mos` declares.
+    // refusal docs/src/reference/deck/matching.md (Rules) states for text, a
+    // model no `device mos` declares.
     var c = try common.compileText(
         \\grid 1nm
         \\layer poly = gds(66, 20)

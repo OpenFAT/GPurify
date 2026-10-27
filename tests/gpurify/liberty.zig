@@ -76,9 +76,11 @@ fn contains(haystack: []const u8, needle: []const u8) bool {
 }
 
 test "the interface level writes pins, supplies and area and no arcs" {
-    // Oracle: `docs/liberty.md`'s `interface` level (pins, `pg_pin`s,
-    // directions and area; no arc, no capacitance), in Liberty's syntax, for
-    // the corpus inverter's labelled pins and the spec's 1.8 V supply.
+    // Oracle: the `interface` level of `docs/liberty.md` (in git history):
+    // pins, `pg_pin`s, directions and area; and of
+    // docs/src/how-to/characterise-a-library.md (Steps, 3): no arc, no
+    // capacitance; in Liberty's syntax, for the corpus inverter's labelled pins
+    // and the spec's 1.8 V supply.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
     defer arena.deinit();
     const a = arena.allocator();

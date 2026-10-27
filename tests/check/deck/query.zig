@@ -294,11 +294,12 @@ test "the queries keep to the layers they are asked about" {
 }
 
 test "the matching query answers for a pair in SI" {
-    // Oracle: docs/deck.md, Matching, by hand: 5 mV·µm is 5e-9 V·m. And a
-    // law: a `single` coefficient is one device's σ, and the difference of
-    // two independent devices has twice one's variance, so the pair's
-    // coefficient squared is twice it squared; `svt`, a gradient between
-    // two devices, is a pair's already. A model with no statement is null.
+    // Oracle: docs/src/reference/deck/matching.md (Keys, Pair or single), by
+    // hand: 5 mV·µm is 5e-9 V·m. And a law: a `single` coefficient is one
+    // device's σ, and the difference of two independent devices has twice one's
+    // variance, so the pair's coefficient squared is twice it squared; `svt`, a
+    // gradient between two devices, is a pair's already. A model with no
+    // statement is null.
     var c = try common.compileText(
         \\grid 1nm
         \\layer poly = gds(66, 20)

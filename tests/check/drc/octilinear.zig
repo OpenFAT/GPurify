@@ -263,9 +263,10 @@ test "a diamond hole is measured" {
 }
 
 test "a kind not proved on 45 degree edges still refuses them" {
-    // Oracle: the rule's documented scope (`docs/limitations.md`): a kind not
-    // yet proved on 45-degree geometry records `Refused` on such a layer,
-    // never a clean `Ran`.
+    // Oracle: the rule's documented scope (docs/src/reference/deck/layers.md,
+    // Angled edges: a check that cannot measure an angled shape reports the
+    // rule refused): a kind not yet proved on 45-degree geometry records
+    // `Refused` on such a layer, never a clean `Ran`.
     const b = bar(0, 10);
     var found = try run("rule p prl_space(met1; prl: 50nm) >= 20nm", &.{&b});
     defer found.deinit();

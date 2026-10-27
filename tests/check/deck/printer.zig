@@ -192,10 +192,11 @@ test "a deck with corners stages and waivers survives printing" {
 }
 
 test "a deck with pex models survives printing" {
-    // Oracle: round trip; and the refusals `docs/deck.md` states (a fill
+    // Oracle: round trip; and the refusals
+    // docs/src/reference/deck/extraction.md (Metal fill, Device-region
+    // capacitance, Through-silicon vias, Substrate network) states (a fill
     // layer that carries no net, a model no `device mos` declares, a key
-    // missing, a substrate port that holds no net or a layer of no
-    // thickness).
+    // missing, a substrate port that holds no net or a layer of no thickness).
     const text =
         \\grid 1nm
         \\layer poly = gds(66, 20)
@@ -233,11 +234,12 @@ test "a deck with pex models survives printing" {
 }
 
 test "a deck with matching statements survives printing" {
-    // Oracle: round trip, each value written in its key's unit (3.9e-9 V·m
-    // is 3.9e0mV·um, 5e-9 m is 5e-1%·um, by hand); and the refusals
-    // `docs/deck.md` states (a model no device declares, a key of another
-    // kind's or unit, a basis other than pair or single, a value that is
-    // not positive, a statement of nothing).
+    // Oracle: round trip, each value written in its key's unit (3.9e-9 V·m is
+    // 3.9e0mV·um, 5e-9 m is 5e-1%·um, by hand); and the refusals
+    // docs/src/reference/deck/matching.md (Rules, Pair or single) states (a
+    // model no device declares, a key of another kind's or unit, a basis other
+    // than pair or single, a value that is not positive, a statement of
+    // nothing).
     const text =
         \\grid 1nm
         \\layer poly = gds(66, 20)
@@ -264,9 +266,10 @@ test "a deck with matching statements survives printing" {
 }
 
 test "a deck with report lines survives printing" {
-    // Oracle: round trip; and the refusals `docs/deck.md` states (two or
-    // more points, each `(x, y)`; a named net; a reach of zero or more,
-    // stated once; on the deck's grid).
+    // Oracle: round trip; and the refusals
+    // docs/src/reference/deck/report-lines.md states (two or more points, each
+    // `(x, y)`; a named net; a reach of zero or more, stated once; on the
+    // deck's grid).
     const text =
         \\grid 5nm
         \\layer met1 = gds(68, 20)
@@ -301,8 +304,9 @@ test "a deck with report lines survives printing" {
 }
 
 test "a deck with layout edits survives printing" {
-    // Oracle: round trip; and the refusals `docs/deck.md` states (an edit
-    // draws on a drawn layer, `fill` states every key, `size` is positive).
+    // Oracle: round trip; and the refusals
+    // docs/src/reference/deck/fill-and-enhance.md states (an edit draws on a
+    // drawn layer, `fill` states every key, `size` is positive).
     const text =
         \\grid 5nm
         \\layer met1 = gds(68, 20)
