@@ -396,3 +396,38 @@ test "node rects names the nodes extract into allocates" {
         .{ .xlo = 0, .ylo = 3, .xhi = 4, .yhi = 4 },
     }, rect.items);
 }
+
+test "a site lands on the region of its net it touches most, on its own layers" {
+    // Oracle: definition, by hand. Net X is a layer-0 bar (region 0), a
+    // layer-0 piece meeting it only at a corner (region 1) and a layer-1
+    // pad (region 2, layers ascend); Y is one layer-0 bar. A box inside the
+    // bar is on X's 0, one abutting the piece's right edge on 1, one on the
+    // pad on 2 but only when layer 1 is allowed; a box on X's bar is on no
+    // node of Y, and one on Y's bar on Y's 0.
+    const boxes = [_]Box{
+        .{ .layer = 0, .net = 0, .r = .{ 0, 0, 8, 1 } },
+        .{ .layer = 0, .net = 0, .r = .{ 8, 1, 12, 2 } },
+        .{ .layer = 1, .net = 0, .r = .{ 0, 5, 2, 7 } },
+        .{ .layer = 0, .net = 1, .r = .{ 0, 3, 4, 4 } },
+    };
+    var c = try Case.init(&boxes, &.{}, 2);
+    defer c.deinit();
+    const b = struct {
+        fn of(xlo: i64, ylo: i64, xhi: i64, yhi: i64) geom.Bbox {
+            return .{ .xlo = xlo, .ylo = ylo, .xhi = xhi, .yhi = yhi };
+        }
+    }.of;
+    const l0: geom.LayerId = @fromBackingInt(0);
+    const l1: geom.LayerId = @fromBackingInt(1);
+    const sites: analytical.Sites = .{
+        .net = &.{ 0, 0, 0, 0, 1, 1 },
+        .box = &.{ b(1, 0, 2, 1), b(12, 1, 13, 2), b(0, 5, 1, 6), b(0, 5, 1, 6), b(1, 0, 2, 1), b(1, 3, 2, 4) },
+        .layer_start = &.{ 0, 1, 2, 3, 4, 5, 6 },
+        .layer = &.{ l0, l0, l0, l1, l0, l0 },
+    };
+    var out: [6]u32 = undefined;
+    var refusal: analytical.Refusal = .{};
+    try analytical.siteNodesInto(gpa, &c.store, &c.nets, &.{}, sites, &out, &refusal);
+    const none = analytical.no_site;
+    try testing.expectEqualSlices(u32, &.{ 0, 1, none, 2, none, 0 }, &out);
+}

@@ -139,7 +139,7 @@ pub fn devices(b: *Builder, out: *Circuit) Allocator.Error!void {
         const marker = store.polyBbox(table.marker.items[d]);
         const terms = table.terminalsOf(@fromBackingInt(@intCast(d)));
         card.clearRetainingCapacity();
-        for (terms.nets, terms.roles) |net, role| try card.append(a, .{ .rank = cardRank(role), .net = net, .role = role });
+        for (terms.nets, terms.roles) |net, role| try card.append(a, .{ .rank = topology.device.cardRank(role), .net = net, .role = role });
         std.sort.insertion(Card, card.items, {}, Card.lessThan);
         try out.device_kind.append(a, kind);
         try out.device_model.append(a, b.loaded.strings.resolve(table.model.items[d]));
@@ -181,7 +181,7 @@ pub fn devices(b: *Builder, out: *Circuit) Allocator.Error!void {
             // The diffusion polygons the channel abuts.
             touches.clearRetainingCapacity();
             try active.sd_index.query(a, marker, &found);
-            for (found.items) |p| if (graph.contact(store.polyBbox(active.sd_polys.items[p]), marker) > 0) try touches.append(a, p);
+            for (found.items) |p| if (store.polyBbox(active.sd_polys.items[p]).contact(marker) > 0) try touches.append(a, p);
             if (try active.lod(a, marker, touches.items)) |lod| {
                 try out.param_name.append(a, "sa");
                 try out.param_value.append(a, .{ .length = @as(f64, @floatFromInt(lod[0])) * b.um });
@@ -209,7 +209,7 @@ fn touchingNode(b: *Builder, net: NetId, marker: Bbox, found: *std.ArrayList(u32
         try entry.index.query(b.arena, marker, found);
         for (found.items) |r| {
             if (b.rect_net.items[r] != net) continue;
-            const c = graph.contact(b.rect.items[r], marker);
+            const c = b.rect.items[r].contact(marker);
             if (c > 0 and (best == null or c > best_c or (c == best_c and r < best.?))) {
                 best = r;
                 best_c = c;
@@ -217,17 +217,6 @@ fn touchingNode(b: *Builder, net: NetId, marker: Bbox, found: *std.ArrayList(u32
         }
     }
     return if (best) |r| Builder.rectNode(r) else b.anchor(net);
-}
-
-/// Where a terminal sits on its family's card: `d g s b`, `c b e`, pins in order.
-fn cardRank(role: TerminalRole) u8 {
-    return switch (role) {
-        .drain, .collector => 0,
-        .gate, .base => 1,
-        .source, .emitter => 2,
-        .bulk => 3,
-        .pin => |position| position,
-    };
 }
 
 fn layerLess(_: void, p: LayerId, q: LayerId) bool {
