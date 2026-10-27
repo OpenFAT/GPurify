@@ -130,11 +130,13 @@ pub const format = "gpurify-deck/1";
 pub const Error = answers.Error;
 
 /// Writes `cd` as the deck dump, `name` as its `deck`. `scratch` holds
-/// the answers' query lists until return. Asserts `cd.grid` is 1 nm.
+/// the answers' query lists until return. Asserts `cd.grid` is 1 nm and
+/// `name` is not empty.
 /// `Unrepresentable`: a non-finite value, or a rule parameter whose unit
 /// the kind table does not state; the output so far is partial.
 pub fn writeDeck(w: *Writer, scratch: Allocator, cd: *const CompiledDeck, strings: *const StrTable, name: []const u8) Error!void {
     assert(cd.grid.dbu_per_um == 1000);
+    assert(name.len > 0);
     const d = &cd.deck;
     try w.print("{{\"format\":\"{s}\",\"deck\":", .{format});
     try writeString(w, name);

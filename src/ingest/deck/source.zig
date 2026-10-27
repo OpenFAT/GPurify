@@ -26,8 +26,6 @@ const UnusedFilter = tables.UnusedFilter;
 
 /// A whole deck by name, in statement order.
 pub const DeckSource = struct {
-    /// `grid <length>`, nm: what every deck length is a multiple of.
-    grid_nm: ?f64 = null,
     /// Drawn layers; their ids are assigned ascending by name.
     layers: std.ArrayList(DrawnLayer) = .empty,
     /// `ignore gds(L, D)` pairs: distinct, none a drawn layer's.

@@ -44,7 +44,7 @@ const Dim = @import("kinds.zig").Dim;
 /// was parsed against.
 pub const Deck = struct {
     /// The `grid` statement, nm: what every deck length is a multiple of;
-    /// null for a deck built in code without one.
+    /// set by `parseDeck` only, null for a deck lowered from a source.
     grid_nm: ?f64 = null,
     /// Drawn and derived layers, and the stream pairs the deck ignores.
     layers: LayerTable = .{},

@@ -57,7 +57,6 @@ pub fn sourceOf(arena: Allocator, cd: *const CompiledDeck, strings: *const StrTa
         try doc.stages.append(arena, stage);
     }
     for (d.waivers) |w| try doc.waivers.append(arena, .{ .rule = strings.resolve(w.rule), .layer = layerName(cd, w.layer, strings) });
-    doc.grid_nm = d.grid_nm;
     doc.boundary = if (d.boundary) |l| layerName(cd, l, strings) else null;
     doc.extraction = if (std.meta.eql(d.extraction, ingest_deck.Extraction{})) null else d.extraction;
     doc.pex_models = d.pex_models;

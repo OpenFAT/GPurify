@@ -110,9 +110,7 @@ pub fn lower(arena: Allocator, gpa: Allocator, doc: *const DeckSource, strings: 
     try checkNetted(c, doc, &layers, connectivity);
     var devices = try buildDevices(c, doc.devices.items, &layers);
     devices.netlist_scale_nm = doc.netlist_scale_nm;
-    var deck = try lower_tables.finish(c, doc, layers, rules, connectivity, devices);
-    deck.grid_nm = doc.grid_nm;
-    return deck;
+    return lower_tables.finish(c, doc, layers, rules, connectivity, devices);
 }
 
 // ---- private ----

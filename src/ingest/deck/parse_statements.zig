@@ -53,7 +53,6 @@ pub fn grid(p: *Parser, span: Span) PErr!void {
     const nm = try convert.quantity(p, v, .length, "grid");
     if (nm.m <= 0) return p.fail(v.span(), "the grid must be positive", .{});
     p.deck_grid = nm;
-    p.out.grid_nm = nm.toF64();
 }
 
 pub fn let_(p: *Parser) PErr!void {
