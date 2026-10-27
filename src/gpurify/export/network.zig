@@ -106,7 +106,8 @@ pub fn checkCanonical(network: *const ParasiticNetwork, diag: *Diagnostic) Error
     if (!std.sort.isSorted(u32, network.node_net.items, {}, std.sort.asc(u32)))
         return refuse(diag, "a parasitic network whose nodes are not grouped by net");
     const from = network.from.items;
-    for (1..from.len) |i| if (@backingInt(from[i - 1]) > @backingInt(from[i]))
+    // `1..0` would underflow: no element is in order.
+    if (from.len > 1) for (from[0 .. from.len - 1], from[1..]) |a, b| if (@backingInt(a) > @backingInt(b))
         return refuse(diag, "a parasitic network whose elements are not in canonical order");
     for (network.to.items, network.kind.items) |to, kind| {
         const may_ground = switch (kind) {
@@ -282,4 +283,12 @@ fn inductorAt(inductor: []const ?u32, node: NodeId) ?u32 {
 
 fn orderU32(a: u32, b: u32) std.math.Order {
     return std.math.order(a, b);
+}
+
+test "a network with no element is canonical" {
+    // Oracle: the law the check states: an empty sequence is in every
+    // order. A layout with nothing to extract still writes its header and
+    // an empty subcircuit, never a crash.
+    var diag: Diagnostic = .{};
+    try checkCanonical(&ParasiticNetwork.empty, &diag);
 }

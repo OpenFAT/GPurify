@@ -5,8 +5,9 @@
 //!
 //! `gpurify <drc|erc|lvs|pex|all|lib> <layout> --deck <deck> [options]`,
 //! `xor <layout> <other>`, `<fill|enhance> <layout> <output.gds>`,
-//! `system <system.json> --reference <netlist>` or `compare <reference>
-//! <candidate>` (cli/args.zig, cli/compare.zig). `--deck` names a deck file
+//! `system <system.json> --reference <netlist>`, `compare <reference>
+//! <candidate>` or `deck <deck> --format json` (cli/args.zig,
+//! cli/compare.zig, cli/deck.zig). `--deck` names a deck file
 //! or a shipped deck (`sky130`, `gf180mcu`, `ihp_sg13g2`, `asap7`, or `generic_finfet`, asap7's old name).
 //! A run's whole report is rendered before the first byte is printed, so an
 //! error leaves stdout empty.
@@ -21,6 +22,7 @@ const gpurify = @import("gpurify");
 const float = gpurify.float;
 const args = @import("cli/args.zig");
 const compare = @import("cli/compare.zig");
+const deck_cli = @import("cli/deck.zig");
 const errors = @import("cli/errors.zig");
 
 /// Written into every report header; Rust's `CARGO_PKG_VERSION`, which the
@@ -78,6 +80,8 @@ fn dispatch(env: Env, arena: Allocator, argv: []const []const u8, out: *Writer, 
         try out.writeAll(text.written());
         return @intFromBool(!passed);
     }
+    // One deck and no layout: the deck dump.
+    if (argv.len > 0 and std.mem.eql(u8, argv[0], "deck")) return deck_cli.run(arena, env.io, env.dir, argv[1..], out, err);
     var message: []const u8 = "";
     var parsed = args.parse(arena, argv, &message) catch |e| switch (e) {
         error.Usage => return fail(err, "{s}", .{message}),
@@ -496,6 +500,7 @@ fn runIn(arena: Allocator, dir: std.Io.Dir, argv: []const []const u8) !struct { 
 test {
     _ = args;
     _ = compare;
+    _ = deck_cli;
     _ = errors;
 }
 
@@ -560,4 +565,54 @@ test "a refusal exits 1 with one error line and no report" {
         try testing.expectEqualStrings("", r[1]);
         try testing.expect(std.mem.startsWith(u8, r[2], c[1]));
     }
+}
+
+test "deck refuses a deck that does not compile with drc's own diagnostics" {
+    // Oracle: drc on a 1 nm layout, the run whose refusal `deck` promises to
+    // repeat: the same stderr bytes, exit 1 and empty stdout, for a deck
+    // naming an undeclared layer, a deck off its own grid, and a deck file
+    // that is not there. The stderr also names the deck and the bad line.
+    const testing = std.testing;
+    var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var tmp = testing.tmpDir(.{});
+    defer tmp.cleanup();
+    try tmp.dir.writeFile(testing.io, .{ .sub_path = "t.gds", .data = try met1Gds(arena, 1000, 1000) });
+    try tmp.dir.writeFile(testing.io, .{ .sub_path = "layer.deck", .data = "grid 5nm\nlayer met1 = gds(68, 20)\nrule m1.1 width(met9) >= 140nm\n" });
+    try tmp.dir.writeFile(testing.io, .{ .sub_path = "grid.deck", .data = "grid 5nm\nlayer met1 = gds(68, 20)\nrule m1.1 width(met1) >= 142nm\n" });
+    for ([_][]const u8{ "layer.deck", "grid.deck", "missing.deck" }) |deck| {
+        const dumped = try runIn(arena, tmp.dir, &.{ "deck", deck, "--format", "json" });
+        const checked = try runIn(arena, tmp.dir, &.{ "drc", "t.gds", "--deck", deck });
+        try testing.expectEqual(1, dumped[0]);
+        try testing.expectEqualStrings("", dumped[1]);
+        try testing.expectEqual(checked[0], dumped[0]);
+        try testing.expectEqualStrings(checked[1], dumped[1]);
+        try testing.expectEqualStrings(checked[2], dumped[2]);
+        try testing.expect(std.mem.startsWith(u8, dumped[2], try std.fmt.allocPrint(arena, "error: deck {s}: ", .{deck})));
+    }
+    const layer = try runIn(arena, tmp.dir, &.{ "deck", "layer.deck" });
+    try testing.expect(std.mem.indexOf(u8, layer[2], "  line 3:") != null);
+    const usage = try runIn(arena, tmp.dir, &.{ "deck", "sky130", "--format", "text" });
+    try testing.expectEqual(1, usage[0]);
+    try testing.expectEqualStrings("error: unknown --format text; deck writes json\n", usage[2]);
+}
+
+test "deck dumps a shipped deck by name on stdout and exits 0" {
+    // Oracle: the format's header (gpurify/export/deck.zig): sky130's
+    // `grid 5nm`, its name as given, and m1.1 (met1 width >= 0.140 um,
+    // SKY130 periphery rules) as a 140 nm `min_width` row on met1.
+    const testing = std.testing;
+    var arena_state: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var tmp = testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const r = try runIn(arena, tmp.dir, &.{ "deck", "sky130", "--format", "json" });
+    try testing.expectEqualStrings("", r[2]);
+    try testing.expectEqual(0, r[0]);
+    try testing.expect(std.mem.startsWith(u8, r[1], "{\"format\":\"gpurify-deck/1\",\"deck\":\"sky130\",\"grid_nm\":5,\n\"layers\":[\n"));
+    try testing.expect(std.mem.indexOf(u8, r[1], "{\"id\":\"m1.1\",\"kind\":\"min_width\",\"keyword\":\"width\",\"domain\":\"drc\",\"severity\":\"error\",\"layers\":[") != null);
+    try testing.expect(std.mem.indexOf(u8, r[1], "\"params\":[{\"name\":\"limit\",\"value\":140,\"unit\":\"nm\"}]},\n") != null);
+    try testing.expect(std.mem.endsWith(u8, r[1], "]}}\n"));
 }

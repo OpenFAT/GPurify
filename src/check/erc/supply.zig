@@ -74,7 +74,8 @@ pub fn checkSupplyShort(r: Record, design: Design, t: *const SupplyShortTable, s
 }
 
 /// A net with a polygon on a soft layer whose hard remainder (re-extracted
-/// with the soft layers and their cuts out) falls into two or more pieces:
+/// with the soft layers, every global layer and their cuts out: the
+/// substrate is resistive too) falls into two or more pieces:
 /// one finding at its lowest remaining polygon naming one in another piece,
 /// measuring 2 against 1. `examined` counts nets on a soft layer.
 pub fn checkSoftConnection(r: Record, design: Design, t: *const SoftConnectionTable, connectivity: *const Connectivity, scratch: *Scratch) Allocator.Error!void {
@@ -99,7 +100,9 @@ pub fn checkSoftConnection(r: Record, design: Design, t: *const SoftConnectionTa
         }
         soft_nets = .empty;
         try netsMarkedInto(arena, scratch.net_marks.items, 1, &soft_nets);
-        // What is left without the resistive bodies, joined only as declared.
+        // What is left without the resistive bodies, joined only as declared:
+        // a global layer (the substrate) is one of them, listed or not.
+        for (connectivity.global) |layer| is_soft[@backingInt(layer)] = true;
         var hard = connectivity.*;
         hard.conductors = try keepHard(arena, is_soft, connectivity.conductors);
         hard.global = try keepHard(arena, is_soft, connectivity.global);
