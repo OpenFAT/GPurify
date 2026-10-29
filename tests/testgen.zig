@@ -15,6 +15,7 @@
 //! - `netlist`: `layoutFromNetlist`, `NetlistSpec`, `DeviceSpec`, `TerminalSpec`, `Floorplan`, `NetlistCase` (testgen/netlist.zig)
 //! - `scale`: `scaleCorpus`, `ScaleSpec`, `ScaleCorpus` (testgen/scale.zig)
 //! - `violation`: `layoutWithViolation`, `Amount`, `ShapeKind`, `ViolationShape`, `ViolationCase` (testgen/violation.zig)
+//! - `oracle`: `run`, `Error`, `Diagnostic`: the comparison tools (testgen/oracle.zig)
 
 pub const Rng = @import("testgen/rng.zig").Rng;
 pub const prop = @import("testgen/prop.zig");
@@ -22,6 +23,10 @@ pub const graph = @import("testgen/graph.zig");
 pub const shapes = @import("testgen/shapes.zig");
 pub const gds = @import("testgen/gds.zig");
 pub const assertions = @import("testgen/assertions.zig");
+pub const netlist = @import("testgen/netlist.zig");
+pub const scale = @import("testgen/scale.zig");
+pub const violation = @import("testgen/violation.zig");
+pub const oracle = @import("testgen/oracle.zig");
 pub const assertClose = assertions.assertClose;
 pub const assertCloseRelative = assertions.assertCloseRelative;
 pub const assertRuleRan = assertions.assertRuleRan;
@@ -30,9 +35,6 @@ pub const assertOnlyViolation = assertions.assertOnlyViolation;
 pub const assertHasViolation = assertions.assertHasViolation;
 pub const assertViolationsEq = assertions.assertViolationsEq;
 pub const assertBytesIdentical = assertions.assertBytesIdentical;
-pub const netlist = @import("testgen/netlist.zig");
-pub const scale = @import("testgen/scale.zig");
-pub const violation = @import("testgen/violation.zig");
 
 test {
     _ = @import("testgen/rng.zig");
@@ -43,4 +45,5 @@ test {
     _ = netlist;
     _ = scale;
     _ = violation;
+    _ = oracle;
 }
