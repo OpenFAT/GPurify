@@ -110,5 +110,5 @@ grown by the margin the metal leaves round the via's own cut. The `via_redundanc
 ## Status and limits
 
 Fill is density-driven only; it does not read timing. See
-[issue 15](https://github.com/OmarSiwy/GPurify/issues/15) for fill and
-[issue 17](https://github.com/OmarSiwy/GPurify/issues/17) for enhancement.
+[issue 15](https://github.com/OpenFAT/GPurify/issues/15) for fill and
+[issue 17](https://github.com/OpenFAT/GPurify/issues/17) for enhancement.

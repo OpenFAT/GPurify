@@ -115,7 +115,7 @@ lvs: Match
 
 The open between the two VSS straps drops from an error to a warning, and the circuits match. The run exits 0.
 
-**Status and limits.** Partial. The same label on disjoint shapes is never joined without a `connect_implicit` or `connect_explicit` line. The LEF 5.8 `MUSTJOINALLPORTS` property is not read. See [issue 7](https://github.com/OmarSiwy/GPurify/issues/7).
+**Status and limits.** Partial. The same label on disjoint shapes is never joined without a `connect_implicit` or `connect_explicit` line. The LEF 5.8 `MUSTJOINALLPORTS` property is not read. See [issue 7](https://github.com/OpenFAT/GPurify/issues/7).
 
 **Sources.** KLayout LVS `connect_implicit` and `connect_explicit` ([KLayout LVS reference](https://www.klayout.de/doc/about/lvs_ref_netter.html)); LEF/DEF 5.8 `LEF58_MUSTJOINALLPORTS`; Siemens Calibre `VIRTUAL CONNECT COLON` and `VIRTUAL CONNECT NAME`.
 
@@ -225,7 +225,7 @@ violations: 5
 
 `VSS` (shape 30) and `A` (shape 31) are one net. The path runs in four steps: from the VSS strap to its extension (shape 36), to the bridge (shape 34), to the A extension (shape 35), to the A strap. Step 3 starts at the bridge at x = −1000 nm.
 
-**Status and limits.** Partial. The path is the shortest one, not every route between the two labels. Opens are not isolated: a reference net split over several layout nets shows only as `lvs.label_conflict` where the pieces are labelled, never as a path. See [issue 8](https://github.com/OmarSiwy/GPurify/issues/8).
+**Status and limits.** Partial. The path is the shortest one, not every route between the two labels. Opens are not isolated: a reference net split over several layout nets shows only as `lvs.label_conflict` where the pieces are labelled, never as a path. See [issue 8](https://github.com/OpenFAT/GPurify/issues/8).
 
 **Sources.** Siemens Calibre `LVS ISOLATE SHORTS` and `LVS ISOLATE OPENS`; Synopsys IC Validator ShortFinder; Cadence Pegasus short isolation.
 

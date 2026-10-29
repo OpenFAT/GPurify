@@ -188,7 +188,7 @@ per pattern. A pattern may not match a `device` model.
 
 A pin pairs only with the port of its name, so a pin with no matching port, or a port with no pin,
 is a mismatch. Black boxes never merge in parallel. See
-[issue 9](https://github.com/OmarSiwy/GPurify/issues/9) for what black boxes do not cover yet.
+[issue 9](https://github.com/OpenFAT/GPurify/issues/9) for what black boxes do not cover yet.
 
 ## Ports and nets paired by name
 
@@ -221,7 +221,7 @@ comparison with every other net of that label, as rails joined only above this l
 **`lvs connect_explicit`** joins the nets labelled with any of the two or more names.
 
 The layout keeps its open: `lvs.label_conflict` still reports it, as a warning rather than an
-error. See [issue 7](https://github.com/OmarSiwy/GPurify/issues/7).
+error. See [issue 7](https://github.com/OpenFAT/GPurify/issues/7).
 
 ## Merging by value
 

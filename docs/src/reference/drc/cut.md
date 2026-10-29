@@ -224,7 +224,7 @@ A square licon 400 nm from the long side of a 0.19 µm by 2 µm slot breaks the 
 **Status and limits.** Partial. Only the class-pair SIDE and END cells are checked. The table's
 second parallel-run value, `CENTERTOCENTER` and `CENTERANDEDGE` cells, `SAMENET` and `SAMEMETAL`
 tables, `LAYER` tables between two cut layers, `EXACTALIGNEDSPACING` and LEF `SPACINGTABLE
-ORTHOGONAL` are not checked. See [issue 6, cut-class spacing tables](https://github.com/OmarSiwy/GPurify/issues/6).
+ORTHOGONAL` are not checked. See [issue 6, cut-class spacing tables](https://github.com/OpenFAT/GPurify/issues/6).
 
 **Sources.** `LEF58_SPACINGTABLE` with `CUTCLASS`; LEF/DEF 5.8 `SPACINGTABLE ORTHOGONAL`; SkyWater
 SKY130 rules licon.2 to licon.2d; the OpenROAD detailed router's cut-class spacing check.

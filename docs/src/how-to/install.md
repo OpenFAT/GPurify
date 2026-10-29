@@ -19,7 +19,7 @@ GPurify builds on Linux (x86-64 and AArch64) and macOS (x86-64 and Apple silicon
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/OmarSiwy/GPurify
+   git clone https://github.com/OpenFAT/GPurify
    cd GPurify
    ```
 
@@ -59,7 +59,7 @@ GPurify builds on Linux (x86-64 and AArch64) and macOS (x86-64 and Apple silicon
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/OmarSiwy/GPurify
+   git clone https://github.com/OpenFAT/GPurify
    cd GPurify
    ```
 

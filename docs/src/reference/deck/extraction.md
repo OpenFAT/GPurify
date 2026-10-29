@@ -257,4 +257,4 @@ grounded backside its resistance there: a DSPF `R` card (to `0` for the backside
 `// substrate <node> <node | 0> <ohm>` comment in SPEF, whose resistance section cannot join two
 nets. The port layers are conductors. Every key is required, every value positive, and the line is
 stated once. No open PDK states its substrate profile, so it is the deck's. See
-[issue 12](https://github.com/OmarSiwy/GPurify/issues/12).
+[issue 12](https://github.com/OpenFAT/GPurify/issues/12).

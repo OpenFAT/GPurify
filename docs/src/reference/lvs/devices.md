@@ -465,7 +465,7 @@ lvs: Mismatch([ParameterMismatch { layout_device: 0, ref_device: 0, param: "r", 
 **Status and limits.** Partial. A fixed cell recognised by its name has no parameters compared. A
 Spectre instance of a defined subcircuit is not read as a device model. GPurify does not recognise
 a subcircuit by the topology of its drawn devices. See
-[issue 10](https://github.com/OmarSiwy/GPurify/issues/10).
+[issue 10](https://github.com/OpenFAT/GPurify/issues/10).
 
 **Sources.** Magic `subcircuit` and `rsubcircuit` device extraction; KLayout SPICE reader
 `wants_subcircuit` (<https://www.klayout.de/doc/about/lvs_ref.html>); IHP SG13G2 LVS decks.

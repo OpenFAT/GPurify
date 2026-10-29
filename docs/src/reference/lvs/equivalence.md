@@ -269,7 +269,7 @@ paired by position, as KLayout pairs them. A device belongs to a box when it lie
 placement's extent, so a parent's device drawn inside that rectangle is taken for the box's. A
 reference subcircuit that is called but not defined is refused (`UndefinedSubckt`); an empty
 `.subckt` with its ports is enough. A box has at most 256 pins. See
-[issue 9](https://github.com/OmarSiwy/GPurify/issues/9).
+[issue 9](https://github.com/OpenFAT/GPurify/issues/9).
 
 **Sources.** KLayout LVS `blank_circuit` (<https://www.klayout.de/doc/about/lvs_ref_netter.html>);
 Netgen `model ... blackbox` (<http://opencircuitdesign.com/netgen/reference.html>).

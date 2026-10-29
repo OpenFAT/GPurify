@@ -283,7 +283,7 @@ gpurify deck waive.deck --format json
 Every length is a whole number of nanometres, and a value the deck does not state is `null`.
 
 **Status and limits.** Partial. GPurify has no editor integration that checks as you draw.
-Open issue: [FLOW-005: In-design / live DRC](https://github.com/OmarSiwy/GPurify/issues/13).
+Open issue: [FLOW-005: In-design / live DRC](https://github.com/OpenFAT/GPurify/issues/13).
 
 **Sources.** Siemens Calibre RealTime; Synopsys IC Validator Live; Cadence Pegasus.
 
@@ -304,7 +304,7 @@ its runs decks built in code, each named as the shipped decks are.
 
 **Status and limits.** Partial. Custom ERC rules are not supported. There is no way to write a
 custom rule in the deck language or in a scripting language. Open issue:
-[FLOW-006: User-programmable rules](https://github.com/OmarSiwy/GPurify/issues/14).
+[FLOW-006: User-programmable rules](https://github.com/OpenFAT/GPurify/issues/14).
 
 **Sources.** Siemens Calibre TVF; KLayout's Ruby and Python DRC scripts.
 
@@ -387,7 +387,7 @@ to standard error; the report goes to standard output.
 multi-size fill. It reads no `density_balance`, `cover_density` or `density_cmp` rules, and it is
 not timing-aware. Two `fill` lines for one density layer each fill as if the other drew nothing.
 Every layer a line reads must be rectilinear. Open issue:
-[FLOW-007: Fill insertion](https://github.com/OmarSiwy/GPurify/issues/15).
+[FLOW-007: Fill insertion](https://github.com/OpenFAT/GPurify/issues/15).
 
 **Sources.** KLayout `Cell#fill_region`; OpenROAD `density_fill`; Siemens Calibre SmartFill;
 Synopsys IC Validator; Cadence Pegasus.
@@ -412,7 +412,7 @@ there is no command for it.
 **Status and limits.** Partial. Only DRC is re-checked: not ERC, LVS or PEX. The re-check extracts
 no nets, and it applies no stages, waivers or custom rules. It does not narrow a re-check to the
 nets an edit changed. Open issue:
-[FLOW-008: Incremental / ECO re-verification](https://github.com/OmarSiwy/GPurify/issues/16).
+[FLOW-008: Incremental / ECO re-verification](https://github.com/OpenFAT/GPurify/issues/16).
 
 **Sources.** Cadence Pegasus; Synopsys StarRC datasheet.
 
@@ -493,7 +493,7 @@ line goes to standard error.
 
 **Status and limits.** Partial. GPurify adds no new power straps or via arrays, spreads no wires,
 and makes no timing-aware choices. Open issue:
-[FLOW-009: Automated DRC-clean layout enhancement](https://github.com/OmarSiwy/GPurify/issues/17).
+[FLOW-009: Automated DRC-clean layout enhancement](https://github.com/OpenFAT/GPurify/issues/17).
 
 **Sources.** Siemens Calibre DesignEnhancer; Xu and others, "Redundant-via enhanced maze routing
 for yield improvement", ASP-DAC 2005, for the redundant-via rate.

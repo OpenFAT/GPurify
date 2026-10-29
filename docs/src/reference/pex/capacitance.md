@@ -164,7 +164,7 @@ reciprocal only to its discretisation: a solve more than 5% from reciprocal is r
 other is written symmetrised. The substrate is a
 grounded plane at height 0. A shape on a layer at height 0 (a well, a diffusion) is a junction in
 that plane, so the field reads metal over another net's junction as coupling to ground. Open issue:
-[PEX-003: Coupling C (same-layer and cross-layer)](https://github.com/OmarSiwy/GPurify/issues/11).
+[PEX-003: Coupling C (same-layer and cross-layer)](https://github.com/OpenFAT/GPurify/issues/11).
 
 **Sources.** Weste and Harris, *CMOS VLSI Design*, 4th edition (2011), chapter 6. Nabors and
 White, "FastCap: a multipole accelerated 3-D capacitance extraction program", IEEE Transactions on
@@ -236,7 +236,7 @@ of one net, the same values are comments, `// substrate t1:0 t2:0 1775788.233788
 modelled: junction and substrate capacitance (a well is a contact, not a doped volume), lateral
 doping changes, contact resistance and trench isolation. A grid of more than 1500 lines on an axis
 is refused. Open issue:
-[PEX-013: Substrate network extraction](https://github.com/OmarSiwy/GPurify/issues/12).
+[PEX-013: Substrate network extraction](https://github.com/OpenFAT/GPurify/issues/12).
 
 **Sources.** GPurify-specific; substrate extraction is offered by the Synopsys StarRC and Cadence
 Quantus datasheets, whose models are not public. The solve is checked against the spreading

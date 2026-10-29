@@ -301,7 +301,7 @@ wire.
 **Status and limits.** Partial. sky130 x.22's exemption labels (`poly_float` to `m5_tie`) and its
 `areaid.stdcell` exclusion are not read; write the exclusion as a derived layer. LEF's own
 `LEF58_MUSTJOINALLPORTS` is not read. Implicit joins are tracked in
-[issue 7](https://github.com/OmarSiwy/GPurify/issues/7).
+[issue 7](https://github.com/OpenFAT/GPurify/issues/7).
 
 **Sources.** SkyWater SKY130 rule x.22; LEF58 `MUSTJOINALLPORTS`.
 
@@ -396,6 +396,6 @@ count.
 
 **Status and limits.** Implemented. The path is the shortest one, not every route. A short is not
 an abort: the run goes on. Short isolation is tracked in
-[issue 8](https://github.com/OmarSiwy/GPurify/issues/8).
+[issue 8](https://github.com/OpenFAT/GPurify/issues/8).
 
 **Sources.** OpenROAD TritonRoute short check.

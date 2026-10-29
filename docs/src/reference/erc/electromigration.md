@@ -903,7 +903,7 @@ replaced by its simulated 3000 µA.
 
 **Options.** None in the rule. A net the file does not reach keeps its budget.
 
-**Status and limits.** Partial ([issue 23](https://github.com/OmarSiwy/GPurify/issues/23)). A
+**Status and limits.** Partial ([issue 23](https://github.com/OpenFAT/GPurify/issues/23)). A
 terminal's current is drawn at its device's tap, not spread over its terminal shapes, and each net is
 fed at one point. A parallel or series group LVS reduced to one device shares the current evenly. A
 device the deck's `lvs ignore` leaves out, and a net LVS reduction removes, carry no current.

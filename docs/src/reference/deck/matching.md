@@ -83,4 +83,4 @@ GPurify reads, checks and keeps the coefficients with the deck, but no command r
 yet: a deck with `matching` lines produces the same reports as one without. The layout matching
 check, which holds a matched group to one model, size, orientation and centroid, is the ERC
 `matching` rule (see the [ERC checks](../erc/README.md)) and reads no coefficient. See
-[issue 25](https://github.com/OmarSiwy/GPurify/issues/25).
+[issue 25](https://github.com/OpenFAT/GPurify/issues/25).

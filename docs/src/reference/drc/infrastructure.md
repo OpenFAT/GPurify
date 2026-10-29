@@ -148,7 +148,7 @@ side reaches 40 nm past its met3 plate, a 40 nm by 2 µm strip of 80 000 nm².
 nets are extracted, and connectivity can read derived layers. A derived layer still carries its
 conductors' nets for net spacing. Selection by angle is horizontal or vertical edges only; there is
 no selection of shapes or edges by any other angle. See
-[issue 19, selection by shape class, net or angle](https://github.com/OmarSiwy/GPurify/issues/19).
+[issue 19, selection by shape class, net or angle](https://github.com/OpenFAT/GPurify/issues/19).
 
 **Sources.** SkyWater SKY130 rule capm.7
 ([periphery rules](https://skywater-pdk.readthedocs.io/en/main/rules/periphery.html)); KLayout's
@@ -264,7 +264,7 @@ turned one.
 
 **Status and limits.** Partial. GPurify has no hierarchical mode like KLayout's deep mode. This is a
 matter of run time and memory, not of the result: a flat check finds what a hierarchical one finds.
-See [issue 20, hierarchical processing](https://github.com/OmarSiwy/GPurify/issues/20).
+See [issue 20, hierarchical processing](https://github.com/OpenFAT/GPurify/issues/20).
 
 **Sources.** KLayout's deep (hierarchical) mode
 ([DRC reference](https://www.klayout.de/doc/about/drc_ref_layer.html)).

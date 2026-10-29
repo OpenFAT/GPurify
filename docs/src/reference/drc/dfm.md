@@ -429,7 +429,7 @@ The square's corner is 4.90 nm from the triangle's slanted edge, reported as 4 n
 on such a layer, `enclosure` with `opposite` or `adjacent` among them, and so do the layer
 operations `.with_rect` and `.extended`. There is no tolerance option, since the measurement is
 exact, and no true curves: GDSII has none, so a curve arrives as a polygon. See
-[issue 18, all-angle DRC](https://github.com/OmarSiwy/GPurify/issues/18).
+[issue 18, all-angle DRC](https://github.com/OpenFAT/GPurify/issues/18).
 
 **Sources.** Siemens Calibre; Silvaco; Empyrean; J. D. Hobby, "Practical segment intersection with
 finite precision output", Computational Geometry 13, 1999; L. Guibas and D. Marimont, "Rounding

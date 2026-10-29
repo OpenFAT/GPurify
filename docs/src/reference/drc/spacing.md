@@ -313,7 +313,7 @@ wide, so the wire breaks the 280 nm limit there. The point is midway across the 
 **Status and limits.** Partial. The stub-width `RANGE` form and the two-stub `SPACINGTABLE INFLUENCE`
 form are not checked. Near a wide corner, the square growth flags a little more than the foundry
 rule does: a false violation, never a missed one. See
-[issue 2](https://github.com/OmarSiwy/GPurify/issues/2).
+[issue 2](https://github.com/OpenFAT/GPurify/issues/2).
 
 **Sources.** SkyWater SKY130 rule m1.3a; LEF/DEF 5.8 `SPACING RANGE INFLUENCE` and
 `SPACINGTABLE INFLUENCE`; OpenROAD TritonRoute.
@@ -579,7 +579,7 @@ limit. The point is midway between the corners. With `corner_to_corner: true` th
 
 **Status and limits.** Partial. `CONCAVECORNER`, the `WIDTH` table and the `SAMEMASK`, `CORNERONLY`,
 `EXCEPTJOGLENGTH` and `EXCEPTSAMENET` qualifiers are not checked. The shipped sky130 deck's poly.4
-over-reports. See [issue 3](https://github.com/OmarSiwy/GPurify/issues/3).
+over-reports. See [issue 3](https://github.com/OpenFAT/GPurify/issues/3).
 
 **Sources.** LEF58 `CORNERSPACING`; ASAP7 rule M1.S.6; GlobalFoundries GF180MCU rule MT30.3; ISPD 2019
 contest; KLayout `corners`; OpenROAD TritonRoute.
@@ -633,7 +633,7 @@ is the range's upper end; the point is midway across the gap.
 **Status and limits.** Partial. This is LEF58 `TWOWIRESFORBIDDENSPACING` as OpenROAD TritonRoute
 reads it. Its `MINSPANLENGTH` and `MAXSPANLENGTH`, LEF58 `FORBIDDENSPACING`'s `WIDTH`, `WITHIN` and
 `TWOEDGES`, and a preferred direction are not checked. See
-[issue 4](https://github.com/OmarSiwy/GPurify/issues/4).
+[issue 4](https://github.com/OpenFAT/GPurify/issues/4).
 
 **Sources.** LEF58 `FORBIDDENSPACING` and `TWOWIRESFORBIDDENSPACING`; OpenROAD TritonRoute.
 
@@ -720,7 +720,7 @@ The second and third fins are 30 nm apart, centre to centre, against an exact 27
 midway between their centre lines.
 
 **Status and limits.** Partial. Track grids (LEF `PITCH`, LEF58 `PITCH`,
-`RIGHTWAYONGRIDONLY`) are not checked. See [issue 5](https://github.com/OmarSiwy/GPurify/issues/5).
+`RIGHTWAYONGRIDONLY`) are not checked. See [issue 5](https://github.com/OpenFAT/GPurify/issues/5).
 
 **Sources.** ASAP7 rules FIN.S.1 and GATE.S.1; LEF/DEF 5.8 `PITCH`; LEF58 `PITCH` and
 `RIGHTWAYONGRIDONLY`; OpenROAD TritonRoute.
@@ -824,7 +824,7 @@ The 45° segment of a 200 nm wire is 200/√2 ≈ 141.4 nm wide, floored to 141 
 
 **Status and limits.** Partial. Edges at angles other than 45° are measured by `width`, `notch`,
 `space`, `area`, `hole_area` and `edge_length` too. Every other geometric check is refused on a
-non-rectilinear layer. See [issue 21](https://github.com/OmarSiwy/GPurify/issues/21).
+non-rectilinear layer. See [issue 21](https://github.com/OpenFAT/GPurify/issues/21).
 
 **Sources.** IHP SG13G2 rules M1.g, Mn.g and Gat.g; GlobalFoundries GF180MCU rules PL.7 and MT30.4;
 SkyWater SKY130 rule via.14a.

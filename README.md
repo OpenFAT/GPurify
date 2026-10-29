@@ -1,9 +1,9 @@
 # GPurify
 
-[![test](https://github.com/OmarSiwy/GPurify/actions/workflows/test.yml/badge.svg)](https://github.com/OmarSiwy/GPurify/actions/workflows/test.yml)
-[![cross](https://github.com/OmarSiwy/GPurify/actions/workflows/cross.yml/badge.svg)](https://github.com/OmarSiwy/GPurify/actions/workflows/cross.yml)
-[![nightly](https://github.com/OmarSiwy/GPurify/actions/workflows/nightly.yml/badge.svg)](https://github.com/OmarSiwy/GPurify/actions/workflows/nightly.yml)
-[![docs](https://github.com/OmarSiwy/GPurify/actions/workflows/docs.yml/badge.svg)](https://omarsiwy.github.io/GPurify/)
+[![test](https://github.com/OpenFAT/GPurify/actions/workflows/test.yml/badge.svg)](https://github.com/OpenFAT/GPurify/actions/workflows/test.yml)
+[![cross](https://github.com/OpenFAT/GPurify/actions/workflows/cross.yml/badge.svg)](https://github.com/OpenFAT/GPurify/actions/workflows/cross.yml)
+[![nightly](https://github.com/OpenFAT/GPurify/actions/workflows/nightly.yml/badge.svg)](https://github.com/OpenFAT/GPurify/actions/workflows/nightly.yml)
+[![docs](https://github.com/OpenFAT/GPurify/actions/workflows/docs.yml/badge.svg)](https://openfat.github.io/GPurify/)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Physical verification for integrated circuits: DRC, LVS, ERC and PEX in one
@@ -15,7 +15,7 @@ shapes it examined, and a run that could not check everything you asked for
 does not pass. The same inputs give the same report bytes on any machine,
 thread count or backend.
 
-**Documentation: <https://omarsiwy.github.io/GPurify/>.** Tutorials, how-to
+**Documentation: <https://openfat.github.io/GPurify/>.** Tutorials, how-to
 guides, the deck language, and every check GPurify runs: what it catches, how
 it is measured, and how to write it in a deck.
 
@@ -25,7 +25,7 @@ GPurify builds from source in a pinned Nix shell, which brings the exact Zig
 compiler it needs:
 
 ```sh
-git clone https://github.com/OmarSiwy/GPurify
+git clone https://github.com/OpenFAT/GPurify
 cd GPurify
 nix develop -c zig build -Doptimize=ReleaseFast
 ./zig-out/bin/gpurify drc my_layout.gds --deck sky130
@@ -52,19 +52,19 @@ summary:
 ```
 
 The exit code is 0 only when every selected check ran and passed, so a
-script or CI job can gate on it. [Install GPurify](https://omarsiwy.github.io/GPurify/how-to/install.html)
+script or CI job can gate on it. [Install GPurify](https://openfat.github.io/GPurify/how-to/install.html)
 covers building without Nix and for a GPU, and
-[Check your first layout](https://omarsiwy.github.io/GPurify/tutorials/first-layout.html)
+[Check your first layout](https://openfat.github.io/GPurify/tutorials/first-layout.html)
 walks through a first run.
 
 ## What it checks
 
 | Check | What it does | Needs |
 |---|---|---|
-| [DRC](https://omarsiwy.github.io/GPurify/reference/drc/README.html) | Design rules: width, spacing, enclosure, area, density, cuts, multi-patterning and more | A layout and a deck |
-| [LVS](https://omarsiwy.github.io/GPurify/reference/lvs/README.html) | Extracts the layout's devices and nets and compares them with a schematic | A reference netlist (SPICE, CDL, Spectre or Verilog) |
-| [ERC](https://omarsiwy.github.io/GPurify/reference/erc/README.html) | Electrical rules: antenna, electromigration and IR drop, ESD, latch-up, voltage and connectivity | Design intent for the voltage- and current-based rules |
-| [PEX](https://omarsiwy.github.io/GPurify/reference/pex/README.html) | Extracts wire resistance, capacitance and inductance, written as SPEF, DSPF or a simulator-ready SPICE netlist | The deck's `pex` stack |
+| [DRC](https://openfat.github.io/GPurify/reference/drc/README.html) | Design rules: width, spacing, enclosure, area, density, cuts, multi-patterning and more | A layout and a deck |
+| [LVS](https://openfat.github.io/GPurify/reference/lvs/README.html) | Extracts the layout's devices and nets and compares them with a schematic | A reference netlist (SPICE, CDL, Spectre or Verilog) |
+| [ERC](https://openfat.github.io/GPurify/reference/erc/README.html) | Electrical rules: antenna, electromigration and IR drop, ESD, latch-up, voltage and connectivity | Design intent for the voltage- and current-based rules |
+| [PEX](https://openfat.github.io/GPurify/reference/pex/README.html) | Extracts wire resistance, capacitance and inductance, written as SPEF, DSPF or a simulator-ready SPICE netlist | The deck's `pex` stack |
 
 ## Commands
 
@@ -82,14 +82,14 @@ A layout is GDS, or DEF with `--lef`. Common options: `--reference` (the LVS
 netlist), `--intent` (ERC design intent), `--currents` (simulated currents
 for EM and IR drop), `--quasistatic <net>` (field-solve a net in PEX),
 `--format text|json|spef|dspf|spice`, `--backend auto|cpu|cuda|hip` and
-`--threads N`. The [command-line reference](https://omarsiwy.github.io/GPurify/reference/cli.html)
+`--threads N`. The [command-line reference](https://openfat.github.io/GPurify/reference/cli.html)
 lists every command and option.
 
 ## Status
 
 Rows of [tests/check-catalog.tsv](tests/check-catalog.tsv), the checks a
 signoff verifier is expected to handle, by how far GPurify covers them. Each
-row has an entry in the [check reference](https://omarsiwy.github.io/GPurify/reference/drc/README.html),
+row has an entry in the [check reference](https://openfat.github.io/GPurify/reference/drc/README.html),
 which says what a `partial` or `missing` row lacks.
 
 | Domain | Implemented | Expressible | Partial | Missing |
@@ -102,13 +102,13 @@ which says what a `partial` or `missing` row lacks.
 
 `Expressible` means the check has no rule kind of its own but can be written
 with general deck operations. Open work is tracked in
-[issues](https://github.com/OmarSiwy/GPurify/issues).
+[issues](https://github.com/OpenFAT/GPurify/issues).
 
 ## Decks
 
 A deck is a text file of layers, rules, connectivity and devices.
 There are 83 design-rule kinds and 57 electrical-rule kinds.
-The [deck language reference](https://omarsiwy.github.io/GPurify/reference/deck/README.html)
+The [deck language reference](https://openfat.github.io/GPurify/reference/deck/README.html)
 covers the language, and `gpurify deck <deck> --format json` shows what a
 deck compiles to.
 
@@ -169,7 +169,7 @@ nix develop .#docs -c docs/diagrams/render.sh && nix develop .#docs -c mdbook se
 [AGENTS.md](AGENTS.md) holds the working rules for contributors, human or
 agent, and [docs/STYLE.md](docs/STYLE.md) the style the documentation
 follows. Bugs and feature requests go to
-[issues](https://github.com/OmarSiwy/GPurify/issues).
+[issues](https://github.com/OpenFAT/GPurify/issues).
 
 ## License
 
