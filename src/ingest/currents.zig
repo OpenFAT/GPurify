@@ -1,5 +1,5 @@
 //! Simulated terminal currents: a simulator's per-terminal current file
-//! (`espice-emir/1`, ESPice `--emir`, OmarSiwy/ESPice#237) → `Currents`, one
+//! (`espice-emir/1`, ESPice `--emir`, OpenFAT/EGSpice#237) → `Currents`, one
 //! row per instance terminal: its average, electromigration-average, RMS
 //! and peak current at one corner. In: the JSON. Out: the rows, names
 //! interned, currents in µA (the file states amperes, positive into the
@@ -195,7 +195,7 @@ fn malformed(diag: *Diagnostic, comptime fmt: []const u8, args: anytype) Error {
 }
 
 test "the format's own example reads as two terminals in microamps" {
-    // Oracle: OmarSiwy/ESPice#237's example file and its units: amperes,
+    // Oracle: OpenFAT/EGSpice#237's example file and its units: amperes,
     // positive into the terminal, so 1.21e-04 A is 121 uA drawn by the
     // drain and -121 uA by the source; the source row is no terminal.
     var arena: std.heap.ArenaAllocator = .init(testing.allocator);
