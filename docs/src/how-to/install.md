@@ -14,6 +14,10 @@ GPurify builds on Linux (x86-64 and AArch64) and macOS (x86-64 and Apple silicon
 - Git, and network access for the first build, which fetches the Zig compiler and GPurify's one
   dependency.
 
+To install without cloning, `nix profile add github:OpenFAT/GPurify` builds the package
+(CPU and HIP kernels, no CUDA) and puts `gpurify` on your `PATH`; `nix run
+github:OpenFAT/GPurify -- drc chip.gds --deck sky130` runs it once.
+
 ### Steps
 
 1. Clone the repository:

@@ -38,8 +38,44 @@
           # sharing ~/.cache/zig evict each other's build runner on every `zig build`.
           shellHook = ''export ZIG_GLOBAL_CACHE_DIR="''${XDG_CACHE_HOME:-$HOME/.cache}/zig-${builtins.baseNameOf zig}"'';
         };
+        # `zig build --fetch` in a fixed-output derivation: the one network step, so the
+        # build below runs offline from a global cache seeded with its packages.
+        deps = pkgs.stdenvNoCC.mkDerivation {
+          name = "gpurify-zig-deps";
+          src = ./.;
+          nativeBuildInputs = [ zig ];
+          SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+          buildPhase = ''
+            export ZIG_GLOBAL_CACHE_DIR=$TMPDIR/zig
+            zig build --fetch
+            mv $ZIG_GLOBAL_CACHE_DIR/p $out
+          '';
+          dontInstall = true;
+          dontFixup = true;
+          outputHashMode = "recursive";
+          outputHash = "sha256-NVf2cvawGiNOwpO3Dwbv4qbXHpRA8uSLQ8bFobpPNZY=";
+        };
+        gpurify = pkgs.stdenv.mkDerivation {
+          pname = "gpurify";
+          version = "0.0.0";
+          src = ./.;
+          nativeBuildInputs = [ zig ] ++ pkgs.lib.optional pkgs.stdenv.isLinux pkgs.autoPatchelfHook;
+          # Zig cannot see the libc ABI inside the sandbox, so Linux names glibc and
+          # autoPatchelfHook points the loader at nixpkgs'. Baseline CPU: the result is cached
+          # and run on other machines. The decks are compiled in: `bin/gpurify` is the install.
+          buildPhase = ''
+            export ZIG_GLOBAL_CACHE_DIR=$TMPDIR/zig
+            mkdir -p $ZIG_GLOBAL_CACHE_DIR && cp -r ${deps} $ZIG_GLOBAL_CACHE_DIR/p
+            zig build install -Doptimize=ReleaseFast -Dcpu=baseline -Dcuda-arch=none --prefix $out \
+              ${pkgs.lib.optionalString pkgs.stdenv.isLinux "-Dtarget=${pkgs.stdenv.hostPlatform.parsed.cpu.name}-linux-gnu"}
+          '';
+          dontInstall = true;
+          meta.mainProgram = "gpurify";
+        };
       in
       {
+        packages.default = gpurify;
+        packages.gpurify = gpurify;
         devShells.default = default;
         # The user docs: mdBook, and the TeX set that renders their CircuiTikZ
         # diagrams to SVG (docs/diagrams/render.sh), apart from the default
